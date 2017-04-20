@@ -8,29 +8,33 @@ halfCarWidth = halfCarHeight / 2
 FORWARD = 0
 BACKWARD = 1
 
-traffic = {
-    cars: [
-        {name: "Lucas", pos: {x:0, y:0}, rot: 0, vel: 4, steering: 0, 
-            ai: {road_queue: [
-                {road: 0, direction: FORWARD}, 
-                {road: 1, direction: FORWARD},
-                {road: 2, direction: FORWARD}
-            ]}}, 
-        {name: "Felix", pos: {x:2, y:20}, rot: 0, vel: 4, steering: 0, 
-            ai: {road_queue: [
-                {road: 3, direction: FORWARD}, 
-                {road: 1, direction: BACKWARD},
-                {road: 4, direction: FORWARD}
-            ]}}, 
-    ],
-    roads: [
-        {start: {x: 5, y: 5}, end: {x: 10, y: 5}, startRoadIdx: -1, endRoadIdx: 1},
-        {start: {x: 10, y: 5}, end: {x: 10, y: 10}, startRoadIdx: 0, endRoadIdx: 2},
-        {start: {x: 10, y: 10}, end: {x: 15, y: 10}, startRoadIdx: 1, endRoadIdx: -1},
-        {start: {x: 5, y: 15}, end: {x: 10, y: 10}, startRoadIdx: -1, endRoadIdx: 1},
-        {start: {x: 10, y: 5}, end: {x: 15, y: 0}, startRoadIdx: 1, endRoadIdx: -1},
-    ]
+function init() {
+    traffic = {
+        cars: [
+            {name: "Lucas", pos: {x:0, y:0}, rot: 0, vel: 4, steering: 0, 
+                ai: {road_queue: [
+                    {road: 0, direction: FORWARD}, 
+                    {road: 1, direction: FORWARD},
+                    {road: 2, direction: FORWARD}
+                ]}}, 
+            {name: "Felix", pos: {x:2, y:20}, rot: 0, vel: 4, steering: 0, 
+                ai: {road_queue: [
+                    {road: 3, direction: FORWARD}, 
+                    {road: 1, direction: BACKWARD},
+                    {road: 4, direction: FORWARD}
+                ]}}, 
+        ],
+        roads: [
+            {start: {x: 5, y: 5}, end: {x: 10, y: 5}, startRoadIdx: -1, endRoadIdx: 1},
+            {start: {x: 10, y: 5}, end: {x: 10, y: 10}, startRoadIdx: 0, endRoadIdx: 2},
+            {start: {x: 10, y: 10}, end: {x: 20, y: 10}, startRoadIdx: 1, endRoadIdx: -1},
+            {start: {x: 5, y: 15}, end: {x: 10, y: 10}, startRoadIdx: -1, endRoadIdx: 1},
+            {start: {x: 10, y: 5}, end: {x: 15, y: 0}, startRoadIdx: 1, endRoadIdx: -1},
+        ]
+    }
 }
+
+init()
 
 lastTime = Date.now()
 
