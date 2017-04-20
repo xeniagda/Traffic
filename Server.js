@@ -10,12 +10,25 @@ BACKWARD = 1
 
 traffic = {
     cars: [
-        {name: "Car1", pos: {x:7, y:5}, rot: 0, vel: 4, steering: 0, ai: {road_queue: [{road: 0, direction: FORWARD}, {road: 1, direction: FORWARD}]}}, 
-        {name: "Car2", pos: {x:10, y:15}, rot: 0, vel: 4, steering: -50, ai: {road_queue: [{road: 1, direction: BACKWARD}, {road: 0, direction: BACKWARD}]}}
+        {name: "Lucas", pos: {x:0, y:0}, rot: 0, vel: 4, steering: 0, 
+            ai: {road_queue: [
+                {road: 0, direction: FORWARD}, 
+                {road: 1, direction: FORWARD},
+                {road: 2, direction: FORWARD}
+            ]}}, 
+        {name: "Felix", pos: {x:2, y:20}, rot: 0, vel: 4, steering: 0, 
+            ai: {road_queue: [
+                {road: 3, direction: FORWARD}, 
+                {road: 1, direction: BACKWARD},
+                {road: 4, direction: FORWARD}
+            ]}}, 
     ],
     roads: [
-        {start: {x: 7, y: 5}, end: {x: 20, y: 10}, startRoadIdx: -1, endRoadIdx: -1},
-        {start: {x: 20, y: 10}, end: {x: 10, y: 15}, startRoadIdx: -1, endRoadIdx: -1},
+        {start: {x: 5, y: 5}, end: {x: 10, y: 5}, startRoadIdx: -1, endRoadIdx: 1},
+        {start: {x: 10, y: 5}, end: {x: 10, y: 10}, startRoadIdx: 0, endRoadIdx: 2},
+        {start: {x: 10, y: 10}, end: {x: 15, y: 10}, startRoadIdx: 1, endRoadIdx: -1},
+        {start: {x: 5, y: 15}, end: {x: 10, y: 10}, startRoadIdx: -1, endRoadIdx: 1},
+        {start: {x: 10, y: 5}, end: {x: 15, y: 0}, startRoadIdx: 1, endRoadIdx: -1},
     ]
 }
 
@@ -44,15 +57,23 @@ var physics = timers.setInterval(() => {
             road_delta = {x: road.end.x - road.start.x, y: road.end.y - road.start.y}
             road_rot = toDegrees(Math.atan2(road_delta.y, road_delta.x))
 
-            k = road_delta.y / road_delta.x
-            m = road.start.y - k * road.start.x
+            if (road_delta.x == 0) {
+                k = 1 / 0
+                m = 0
+                cx = road.start.x
+                cy = car.pos.y
+            }
+            else {
+                k = road_delta.y / road_delta.x
+                m = road.start.y - k * road.start.x
 
-            cx = (car.pos.x + k * car.pos.y - k * m) / (1 + k * k)
-            cy = k * cx + m
+                cx = (car.pos.x + k * car.pos.y - k * m) / (1 + k * k)
+                cy = k * cx + m
+            }
             dx = car.pos.x - cx
             dy = car.pos.y - cy
             dist = Math.pow(dx * dx + dy * dy, 1/4)
-            dist_exag = Math.exp(5 * dist)
+            dist_exag = Math.exp(3 * dist)
 
             // Steer car towards closest point
             wanted_end_pos = current_path.direction == FORWARD ? road.end : road.start
