@@ -10,11 +10,12 @@ BACKWARD = 1
 
 traffic = {
     cars: [
-        {name: "Car1", pos: {x:10, y:5}, rot: 180, vel: 1, steering: 0, ai: {onRoad: 0, direction: FORWARD}}, 
-        {name: "Car2", pos: {x:15, y:15}, rot: 0, vel: 1, steering: -50, ai: {onRoad: 0, direction: BACKWARD}}
+        {name: "Car1", pos: {x:7, y:5}, rot: 0, vel: 4, steering: 0, ai: {road_queue: [{road: 0, direction: FORWARD}, {road: 1, direction: FORWARD}]}}, 
+        {name: "Car2", pos: {x:10, y:15}, rot: 0, vel: 4, steering: -50, ai: {road_queue: [{road: 1, direction: BACKWARD}, {road: 0, direction: BACKWARD}]}}
     ],
     roads: [
-        {start: {x: 7, y: 5}, end: {x: 20, y: 10}, startRoadIdx: -1, endRoadIdx: -1}
+        {start: {x: 7, y: 5}, end: {x: 20, y: 10}, startRoadIdx: -1, endRoadIdx: -1},
+        {start: {x: 20, y: 10}, end: {x: 10, y: 15}, startRoadIdx: -1, endRoadIdx: -1},
     ]
 }
 
@@ -33,11 +34,13 @@ var physics = timers.setInterval(() => {
         new_pos = {x: car.pos.x + rx, y: car.pos.y + ry}
         car.pos = new_pos
 
-        car.rot += car.steering * delta
+        car.rot += car.steering * delta * 5
 
         // Calculate AI
-        if (car.ai) {
-            road = traffic.roads[car.ai.onRoad]
+        if (car.ai && car.ai.road_queue.length > 0) {
+            current_path = car.ai.road_queue[0]
+
+            road = traffic.roads[current_path.road]
             road_delta = {x: road.end.x - road.start.x, y: road.end.y - road.start.y}
             road_rot = toDegrees(Math.atan2(road_delta.y, road_delta.x))
 
@@ -49,15 +52,24 @@ var physics = timers.setInterval(() => {
             dx = car.pos.x - cx
             dy = car.pos.y - cy
             dist = Math.pow(dx * dx + dy * dy, 1/4)
+            dist_exag = Math.exp(5 * dist)
 
             // Steer car towards closest point
-            wanted_end_pos = car.ai.direction == FORWARD ? road.end : road.start
+            wanted_end_pos = current_path.direction == FORWARD ? road.end : road.start
             
-            wanted_rot = (toDegrees(Math.atan2(car.pos.y - (cy * dist + wanted_end_pos.y) / (dist + 1), car.pos.x - (cx * dist + wanted_end_pos.x) / (dist + 1)))) % 360 + 180
+            wanted_rot = (toDegrees(Math.atan2(car.pos.y - (cy * dist_exag + wanted_end_pos.y) / (dist_exag + 1), car.pos.x - (cx * dist_exag + wanted_end_pos.x) / (dist_exag + 1)))) % 360 + 180
 
             car.steering = wanted_rot - car.rot
             
             car.steering = (car.steering + 180) % 360 - 180
+            
+            dwx = wanted_end_pos.x - car.pos.x
+            dwy = wanted_end_pos.y - car.pos.y
+            dist_to_finish = Math.sqrt(dwx * dwx + dwy * dwy)
+
+            if (dist_to_finish < 1) {
+                car.ai.road_queue.shift()
+            }
         }
         return car
     })
