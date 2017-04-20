@@ -12,7 +12,10 @@ import Svg.Attributes as Sa
 import Window
 import Time exposing (Time)
 
-renderScale = 40
+
+renderScale =
+    40
+
 
 main =
     Html.program { init = init, view = view, update = update, subscriptions = subscriptions }
@@ -39,28 +42,31 @@ carWidth =
 
 type alias Car =
     { name : String
-    , pos  : Position
-    , rot  : Float
-    , vel  : Float -- How many pixels forwards the car should move every second in the direction it's facing
+    , pos : Position
+    , rot : Float
+    , vel : Float -- How many pixels forwards the car should move every second in the direction it's facing
     }
 
+
 type alias Road =
-    { start        : Position
-    , end          : Position
+    { start : Position
+    , end : Position
     , startRoadIdx : Int
-    , endRoadIdx   : Int }
+    , endRoadIdx : Int
+    }
 
 
 type alias Traffic =
     { cars : List Car
-    , roads: List Road }
+    , roads : List Road
+    }
 
 
 decodeTraffic : Decoder Traffic
 decodeTraffic =
-    Decode.map2 (\cars roads -> { cars = cars, roads = roads})
+    Decode.map2 (\cars roads -> { cars = cars, roads = roads })
         (Decode.field "cars" decodeCars)
-        (Decode.field "roads" decodeRoads )
+        (Decode.field "roads" decodeRoads)
 
 
 decodeCars : Decoder (List Car)
@@ -72,6 +78,7 @@ decodeCars =
             |> P.required "rot" Decode.float
             |> P.required "vel" Decode.float
         )
+
 
 decodeRoads : Decoder (List Road)
 decodeRoads =
@@ -127,7 +134,7 @@ update msg model =
             ( { model | err = Just <| toString error }, Cmd.none )
 
         Request ->
-            ( model, Http.send SetTrafficState <| Http.get "http://localhost:8000/Cars" decodeTraffic )
+            ( model, Http.send SetTrafficState <| Http.get "/Cars" decodeTraffic )
 
         Resize size ->
             ( { model | size = Just { x = toFloat size.width, y = toFloat size.height } }, Cmd.none )
@@ -142,12 +149,12 @@ update msg model =
 
                 Just lasttime ->
                     let
-                        delta = Time.inSeconds (lasttime - time)
+                        delta =
+                            Time.inSeconds (lasttime - time)
                     in
                         ( { model
                             | lasttime = Just time
-                            , cars = List.map
-                                    (\car ->
+                            , cars = List.map (\car ->
                                         { car
                                             | pos =
                                                 pAdd car.pos <| (\( x, y ) -> { x = negate x, y = negate y }) <| fromPolar ( car.vel * delta, degrees car.rot )
@@ -171,42 +178,83 @@ view model =
             , Sa.height <| Maybe.withDefault "10" <| Maybe.map (toString << .y) model.size
             , Sa.style "background: green"
             ]
-            (List.concatMap
-                (\car ->
-                    [ S.image
-                        [ Sa.x <| toString <| floor <| (car.pos.x * renderScale) - carWidth / 2
-                        , Sa.y <| toString <| floor <| (car.pos.y * renderScale) - carHeight / 2
-                        , Sa.width <| toString <| carWidth
-                        , Sa.height <| toString <| carHeight
-                        , Sa.xlinkHref "/Cars/Car1.png"
-                        , Sa.transform <| "rotate(" ++ (toString car.rot)
-                                             ++ " " ++ (toString <| car.pos.x * renderScale)
-                                             ++ " " ++ (toString <| car.pos.y * renderScale)
-                                             ++ ")"
-                        ]
-                        []
-                    , S.text_
-                        [ Sa.x <| toString <| car.pos.x * renderScale
-                        , Sa.y <| toString <| car.pos.y * renderScale
-                        ]
-                        [ S.text car.name ]
-                    ]
-                )
-                model.cars
-             ++
-             List.map
+            (List.map
                 (\road ->
                     S.line
-                        [ Sa.x1 <| toString <| floor <| (road.start.x * renderScale) 
-                        , Sa.y1 <| toString <| floor <| (road.start.y * renderScale) 
-                        , Sa.x2 <| toString <| floor <| (road.end.x * renderScale) 
-                        , Sa.y2 <| toString <| floor <| (road.end.y * renderScale) 
-                        , Sa.strokeWidth "10"
-                        , Sa.stroke "black"
+                        [ Sa.x1 <| toString <| floor <| (road.start.x * renderScale)
+                        , Sa.y1 <| toString <| floor <| (road.start.y * renderScale)
+                        , Sa.x2 <| toString <| floor <| (road.end.x * renderScale)
+                        , Sa.y2 <| toString <| floor <| (road.end.y * renderScale)
+                        , Sa.strokeWidth "40"
+                        , Sa.stroke "gray"
                         ]
-                    []
+                        []
                 )
                 model.roads
+                ++ List.concatMap
+                    (\car ->
+                        [ S.image
+                            [ Sa.x <| toString <| floor <| (car.pos.x * renderScale) - carWidth / 2
+                            , Sa.y <| toString <| floor <| (car.pos.y * renderScale) - carHeight / 2
+                            , Sa.width <| toString <| carWidth
+                            , Sa.height <| toString <| carHeight
+                            , Sa.xlinkHref "/Cars/Car1.png"
+                            , Sa.transform <|
+                                "rotate("
+                                    ++ (toString car.rot)
+                                    ++ " "
+                                    ++ (toString <| car.pos.x * renderScale)
+                                    ++ " "
+                                    ++ (toString <| car.pos.y * renderScale)
+                                    ++ ")"
+                            ]
+                            []
+                        , S.text_
+                            [ Sa.x <| toString <| car.pos.x * renderScale
+                            , Sa.y <| toString <| car.pos.y * renderScale
+                            ]
+                            [ S.text car.name ]
+                        ]
+                    )
+                    model.cars
+                ++ case model.size of
+                    Just pos ->
+                        (List.map (\x ->
+                                S.line
+                                    [ Sa.x1 <| toString <| floor <| renderScale * toFloat x
+                                    , Sa.y1 "0"
+                                    , Sa.x2 <| toString <| floor <| renderScale * toFloat x
+                                    , Sa.y2 <| toString <| pos.y
+                                    , Sa.stroke "black"
+                                    , Sa.strokeWidth "0.2"
+                                    ]
+                                    []
+                            )
+                         <|
+                            List.range 0 <|
+                                floor <|
+                                    pos.x / renderScale
+                        )
+                        ++ 
+                        (List.map (\y ->
+                                S.line
+                                    [ Sa.x1 "0"
+                                    , Sa.y1 <| toString <| floor <| renderScale * toFloat y
+                                    , Sa.x2 <| toString <| pos.x
+                                    , Sa.y2 <| toString <| floor <| renderScale * toFloat y
+                                    , Sa.stroke "black"
+                                    , Sa.strokeWidth "0.2"
+                                    ]
+                                    []
+                            )
+                        <|
+                            List.range 0 <|
+                                floor <|
+                                    pos.y / renderScale
+                           )
+
+                    Nothing ->
+                        []
             )
         ]
             ++ [ button [ onClick Request ] [ text "Request!" ]

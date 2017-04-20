@@ -9891,7 +9891,7 @@ var _user$project$Main$update = F2(
 					_1: A2(
 						_elm_lang$http$Http$send,
 						_user$project$Main$SetTrafficState,
-						A2(_elm_lang$http$Http$get, 'http://localhost:8000/Cars', _user$project$Main$decodeTraffic))
+						A2(_elm_lang$http$Http$get, '/Cars', _user$project$Main$decodeTraffic))
 				};
 			case 'Resize':
 				var _p2 = _p0._0;
@@ -10025,89 +10025,6 @@ var _user$project$Main$view = function (model) {
 					A2(
 						_elm_lang$core$Basics_ops['++'],
 						A2(
-							_elm_lang$core$List$concatMap,
-							function (car) {
-								return {
-									ctor: '::',
-									_0: A2(
-										_elm_lang$svg$Svg$image,
-										{
-											ctor: '::',
-											_0: _elm_lang$svg$Svg_Attributes$x(
-												_elm_lang$core$Basics$toString(
-													_elm_lang$core$Basics$floor((car.pos.x * _user$project$Main$renderScale) - (_user$project$Main$carWidth / 2)))),
-											_1: {
-												ctor: '::',
-												_0: _elm_lang$svg$Svg_Attributes$y(
-													_elm_lang$core$Basics$toString(
-														_elm_lang$core$Basics$floor((car.pos.y * _user$project$Main$renderScale) - (_user$project$Main$carHeight / 2)))),
-												_1: {
-													ctor: '::',
-													_0: _elm_lang$svg$Svg_Attributes$width(
-														_elm_lang$core$Basics$toString(_user$project$Main$carWidth)),
-													_1: {
-														ctor: '::',
-														_0: _elm_lang$svg$Svg_Attributes$height(
-															_elm_lang$core$Basics$toString(_user$project$Main$carHeight)),
-														_1: {
-															ctor: '::',
-															_0: _elm_lang$svg$Svg_Attributes$xlinkHref('/Cars/Car1.png'),
-															_1: {
-																ctor: '::',
-																_0: _elm_lang$svg$Svg_Attributes$transform(
-																	A2(
-																		_elm_lang$core$Basics_ops['++'],
-																		'rotate(',
-																		A2(
-																			_elm_lang$core$Basics_ops['++'],
-																			_elm_lang$core$Basics$toString(car.rot),
-																			A2(
-																				_elm_lang$core$Basics_ops['++'],
-																				' ',
-																				A2(
-																					_elm_lang$core$Basics_ops['++'],
-																					_elm_lang$core$Basics$toString(car.pos.x * _user$project$Main$renderScale),
-																					A2(
-																						_elm_lang$core$Basics_ops['++'],
-																						' ',
-																						A2(
-																							_elm_lang$core$Basics_ops['++'],
-																							_elm_lang$core$Basics$toString(car.pos.y * _user$project$Main$renderScale),
-																							')'))))))),
-																_1: {ctor: '[]'}
-															}
-														}
-													}
-												}
-											}
-										},
-										{ctor: '[]'}),
-									_1: {
-										ctor: '::',
-										_0: A2(
-											_elm_lang$svg$Svg$text_,
-											{
-												ctor: '::',
-												_0: _elm_lang$svg$Svg_Attributes$x(
-													_elm_lang$core$Basics$toString(car.pos.x * _user$project$Main$renderScale)),
-												_1: {
-													ctor: '::',
-													_0: _elm_lang$svg$Svg_Attributes$y(
-														_elm_lang$core$Basics$toString(car.pos.y * _user$project$Main$renderScale)),
-													_1: {ctor: '[]'}
-												}
-											},
-											{
-												ctor: '::',
-												_0: _elm_lang$svg$Svg$text(car.name),
-												_1: {ctor: '[]'}
-											}),
-										_1: {ctor: '[]'}
-									}
-								};
-							},
-							model.cars),
-						A2(
 							_elm_lang$core$List$map,
 							function (road) {
 								return A2(
@@ -10134,10 +10051,10 @@ var _user$project$Main$view = function (model) {
 															_elm_lang$core$Basics$floor(road.end.y * _user$project$Main$renderScale))),
 													_1: {
 														ctor: '::',
-														_0: _elm_lang$svg$Svg_Attributes$strokeWidth('10'),
+														_0: _elm_lang$svg$Svg_Attributes$strokeWidth('40'),
 														_1: {
 															ctor: '::',
-															_0: _elm_lang$svg$Svg_Attributes$stroke('black'),
+															_0: _elm_lang$svg$Svg_Attributes$stroke('gray'),
 															_1: {ctor: '[]'}
 														}
 													}
@@ -10147,7 +10064,188 @@ var _user$project$Main$view = function (model) {
 									},
 									{ctor: '[]'});
 							},
-							model.roads))),
+							model.roads),
+						A2(
+							_elm_lang$core$Basics_ops['++'],
+							A2(
+								_elm_lang$core$List$concatMap,
+								function (car) {
+									return {
+										ctor: '::',
+										_0: A2(
+											_elm_lang$svg$Svg$image,
+											{
+												ctor: '::',
+												_0: _elm_lang$svg$Svg_Attributes$x(
+													_elm_lang$core$Basics$toString(
+														_elm_lang$core$Basics$floor((car.pos.x * _user$project$Main$renderScale) - (_user$project$Main$carWidth / 2)))),
+												_1: {
+													ctor: '::',
+													_0: _elm_lang$svg$Svg_Attributes$y(
+														_elm_lang$core$Basics$toString(
+															_elm_lang$core$Basics$floor((car.pos.y * _user$project$Main$renderScale) - (_user$project$Main$carHeight / 2)))),
+													_1: {
+														ctor: '::',
+														_0: _elm_lang$svg$Svg_Attributes$width(
+															_elm_lang$core$Basics$toString(_user$project$Main$carWidth)),
+														_1: {
+															ctor: '::',
+															_0: _elm_lang$svg$Svg_Attributes$height(
+																_elm_lang$core$Basics$toString(_user$project$Main$carHeight)),
+															_1: {
+																ctor: '::',
+																_0: _elm_lang$svg$Svg_Attributes$xlinkHref('/Cars/Car1.png'),
+																_1: {
+																	ctor: '::',
+																	_0: _elm_lang$svg$Svg_Attributes$transform(
+																		A2(
+																			_elm_lang$core$Basics_ops['++'],
+																			'rotate(',
+																			A2(
+																				_elm_lang$core$Basics_ops['++'],
+																				_elm_lang$core$Basics$toString(car.rot),
+																				A2(
+																					_elm_lang$core$Basics_ops['++'],
+																					' ',
+																					A2(
+																						_elm_lang$core$Basics_ops['++'],
+																						_elm_lang$core$Basics$toString(car.pos.x * _user$project$Main$renderScale),
+																						A2(
+																							_elm_lang$core$Basics_ops['++'],
+																							' ',
+																							A2(
+																								_elm_lang$core$Basics_ops['++'],
+																								_elm_lang$core$Basics$toString(car.pos.y * _user$project$Main$renderScale),
+																								')'))))))),
+																	_1: {ctor: '[]'}
+																}
+															}
+														}
+													}
+												}
+											},
+											{ctor: '[]'}),
+										_1: {
+											ctor: '::',
+											_0: A2(
+												_elm_lang$svg$Svg$text_,
+												{
+													ctor: '::',
+													_0: _elm_lang$svg$Svg_Attributes$x(
+														_elm_lang$core$Basics$toString(car.pos.x * _user$project$Main$renderScale)),
+													_1: {
+														ctor: '::',
+														_0: _elm_lang$svg$Svg_Attributes$y(
+															_elm_lang$core$Basics$toString(car.pos.y * _user$project$Main$renderScale)),
+														_1: {ctor: '[]'}
+													}
+												},
+												{
+													ctor: '::',
+													_0: _elm_lang$svg$Svg$text(car.name),
+													_1: {ctor: '[]'}
+												}),
+											_1: {ctor: '[]'}
+										}
+									};
+								},
+								model.cars),
+							function () {
+								var _p9 = model.size;
+								if (_p9.ctor === 'Just') {
+									var _p10 = _p9._0;
+									return A2(
+										_elm_lang$core$Basics_ops['++'],
+										A2(
+											_elm_lang$core$List$map,
+											function (x) {
+												return A2(
+													_elm_lang$svg$Svg$line,
+													{
+														ctor: '::',
+														_0: _elm_lang$svg$Svg_Attributes$x1(
+															_elm_lang$core$Basics$toString(
+																_elm_lang$core$Basics$floor(
+																	_user$project$Main$renderScale * _elm_lang$core$Basics$toFloat(x)))),
+														_1: {
+															ctor: '::',
+															_0: _elm_lang$svg$Svg_Attributes$y1('0'),
+															_1: {
+																ctor: '::',
+																_0: _elm_lang$svg$Svg_Attributes$x2(
+																	_elm_lang$core$Basics$toString(
+																		_elm_lang$core$Basics$floor(
+																			_user$project$Main$renderScale * _elm_lang$core$Basics$toFloat(x)))),
+																_1: {
+																	ctor: '::',
+																	_0: _elm_lang$svg$Svg_Attributes$y2(
+																		_elm_lang$core$Basics$toString(_p10.y)),
+																	_1: {
+																		ctor: '::',
+																		_0: _elm_lang$svg$Svg_Attributes$stroke('black'),
+																		_1: {
+																			ctor: '::',
+																			_0: _elm_lang$svg$Svg_Attributes$strokeWidth('0.2'),
+																			_1: {ctor: '[]'}
+																		}
+																	}
+																}
+															}
+														}
+													},
+													{ctor: '[]'});
+											},
+											A2(
+												_elm_lang$core$List$range,
+												0,
+												_elm_lang$core$Basics$floor(_p10.x / _user$project$Main$renderScale))),
+										A2(
+											_elm_lang$core$List$map,
+											function (y) {
+												return A2(
+													_elm_lang$svg$Svg$line,
+													{
+														ctor: '::',
+														_0: _elm_lang$svg$Svg_Attributes$x1('0'),
+														_1: {
+															ctor: '::',
+															_0: _elm_lang$svg$Svg_Attributes$y1(
+																_elm_lang$core$Basics$toString(
+																	_elm_lang$core$Basics$floor(
+																		_user$project$Main$renderScale * _elm_lang$core$Basics$toFloat(y)))),
+															_1: {
+																ctor: '::',
+																_0: _elm_lang$svg$Svg_Attributes$x2(
+																	_elm_lang$core$Basics$toString(_p10.x)),
+																_1: {
+																	ctor: '::',
+																	_0: _elm_lang$svg$Svg_Attributes$y2(
+																		_elm_lang$core$Basics$toString(
+																			_elm_lang$core$Basics$floor(
+																				_user$project$Main$renderScale * _elm_lang$core$Basics$toFloat(y)))),
+																	_1: {
+																		ctor: '::',
+																		_0: _elm_lang$svg$Svg_Attributes$stroke('black'),
+																		_1: {
+																			ctor: '::',
+																			_0: _elm_lang$svg$Svg_Attributes$strokeWidth('0.2'),
+																			_1: {ctor: '[]'}
+																		}
+																	}
+																}
+															}
+														}
+													},
+													{ctor: '[]'});
+											},
+											A2(
+												_elm_lang$core$List$range,
+												0,
+												_elm_lang$core$Basics$floor(_p10.y / _user$project$Main$renderScale))));
+								} else {
+									return {ctor: '[]'};
+								}
+							}()))),
 				_1: {ctor: '[]'}
 			},
 			A2(
@@ -10171,8 +10269,8 @@ var _user$project$Main$view = function (model) {
 				A2(
 					_elm_lang$core$Basics_ops['++'],
 					function () {
-						var _p9 = model.err;
-						if (_p9.ctor === 'Just') {
+						var _p11 = model.err;
+						if (_p11.ctor === 'Just') {
 							return {
 								ctor: '::',
 								_0: A2(
@@ -10203,8 +10301,8 @@ var _user$project$Main$view = function (model) {
 						}
 					}(),
 					function () {
-						var _p10 = model.size;
-						if (_p10.ctor === 'Just') {
+						var _p12 = model.size;
+						if (_p12.ctor === 'Just') {
 							return {
 								ctor: '::',
 								_0: A2(
