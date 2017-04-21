@@ -11,13 +11,13 @@ BACKWARD = 1
 function init() {
     traffic = {
         cars: [
-            {name: "Lucas", img: "Car1", pos: {x:0, y:0}, rot: 0, vel: 4, steering: 0, 
+            {name: "Lucas", img: "Car1", pos: {x:0, y:0}, rot: 0, vel: 4, steering: 0, crashed: false,
                 ai: {road_queue: [
                     {road: 0, direction: FORWARD}, 
                     {road: 1, direction: FORWARD},
                     {road: 2, direction: FORWARD}
                 ]}}, 
-            {name: "Felix", img: "Car2", pos: {x:2, y:20}, rot: 0, vel: 4, steering: 0, 
+            {name: "Felix", img: "Car2", pos: {x:2, y:20}, rot: 0, vel: 4, steering: 0, crashed: false,
                 ai: {road_queue: [
                     {road: 3, direction: FORWARD}, 
                     {road: 1, direction: BACKWARD},
@@ -62,8 +62,14 @@ var physics = timers.setInterval(() => {
 
         car.rot += car.steering * delta * 5
 
+        if (!car.crashed && traffic.cars.filter(car2 => car != car2 && distance(car.pos, car2.pos) < 1).length > 0) {
+            car.img += "Trasig"
+            car.crashed = true
+            car.vel *= -1
+        }
+
         // Calculate AI
-        if (car.ai && car.ai.road_queue.length > 0) {
+        if (!car.crashed && car.ai && car.ai.road_queue.length > 0) {
             current_path = car.ai.road_queue[0]
 
             road = traffic.roads[current_path.road]
