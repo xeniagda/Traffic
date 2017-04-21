@@ -9919,7 +9919,7 @@ var _user$project$Main$update = F2(
 					_1: A2(_elm_lang$core$Task$perform, _user$project$Main$Resize, _elm_lang$window$Window$size)
 				};
 			case 'UpdateClient':
-				var _p6 = _p0._0;
+				var _p7 = _p0._0;
 				var _p3 = model.lasttime;
 				if (_p3.ctor === 'Nothing') {
 					return {
@@ -9927,18 +9927,18 @@ var _user$project$Main$update = F2(
 						_0: _elm_lang$core$Native_Utils.update(
 							model,
 							{
-								lasttime: _elm_lang$core$Maybe$Just(_p6)
+								lasttime: _elm_lang$core$Maybe$Just(_p7)
 							}),
 						_1: _elm_lang$core$Platform_Cmd$none
 					};
 				} else {
-					var delta = _elm_lang$core$Time$inSeconds(_p3._0 - _p6);
+					var delta = _elm_lang$core$Time$inSeconds(_p7 - _p3._0);
 					return {
 						ctor: '_Tuple2',
 						_0: _elm_lang$core$Native_Utils.update(
 							model,
 							{
-								lasttime: _elm_lang$core$Maybe$Just(_p6),
+								lasttime: _elm_lang$core$Maybe$Just(_p7),
 								cars: A2(
 									_elm_lang$core$List$map,
 									function (car) {
@@ -9950,10 +9950,7 @@ var _user$project$Main$update = F2(
 													car.pos,
 													function (_p4) {
 														var _p5 = _p4;
-														return {
-															x: _elm_lang$core$Basics$negate(_p5._0),
-															y: _elm_lang$core$Basics$negate(_p5._1)
-														};
+														return {x: _p5._0, y: _p5._1};
 													}(
 														_elm_lang$core$Basics$fromPolar(
 															{
@@ -9961,7 +9958,15 @@ var _user$project$Main$update = F2(
 																_0: car.vel * delta,
 																_1: _elm_lang$core$Basics$degrees(car.rot)
 															}))),
-												rot: car.rot + (car.steering * delta)
+												rot: car.rot + (car.steering * delta),
+												vel: function () {
+													var _p6 = model.err;
+													if (_p6.ctor === 'Just') {
+														return car.vel / Math.pow(5, delta);
+													} else {
+														return car.vel;
+													}
+												}()
 											});
 									},
 									model.cars)
@@ -9998,11 +10003,11 @@ var _user$project$Main$view = function (model) {
 								'10',
 								A2(
 									_elm_lang$core$Maybe$map,
-									function (_p7) {
+									function (_p8) {
 										return _elm_lang$core$Basics$toString(
 											function (_) {
 												return _.x;
-											}(_p7));
+											}(_p8));
 									},
 									model.size))),
 						_1: {
@@ -10013,11 +10018,11 @@ var _user$project$Main$view = function (model) {
 									'10',
 									A2(
 										_elm_lang$core$Maybe$map,
-										function (_p8) {
+										function (_p9) {
 											return _elm_lang$core$Basics$toString(
 												function (_) {
 													return _.y;
-												}(_p8));
+												}(_p9));
 										},
 										model.size))),
 							_1: {
@@ -10165,9 +10170,9 @@ var _user$project$Main$view = function (model) {
 							},
 							model.roads);
 						var lines = function () {
-							var _p9 = model.size;
-							if (_p9.ctor === 'Just') {
-								var _p10 = _p9._0;
+							var _p10 = model.size;
+							if (_p10.ctor === 'Just') {
+								var _p11 = _p10._0;
 								return A2(
 									_elm_lang$core$Basics_ops['++'],
 									A2(
@@ -10193,7 +10198,7 @@ var _user$project$Main$view = function (model) {
 															_1: {
 																ctor: '::',
 																_0: _elm_lang$svg$Svg_Attributes$y2(
-																	_elm_lang$core$Basics$toString(_p10.y)),
+																	_elm_lang$core$Basics$toString(_p11.y)),
 																_1: {
 																	ctor: '::',
 																	_0: _elm_lang$svg$Svg_Attributes$stroke('black'),
@@ -10212,7 +10217,7 @@ var _user$project$Main$view = function (model) {
 										A2(
 											_elm_lang$core$List$range,
 											0,
-											_elm_lang$core$Basics$floor(_p10.x / _user$project$Main$renderScale))),
+											_elm_lang$core$Basics$floor(_p11.x / _user$project$Main$renderScale))),
 									A2(
 										_elm_lang$core$List$map,
 										function (y) {
@@ -10230,7 +10235,7 @@ var _user$project$Main$view = function (model) {
 														_1: {
 															ctor: '::',
 															_0: _elm_lang$svg$Svg_Attributes$x2(
-																_elm_lang$core$Basics$toString(_p10.x)),
+																_elm_lang$core$Basics$toString(_p11.x)),
 															_1: {
 																ctor: '::',
 																_0: _elm_lang$svg$Svg_Attributes$y2(
@@ -10255,7 +10260,7 @@ var _user$project$Main$view = function (model) {
 										A2(
 											_elm_lang$core$List$range,
 											0,
-											_elm_lang$core$Basics$floor(_p10.y / _user$project$Main$renderScale))));
+											_elm_lang$core$Basics$floor(_p11.y / _user$project$Main$renderScale))));
 							} else {
 								return {ctor: '[]'};
 							}
@@ -10288,8 +10293,8 @@ var _user$project$Main$view = function (model) {
 				A2(
 					_elm_lang$core$Basics_ops['++'],
 					function () {
-						var _p11 = model.err;
-						if (_p11.ctor === 'Just') {
+						var _p12 = model.err;
+						if (_p12.ctor === 'Just') {
 							return {
 								ctor: '::',
 								_0: A2(
@@ -10320,8 +10325,8 @@ var _user$project$Main$view = function (model) {
 						}
 					}(),
 					function () {
-						var _p12 = model.size;
-						if (_p12.ctor === 'Just') {
+						var _p13 = model.size;
+						if (_p13.ctor === 'Just') {
 							return {
 								ctor: '::',
 								_0: A2(

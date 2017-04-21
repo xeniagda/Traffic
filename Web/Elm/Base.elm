@@ -152,7 +152,7 @@ update msg model =
                 Just lasttime ->
                     let
                         delta =
-                            Time.inSeconds (lasttime - time)
+                            Time.inSeconds (time - lasttime)
                     in
                         ( { model
                             | lasttime = Just time
@@ -160,8 +160,12 @@ update msg model =
                                 List.map (\car ->
                                         { car
                                             | pos =
-                                                pAdd car.pos <| (\( x, y ) -> { x = negate x, y = negate y }) <| fromPolar ( car.vel * delta, degrees car.rot )
+                                                pAdd car.pos <| (\( x, y ) -> { x = x, y = y }) <| fromPolar ( car.vel * delta, degrees car.rot )
                                             , rot = car.rot + car.steering * delta
+                                            , vel =
+                                                case model.err of
+                                                    Just _  -> car.vel / (5 ^ delta)
+                                                    Nothing -> car.vel
                                         }
                                     )
                                     model.cars

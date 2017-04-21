@@ -11,13 +11,13 @@ BACKWARD = 1
 function init() {
     traffic = {
         cars: [
-            {name: "Lucas", pos: {x:0, y:0}, rot: 0, vel: 4, steering: 0, 
+            {name: "Lucas", pos: {x:0, y:0}, rot: 0, vel: 1, steering: 0, 
                 ai: {road_queue: [
                     {road: 0, direction: FORWARD}, 
                     {road: 1, direction: FORWARD},
                     {road: 2, direction: FORWARD}
                 ]}}, 
-            {name: "Felix", pos: {x:2, y:20}, rot: 0, vel: 4, steering: 0, 
+            {name: "Felix", pos: {x:2, y:20}, rot: 0, vel: 1, steering: 0, 
                 ai: {road_queue: [
                     {road: 3, direction: FORWARD}, 
                     {road: 1, direction: BACKWARD},
