@@ -11,24 +11,25 @@ BACKWARD = 1
 function init() {
     traffic = {
         cars: [
-            {name: "Lucas", img: "Car1", pos: {x:0, y:0}, rot: 0, vel: 3, steering: 0,
+            {name: "Lucas", img: "Car1", pos: {x:0, y:0}, rot: 0, vel: 4, steering: 0, 
                 ai: {road_queue: [
-                    {road: 0, direction: FORWARD},
-                    {road: 2, direction: FORWARD},
-                ]}},
-            {name: "Felix", img: "Car2", pos: {x:2, y:20}, rot: 0, vel: 2, steering: 0,
+                    {road: 0, direction: FORWARD}, 
+                    {road: 1, direction: FORWARD},
+                    {road: 2, direction: FORWARD}
+                ]}}, 
+            {name: "Felix", img: "Car2", pos: {x:2, y:20}, rot: 0, vel: 4, steering: 0, 
                 ai: {road_queue: [
-                ]}},
+                    {road: 3, direction: FORWARD}, 
+                    {road: 1, direction: BACKWARD},
+                    {road: 4, direction: FORWARD}
+                ]}}, 
         ],
         roads: [
-            {start: {x: 10, y: 5}, end: {x: 10, y: 9}, startRoadIdx: -1, endRoadIdx: -1}, // Up
-            {start: {x: 11, y: 9}, end: {x: 11, y: 5}, startRoadIdx: -1, endRoadIdx: -1},
-            {start: {x: 9, y: 10}, end: {x: 5, y: 10}, startRoadIdx: -1, endRoadIdx: -1}, // Right
-            {start: {x: 5, y: 11}, end: {x: 9, y: 11}, startRoadIdx: -1, endRoadIdx: -1},
-            {start: {x: 10, y: 12}, end: {x: 10, y: 16}, startRoadIdx: -1, endRoadIdx: -1}, // Down
-            {start: {x: 11, y: 16}, end: {x: 11, y: 12}, startRoadIdx: -1, endRoadIdx: -1},
-            {start: {x: 16, y: 10}, end: {x: 12, y: 10}, startRoadIdx: -1, endRoadIdx: -1}, // Left
-            {start: {x: 12, y: 11}, end: {x: 16, y: 11}, startRoadIdx: -1, endRoadIdx: -1},
+            {start: {x: 5, y: 5}, end: {x: 10, y: 5}, startRoadIdx: -1, endRoadIdx: 1},
+            {start: {x: 10, y: 5}, end: {x: 10, y: 10}, startRoadIdx: 0, endRoadIdx: 2},
+            {start: {x: 10, y: 10}, end: {x: 20, y: 10}, startRoadIdx: 1, endRoadIdx: -1},
+            {start: {x: 5, y: 15}, end: {x: 10, y: 10}, startRoadIdx: -1, endRoadIdx: 1},
+            {start: {x: 10, y: 5}, end: {x: 15, y: 0}, startRoadIdx: 1, endRoadIdx: -1},
         ]
     }
 }
