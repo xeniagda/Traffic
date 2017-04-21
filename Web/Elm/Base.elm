@@ -42,6 +42,7 @@ carWidth =
 
 type alias Car =
     { name : String
+    , img : String
     , pos : Position
     , rot : Float
     , vel : Float -- How many pixels forwards the car should move every second in the direction it's facing
@@ -75,6 +76,7 @@ decodeCars =
     Decode.list
         (P.decode Car
             |> P.required "name" Decode.string
+            |> P.required "img" Decode.string
             |> P.required "pos" decodePosition
             |> P.required "rot" Decode.float
             |> P.required "vel" Decode.float
@@ -101,7 +103,7 @@ decodePosition =
 type alias Model =
     { cars : List Car
     , roads : List Road
-    , err : Maybe String
+    , err : Maybe Http.Error
     , size : Maybe Position
     , lasttime : Maybe Time
     }
@@ -133,7 +135,7 @@ update msg model =
             ( { model | cars = traffic.cars, roads = traffic.roads, err = Nothing }, Cmd.none )
 
         SetTrafficState (Err error) ->
-            ( { model | err = Just <| toString error }, Cmd.none )
+            ( { model | err = Just error }, Cmd.none )
 
         Request ->
             ( model, Http.send SetTrafficState <| Http.get "/Cars" decodeTraffic )
@@ -166,6 +168,10 @@ update msg model =
                                                 case model.err of
                                                     Just _  -> car.vel / (5 ^ delta)
                                                     Nothing -> car.vel
+                                            , steering =
+                                                case model.err of
+                                                    Just _  -> car.steering / (2 ^ delta)
+                                                    Nothing -> car.steering
                                         }
                                     )
                                     model.cars
@@ -241,7 +247,19 @@ view model =
                                 []
                         )
                         model.roads
-
+                roadLines =
+                    List.map (\road ->
+                            S.line
+                                [ Sa.x1 <| toString <| floor <| (road.start.x * renderScale)
+                                , Sa.y1 <| toString <| floor <| (road.start.y * renderScale)
+                                , Sa.x2 <| toString <| floor <| (road.end.x * renderScale)
+                                , Sa.y2 <| toString <| floor <| (road.end.y * renderScale)
+                                , Sa.strokeWidth "5"
+                                , Sa.stroke "yellow"
+                                , Sa.strokeDasharray "5, 15"
+                                ]
+                                []
+                        ) model.roads
                 cars =
                     List.concatMap (\car ->
                             [ S.image
@@ -249,7 +267,7 @@ view model =
                                 , Sa.y <| toString <| floor <| (car.pos.y * renderScale) - carHeight / 2
                                 , Sa.width <| toString <| carWidth
                                 , Sa.height <| toString <| carHeight
-                                , Sa.xlinkHref "/Cars/Car1.png"
+                                , Sa.xlinkHref <| "/Cars/" ++ car.img ++ ".png"
                                 , Sa.transform <|
                                     "rotate("
                                         ++ (toString car.rot)
@@ -267,30 +285,23 @@ view model =
                                 , Sa.fill "blue"
                                 , Sa.fontWeight "bold"
                                 ]
-                                [ S.text car.name ]
+                                [] --S.text car.name ]
                             ]
                         )
                         model.cars
+                err =
+                    case model.err of
+                        Just err ->
+                            [S.text_ 
+                                [ Sa.x "0"
+                                , Sa.y "20"
+                                , Sa.fill "red"] [S.text <| toString err]]
+                        Nothing -> []
              in
-                lines ++ roads ++ cars
+                lines ++ roads ++ roadLines ++ cars ++ err
             )
         ]
-            ++ [ button [ onClick Request ] [ text "Request!" ]
-               ]
-            ++ (case model.err of
-                    Just err ->
-                        [ p [ style [ ( "color", "red" ) ] ] [ text <| "Error: " ++ toString model.err ] ]
 
-                    Nothing ->
-                        []
-               )
-            ++ (case model.size of
-                    Just size ->
-                        [ p [] [ text <| "Size: " ++ toString model.size ] ]
-
-                    Nothing ->
-                        []
-               )
 
 
 subscriptions : Model -> Sub Msg
