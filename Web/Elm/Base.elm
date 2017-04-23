@@ -5,7 +5,7 @@ import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import Http
 import Task
-import Json.Decode as Decode exposing (Decoder)
+import Json.Decode as Decode exposing (Decoder, decodeString)
 import Json.Decode.Pipeline as P
 import Svg as S
 import Svg.Attributes as Sa
@@ -13,9 +13,9 @@ import Window
 import Time exposing (Time)
 import Mouse
 import Keyboard
+import WebSocket
 
 import Debug
-
 
 pAdd : Position -> Position -> Position
 pAdd p1 p2 =
@@ -27,8 +27,12 @@ pAdd p1 p2 =
 
 infixr 0 !!
 
+type alias Flags =
+    { webSocketUrl : String
+    }
+
 main =
-    Html.program { init = init, view = view, update = update, subscriptions = subscriptions }
+    Html.programWithFlags { init = init, view = view, update = update, subscriptions = subscriptions }
 
 
 type alias Position =
@@ -138,32 +142,28 @@ decodePosition =
 type alias Model =
     { cars : List Car
     , roads : List Road
-    , err : Maybe Http.Error
+    , err : Maybe String
     , size : Maybe Position
     , lasttime : Maybe Time
     , scroll : Position -- Upper left corner
     , lastMouse : Maybe Position
     , renderScale : Float
+    , webSocketUrl : String
     }
 
 
-init : ( Model, Cmd Msg )
-init =
-    ( Model [] [] Nothing Nothing Nothing {x=0, y=0} Nothing 40
-    , Cmd.batch
-        [ Task.perform identity <| Task.succeed Request
-        , Task.perform identity <| Task.succeed CheckSize
-        ]
+init : Flags -> ( Model, Cmd Msg )
+init flags =
+    ( Model [] [] Nothing Nothing Nothing {x=0, y=0} Nothing 40 <| Debug.log "Flags" flags.webSocketUrl
+    , Task.perform identity <| Task.succeed CheckSize
     )
 
 
 type Msg
-    = Request
-    | SetTrafficState (Result Http.Error Traffic)
+    = ServerSync String
     | Resize Window.Size
     | CheckSize
     | UpdateClient Time
-    | UpdateServer Time
     | MousePress Mouse.Position
     | MouseRelease Mouse.Position
     | MouseMove Mouse.Position
@@ -173,14 +173,13 @@ type Msg
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        SetTrafficState (Ok traffic) ->
-            ( { model | cars = traffic.cars, roads = traffic.roads, err = Nothing }, Cmd.none )
-
-        SetTrafficState (Err error) ->
-            ( { model | err = Just error }, Cmd.none )
-
-        Request ->
-            ( model, Http.send SetTrafficState <| Http.get "/Cars" decodeTraffic )
+        ServerSync json ->
+            let result = decodeString decodeTraffic json
+            in case result of
+                Ok traffic ->
+                    ( { model | cars = traffic.cars, roads = traffic.roads, err = Nothing }, Cmd.none )
+                Err error ->
+                    ( { model | err = Just error }, Cmd.none )
 
         Resize size ->
             ( { model | size = Just { x = toFloat size.width, y = toFloat size.height } }, Cmd.none )
@@ -221,9 +220,6 @@ update msg model =
                         , Cmd.none
                         )
 
-        UpdateServer time ->
-            ( model, Task.perform identity <| Task.succeed Request )
-
         MouseRelease _ ->
             ( {model | lastMouse = Nothing}, Cmd.none )
 
@@ -247,7 +243,7 @@ update msg model =
 
 view : Model -> Html Msg
 view model =
-    div [] <|
+    div [style [("margin", "0px")]] <|
         [ -- Generate svg!
           S.svg
             [ Sa.width <| Maybe.withDefault "10" <| Maybe.map (toString << .x) model.size
@@ -425,9 +421,9 @@ subscriptions model =
     Sub.batch
         [ Window.resizes Resize
         , Time.every (Time.second / 30) UpdateClient
-        , Time.every (Time.second / 10) UpdateServer
         , Mouse.downs MousePress
         , Mouse.ups MouseRelease
         , Mouse.moves MouseMove
         , Keyboard.presses KeyDown
+        , WebSocket.listen model.webSocketUrl ServerSync
         ]

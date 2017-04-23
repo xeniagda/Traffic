@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <title> Traffic </title>
+    </head>
+    <body style="margin: 0;">
+        <div id="main"></div>
+        <script src="main.js"></script>
+        <script>
+            var node = document.getElementById("main")
+            var app = Elm.Main.embed(node, {webSocketUrl: "ws://" + document.location.hostname + ":" + document.location.port});
+        </script>
+    </body>
+</html>

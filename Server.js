@@ -1,6 +1,7 @@
 let http = require("http")
 let fs = require("fs")
 let timers = require("timers")
+let ws = require("ws")
 
 halfCarHeight = 50
 halfCarWidth = halfCarHeight / 2
@@ -354,13 +355,10 @@ var server = http.createServer((req, res) => {
     ip  = req.connection.remoteAddress
     if (method === "GET") {
         filePath = "Web" + url
-        if (url === "/Cars") {
-            res.setHeader("Content-Type", "text/json")
-            res.end(JSON.stringify(traffic))
-        } else if (fs.existsSync(filePath)) {
+        if (fs.existsSync(filePath)) {
             console.log(method + " " + url)
             if (!fs.lstatSync(filePath).isFile()) {
-                filePath = "Web/index.html"
+                filePath = "Web/traffic.html"
             }
             content = fs.readFileSync(filePath)
             res.setHeader("Content-Type", "text/html")
@@ -412,3 +410,13 @@ var server = http.createServer((req, res) => {
 
 server.listen(8000)
 console.log("Started")
+
+var wss = new ws.Server({server: server})
+
+var broadcast = timers.setInterval(() => {
+    wss.clients.forEach(client => {
+        if (client.readyState === ws.OPEN) {
+            client.send(JSON.stringify(traffic))
+        }
+    })   
+}, 100)
