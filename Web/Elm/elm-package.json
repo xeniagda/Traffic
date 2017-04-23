@@ -1,8 +1,8 @@
 {
     "version": "1.0.0",
     "summary": "A traffic simulator",
-    "repository": "https://github.com/loovjo/Traffic.git",
-    "license": "BSD3".,
+    "repository": "https://github.com/loovjo/traffic.git",
+    "license": "BSD3",
     "source-directories": [
         "."
     ],
@@ -13,6 +13,7 @@
         "elm-lang/dom": "1.1.1 <= v < 2.0.0",
         "elm-lang/html": "2.0.0 <= v < 3.0.0",
         "elm-lang/http": "1.0.0 <= v < 2.0.0",
+        "elm-lang/keyboard": "1.0.1 <= v < 2.0.0",
         "elm-lang/mouse": "1.0.1 <= v < 2.0.0",
         "elm-lang/svg": "2.0.0 <= v < 3.0.0",
         "elm-lang/window": "1.0.1 <= v < 2.0.0"

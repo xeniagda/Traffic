@@ -9264,6 +9264,174 @@ var _elm_lang$http$Http$StringPart = F2(
 		return {ctor: 'StringPart', _0: a, _1: b};
 	});
 var _elm_lang$http$Http$stringPart = _elm_lang$http$Http$StringPart;
+var _elm_lang$keyboard$Keyboard$onSelfMsg = F3(
+	function (router, _p0, state) {
+		var _p1 = _p0;
+		var _p2 = A2(_elm_lang$core$Dict$get, _p1.category, state);
+		if (_p2.ctor === 'Nothing') {
+			return _elm_lang$core$Task$succeed(state);
+		} else {
+			var send = function (tagger) {
+				return A2(
+					_elm_lang$core$Platform$sendToApp,
+					router,
+					tagger(_p1.keyCode));
+			};
+			return A2(
+				_elm_lang$core$Task$andThen,
+				function (_p3) {
+					return _elm_lang$core$Task$succeed(state);
+				},
+				_elm_lang$core$Task$sequence(
+					A2(_elm_lang$core$List$map, send, _p2._0.taggers)));
+		}
+	});
+var _elm_lang$keyboard$Keyboard_ops = _elm_lang$keyboard$Keyboard_ops || {};
+_elm_lang$keyboard$Keyboard_ops['&>'] = F2(
+	function (task1, task2) {
+		return A2(
+			_elm_lang$core$Task$andThen,
+			function (_p4) {
+				return task2;
+			},
+			task1);
+	});
+var _elm_lang$keyboard$Keyboard$init = _elm_lang$core$Task$succeed(_elm_lang$core$Dict$empty);
+var _elm_lang$keyboard$Keyboard$categorizeHelpHelp = F2(
+	function (value, maybeValues) {
+		var _p5 = maybeValues;
+		if (_p5.ctor === 'Nothing') {
+			return _elm_lang$core$Maybe$Just(
+				{
+					ctor: '::',
+					_0: value,
+					_1: {ctor: '[]'}
+				});
+		} else {
+			return _elm_lang$core$Maybe$Just(
+				{ctor: '::', _0: value, _1: _p5._0});
+		}
+	});
+var _elm_lang$keyboard$Keyboard$categorizeHelp = F2(
+	function (subs, subDict) {
+		categorizeHelp:
+		while (true) {
+			var _p6 = subs;
+			if (_p6.ctor === '[]') {
+				return subDict;
+			} else {
+				var _v4 = _p6._1,
+					_v5 = A3(
+					_elm_lang$core$Dict$update,
+					_p6._0._0,
+					_elm_lang$keyboard$Keyboard$categorizeHelpHelp(_p6._0._1),
+					subDict);
+				subs = _v4;
+				subDict = _v5;
+				continue categorizeHelp;
+			}
+		}
+	});
+var _elm_lang$keyboard$Keyboard$categorize = function (subs) {
+	return A2(_elm_lang$keyboard$Keyboard$categorizeHelp, subs, _elm_lang$core$Dict$empty);
+};
+var _elm_lang$keyboard$Keyboard$keyCode = A2(_elm_lang$core$Json_Decode$field, 'keyCode', _elm_lang$core$Json_Decode$int);
+var _elm_lang$keyboard$Keyboard$subscription = _elm_lang$core$Native_Platform.leaf('Keyboard');
+var _elm_lang$keyboard$Keyboard$Watcher = F2(
+	function (a, b) {
+		return {taggers: a, pid: b};
+	});
+var _elm_lang$keyboard$Keyboard$Msg = F2(
+	function (a, b) {
+		return {category: a, keyCode: b};
+	});
+var _elm_lang$keyboard$Keyboard$onEffects = F3(
+	function (router, newSubs, oldState) {
+		var rightStep = F3(
+			function (category, taggers, task) {
+				return A2(
+					_elm_lang$core$Task$andThen,
+					function (state) {
+						return A2(
+							_elm_lang$core$Task$andThen,
+							function (pid) {
+								return _elm_lang$core$Task$succeed(
+									A3(
+										_elm_lang$core$Dict$insert,
+										category,
+										A2(_elm_lang$keyboard$Keyboard$Watcher, taggers, pid),
+										state));
+							},
+							_elm_lang$core$Process$spawn(
+								A3(
+									_elm_lang$dom$Dom_LowLevel$onDocument,
+									category,
+									_elm_lang$keyboard$Keyboard$keyCode,
+									function (_p7) {
+										return A2(
+											_elm_lang$core$Platform$sendToSelf,
+											router,
+											A2(_elm_lang$keyboard$Keyboard$Msg, category, _p7));
+									})));
+					},
+					task);
+			});
+		var bothStep = F4(
+			function (category, _p8, taggers, task) {
+				var _p9 = _p8;
+				return A2(
+					_elm_lang$core$Task$map,
+					A2(
+						_elm_lang$core$Dict$insert,
+						category,
+						A2(_elm_lang$keyboard$Keyboard$Watcher, taggers, _p9.pid)),
+					task);
+			});
+		var leftStep = F3(
+			function (category, _p10, task) {
+				var _p11 = _p10;
+				return A2(
+					_elm_lang$keyboard$Keyboard_ops['&>'],
+					_elm_lang$core$Process$kill(_p11.pid),
+					task);
+			});
+		return A6(
+			_elm_lang$core$Dict$merge,
+			leftStep,
+			bothStep,
+			rightStep,
+			oldState,
+			_elm_lang$keyboard$Keyboard$categorize(newSubs),
+			_elm_lang$core$Task$succeed(_elm_lang$core$Dict$empty));
+	});
+var _elm_lang$keyboard$Keyboard$MySub = F2(
+	function (a, b) {
+		return {ctor: 'MySub', _0: a, _1: b};
+	});
+var _elm_lang$keyboard$Keyboard$presses = function (tagger) {
+	return _elm_lang$keyboard$Keyboard$subscription(
+		A2(_elm_lang$keyboard$Keyboard$MySub, 'keypress', tagger));
+};
+var _elm_lang$keyboard$Keyboard$downs = function (tagger) {
+	return _elm_lang$keyboard$Keyboard$subscription(
+		A2(_elm_lang$keyboard$Keyboard$MySub, 'keydown', tagger));
+};
+var _elm_lang$keyboard$Keyboard$ups = function (tagger) {
+	return _elm_lang$keyboard$Keyboard$subscription(
+		A2(_elm_lang$keyboard$Keyboard$MySub, 'keyup', tagger));
+};
+var _elm_lang$keyboard$Keyboard$subMap = F2(
+	function (func, _p12) {
+		var _p13 = _p12;
+		return A2(
+			_elm_lang$keyboard$Keyboard$MySub,
+			_p13._0,
+			function (_p14) {
+				return func(
+					_p13._1(_p14));
+			});
+	});
+_elm_lang$core$Native_Platform.effectManagers['Keyboard'] = {pkg: 'elm-lang/keyboard', init: _elm_lang$keyboard$Keyboard$init, onEffects: _elm_lang$keyboard$Keyboard$onEffects, onSelfMsg: _elm_lang$keyboard$Keyboard$onSelfMsg, tag: 'sub', subMap: _elm_lang$keyboard$Keyboard$subMap};
 var _elm_lang$mouse$Mouse_ops = _elm_lang$mouse$Mouse_ops || {};
 _elm_lang$mouse$Mouse_ops['&>'] = F2(
 	function (t1, t2) {
@@ -9905,7 +10073,7 @@ var _elm_lang$window$Window$subMap = F2(
 			});
 	});
 _elm_lang$core$Native_Platform.effectManagers['Window'] = {pkg: 'elm-lang/window', init: _elm_lang$window$Window$init, onEffects: _elm_lang$window$Window$onEffects, onSelfMsg: _elm_lang$window$Window$onSelfMsg, tag: 'sub', subMap: _elm_lang$window$Window$subMap};
-var _user$project$Main$decodePosition = A3(
+var _loovjo$traffic$Main$decodePosition = A3(
 	_elm_lang$core$Json_Decode$map2,
 	F2(
 		function (x, y) {
@@ -9913,29 +10081,24 @@ var _user$project$Main$decodePosition = A3(
 		}),
 	A2(_elm_lang$core$Json_Decode$field, 'x', _elm_lang$core$Json_Decode$float),
 	A2(_elm_lang$core$Json_Decode$field, 'y', _elm_lang$core$Json_Decode$float));
-var _user$project$Main$getTrafficLightPath = function (light) {
+var _loovjo$traffic$Main$getTrafficLightPath = function (light) {
 	return (_elm_lang$core$Native_Utils.cmp(light.greenLeft, 0) < 1) ? 'Textures/TrafficLights/Light_red.png' : ((_elm_lang$core$Native_Utils.cmp(light.greenLeft, 1) < 0) ? 'Textures/TrafficLights/Light_yellow.png' : 'Textures/TrafficLights/Light_green.png');
 };
-var _user$project$Main$getImg = function (car) {
+var _loovjo$traffic$Main$getImg = function (car) {
 	return A2(
 		_elm_lang$core$Basics_ops['++'],
 		car.crashed ? A2(_elm_lang$core$Basics_ops['++'], car.img, 'Trasig') : car.img,
 		'.png');
 };
-var _user$project$Main$carHeight = 25;
-var _user$project$Main$carWidth = _user$project$Main$carHeight * 2;
-var _user$project$Main_ops = _user$project$Main_ops || {};
-_user$project$Main_ops['!!'] = F2(
+var _loovjo$traffic$Main$carHeight = 0.8;
+var _loovjo$traffic$Main$carWidth = _loovjo$traffic$Main$carHeight * 2;
+var _loovjo$traffic$Main_ops = _loovjo$traffic$Main_ops || {};
+_loovjo$traffic$Main_ops['!!'] = F2(
 	function (lst, n) {
 		return _elm_lang$core$List$head(
 			A2(_elm_lang$core$List$drop, n, lst));
 	});
-var _user$project$Main$pAdd = F2(
-	function (p1, p2) {
-		return {x: p1.x + p2.x, y: p1.y + p2.y};
-	});
-var _user$project$Main$renderScale = 40;
-var _user$project$Main$view = function (model) {
+var _loovjo$traffic$Main$view = function (model) {
 	return A2(
 		_elm_lang$html$Html$div,
 		{ctor: '[]'},
@@ -10000,19 +10163,19 @@ var _user$project$Main$view = function (model) {
 											{
 												ctor: '::',
 												_0: _elm_lang$svg$Svg_Attributes$x(
-													_elm_lang$core$Basics$toString((((road.end.x + _p3.offset.x) - 0.5) * _user$project$Main$renderScale) + model.scroll.x)),
+													_elm_lang$core$Basics$toString((((road.end.x + _p3.offset.x) - 0.5) * model.renderScale) + model.scroll.x)),
 												_1: {
 													ctor: '::',
 													_0: _elm_lang$svg$Svg_Attributes$y(
-														_elm_lang$core$Basics$toString((((road.end.y + _p3.offset.y) - 0.5) * _user$project$Main$renderScale) + model.scroll.y)),
+														_elm_lang$core$Basics$toString((((road.end.y + _p3.offset.y) - 0.5) * model.renderScale) + model.scroll.y)),
 													_1: {
 														ctor: '::',
 														_0: _elm_lang$svg$Svg_Attributes$width(
-															_elm_lang$core$Basics$toString(_user$project$Main$renderScale)),
+															_elm_lang$core$Basics$toString(model.renderScale)),
 														_1: {
 															ctor: '::',
 															_0: _elm_lang$svg$Svg_Attributes$height(
-																_elm_lang$core$Basics$toString(_user$project$Main$renderScale)),
+																_elm_lang$core$Basics$toString(model.renderScale)),
 															_1: {
 																ctor: '::',
 																_0: _elm_lang$svg$Svg_Attributes$transform(
@@ -10027,18 +10190,18 @@ var _user$project$Main$view = function (model) {
 																				' ',
 																				A2(
 																					_elm_lang$core$Basics_ops['++'],
-																					_elm_lang$core$Basics$toString(((road.end.x + _p3.offset.x) * _user$project$Main$renderScale) + model.scroll.x),
+																					_elm_lang$core$Basics$toString(((road.end.x + _p3.offset.x) * model.renderScale) + model.scroll.x),
 																					A2(
 																						_elm_lang$core$Basics_ops['++'],
 																						' ',
 																						A2(
 																							_elm_lang$core$Basics_ops['++'],
-																							_elm_lang$core$Basics$toString(((road.end.y + _p3.offset.y) * _user$project$Main$renderScale) + model.scroll.y),
+																							_elm_lang$core$Basics$toString(((road.end.y + _p3.offset.y) * model.renderScale) + model.scroll.y),
 																							')'))))))),
 																_1: {
 																	ctor: '::',
 																	_0: _elm_lang$svg$Svg_Attributes$xlinkHref(
-																		_user$project$Main$getTrafficLightPath(_p3)),
+																		_loovjo$traffic$Main$getTrafficLightPath(_p3)),
 																	_1: {ctor: '[]'}
 																}
 															}
@@ -10095,27 +10258,27 @@ var _user$project$Main$view = function (model) {
 										ctor: '::',
 										_0: _elm_lang$svg$Svg_Attributes$x(
 											_elm_lang$core$Basics$toString(
-												_elm_lang$core$Basics$floor((model.scroll.x + (car.pos.x * _user$project$Main$renderScale)) - (_user$project$Main$carWidth / 2)))),
+												_elm_lang$core$Basics$floor((model.scroll.x + (car.pos.x * model.renderScale)) - ((_loovjo$traffic$Main$carWidth / 2) * model.renderScale)))),
 										_1: {
 											ctor: '::',
 											_0: _elm_lang$svg$Svg_Attributes$y(
 												_elm_lang$core$Basics$toString(
-													_elm_lang$core$Basics$floor((model.scroll.y + (car.pos.y * _user$project$Main$renderScale)) - (_user$project$Main$carHeight / 2)))),
+													_elm_lang$core$Basics$floor((model.scroll.y + (car.pos.y * model.renderScale)) - ((_loovjo$traffic$Main$carHeight / 2) * model.renderScale)))),
 											_1: {
 												ctor: '::',
 												_0: _elm_lang$svg$Svg_Attributes$width(
-													_elm_lang$core$Basics$toString(_user$project$Main$carWidth)),
+													_elm_lang$core$Basics$toString(_loovjo$traffic$Main$carWidth * model.renderScale)),
 												_1: {
 													ctor: '::',
 													_0: _elm_lang$svg$Svg_Attributes$height(
-														_elm_lang$core$Basics$toString(_user$project$Main$carHeight)),
+														_elm_lang$core$Basics$toString(_loovjo$traffic$Main$carHeight * model.renderScale)),
 													_1: {
 														ctor: '::',
 														_0: _elm_lang$svg$Svg_Attributes$xlinkHref(
 															A2(
 																_elm_lang$core$Basics_ops['++'],
 																'Textures/Cars/',
-																_user$project$Main$getImg(car))),
+																_loovjo$traffic$Main$getImg(car))),
 														_1: {
 															ctor: '::',
 															_0: _elm_lang$svg$Svg_Attributes$opacity(
@@ -10134,13 +10297,13 @@ var _user$project$Main$view = function (model) {
 																				' ',
 																				A2(
 																					_elm_lang$core$Basics_ops['++'],
-																					_elm_lang$core$Basics$toString((car.pos.x * _user$project$Main$renderScale) + model.scroll.x),
+																					_elm_lang$core$Basics$toString((car.pos.x * model.renderScale) + model.scroll.x),
 																					A2(
 																						_elm_lang$core$Basics_ops['++'],
 																						' ',
 																						A2(
 																							_elm_lang$core$Basics_ops['++'],
-																							_elm_lang$core$Basics$toString((car.pos.y * _user$project$Main$renderScale) + model.scroll.y),
+																							_elm_lang$core$Basics$toString((car.pos.y * model.renderScale) + model.scroll.y),
 																							')'))))))),
 																_1: {ctor: '[]'}
 															}
@@ -10162,22 +10325,22 @@ var _user$project$Main$view = function (model) {
 										ctor: '::',
 										_0: _elm_lang$svg$Svg_Attributes$x1(
 											_elm_lang$core$Basics$toString(
-												_elm_lang$core$Basics$floor((road.start.x * _user$project$Main$renderScale) + model.scroll.x))),
+												_elm_lang$core$Basics$floor((road.start.x * model.renderScale) + model.scroll.x))),
 										_1: {
 											ctor: '::',
 											_0: _elm_lang$svg$Svg_Attributes$y1(
 												_elm_lang$core$Basics$toString(
-													_elm_lang$core$Basics$floor((road.start.y * _user$project$Main$renderScale) + model.scroll.y))),
+													_elm_lang$core$Basics$floor((road.start.y * model.renderScale) + model.scroll.y))),
 											_1: {
 												ctor: '::',
 												_0: _elm_lang$svg$Svg_Attributes$x2(
 													_elm_lang$core$Basics$toString(
-														_elm_lang$core$Basics$floor((road.end.x * _user$project$Main$renderScale) + model.scroll.x))),
+														_elm_lang$core$Basics$floor((road.end.x * model.renderScale) + model.scroll.x))),
 												_1: {
 													ctor: '::',
 													_0: _elm_lang$svg$Svg_Attributes$y2(
 														_elm_lang$core$Basics$toString(
-															_elm_lang$core$Basics$floor((road.end.y * _user$project$Main$renderScale) + model.scroll.y))),
+															_elm_lang$core$Basics$floor((road.end.y * model.renderScale) + model.scroll.y))),
 													_1: {
 														ctor: '::',
 														_0: _elm_lang$svg$Svg_Attributes$strokeWidth('5'),
@@ -10204,7 +10367,7 @@ var _user$project$Main$view = function (model) {
 								return A2(
 									_elm_lang$core$List$concatMap,
 									function (idx) {
-										var maybeOtherRoad = A2(_user$project$Main_ops['!!'], model.roads, idx);
+										var maybeOtherRoad = A2(_loovjo$traffic$Main_ops['!!'], model.roads, idx);
 										var _p5 = maybeOtherRoad;
 										if (_p5.ctor === 'Just') {
 											var _p6 = _p5._0;
@@ -10213,31 +10376,31 @@ var _user$project$Main$view = function (model) {
 													{ctor: '_Tuple2', _0: _p6.end.x - _p6.start.x, _1: _p6.end.y - _p6.start.y}));
 											var otherRoadEdge1x = ((_p6.start.x + _elm_lang$core$Tuple$first(
 												_elm_lang$core$Basics$fromPolar(
-													{ctor: '_Tuple2', _0: _p6.width / 2, _1: otherRoadRot - (_elm_lang$core$Basics$pi / 2)}))) * _user$project$Main$renderScale) + model.scroll.x;
+													{ctor: '_Tuple2', _0: _p6.width / 2, _1: otherRoadRot - (_elm_lang$core$Basics$pi / 2)}))) * model.renderScale) + model.scroll.x;
 											var otherRoadEdge1y = ((_p6.start.y + _elm_lang$core$Tuple$second(
 												_elm_lang$core$Basics$fromPolar(
-													{ctor: '_Tuple2', _0: _p6.width / 2, _1: otherRoadRot - (_elm_lang$core$Basics$pi / 2)}))) * _user$project$Main$renderScale) + model.scroll.y;
+													{ctor: '_Tuple2', _0: _p6.width / 2, _1: otherRoadRot - (_elm_lang$core$Basics$pi / 2)}))) * model.renderScale) + model.scroll.y;
 											var otherRoadEdge2x = ((_p6.start.x - _elm_lang$core$Tuple$first(
 												_elm_lang$core$Basics$fromPolar(
-													{ctor: '_Tuple2', _0: _p6.width / 2, _1: otherRoadRot - (_elm_lang$core$Basics$pi / 2)}))) * _user$project$Main$renderScale) + model.scroll.x;
+													{ctor: '_Tuple2', _0: _p6.width / 2, _1: otherRoadRot - (_elm_lang$core$Basics$pi / 2)}))) * model.renderScale) + model.scroll.x;
 											var otherRoadEdge2y = ((_p6.start.y - _elm_lang$core$Tuple$second(
 												_elm_lang$core$Basics$fromPolar(
-													{ctor: '_Tuple2', _0: _p6.width / 2, _1: otherRoadRot - (_elm_lang$core$Basics$pi / 2)}))) * _user$project$Main$renderScale) + model.scroll.y;
+													{ctor: '_Tuple2', _0: _p6.width / 2, _1: otherRoadRot - (_elm_lang$core$Basics$pi / 2)}))) * model.renderScale) + model.scroll.y;
 											var roadRot = _elm_lang$core$Tuple$second(
 												_elm_lang$core$Basics$toPolar(
 													{ctor: '_Tuple2', _0: road.end.x - road.start.x, _1: road.end.y - road.start.y}));
 											var roadEdge1x = ((road.end.x + _elm_lang$core$Tuple$first(
 												_elm_lang$core$Basics$fromPolar(
-													{ctor: '_Tuple2', _0: road.width / 2, _1: roadRot - (_elm_lang$core$Basics$pi / 2)}))) * _user$project$Main$renderScale) + model.scroll.x;
+													{ctor: '_Tuple2', _0: road.width / 2, _1: roadRot - (_elm_lang$core$Basics$pi / 2)}))) * model.renderScale) + model.scroll.x;
 											var roadEdge1y = ((road.end.y + _elm_lang$core$Tuple$second(
 												_elm_lang$core$Basics$fromPolar(
-													{ctor: '_Tuple2', _0: road.width / 2, _1: roadRot - (_elm_lang$core$Basics$pi / 2)}))) * _user$project$Main$renderScale) + model.scroll.y;
+													{ctor: '_Tuple2', _0: road.width / 2, _1: roadRot - (_elm_lang$core$Basics$pi / 2)}))) * model.renderScale) + model.scroll.y;
 											var roadEdge2x = ((road.end.x - _elm_lang$core$Tuple$first(
 												_elm_lang$core$Basics$fromPolar(
-													{ctor: '_Tuple2', _0: road.width / 2, _1: roadRot - (_elm_lang$core$Basics$pi / 2)}))) * _user$project$Main$renderScale) + model.scroll.x;
+													{ctor: '_Tuple2', _0: road.width / 2, _1: roadRot - (_elm_lang$core$Basics$pi / 2)}))) * model.renderScale) + model.scroll.x;
 											var roadEdge2y = ((road.end.y - _elm_lang$core$Tuple$second(
 												_elm_lang$core$Basics$fromPolar(
-													{ctor: '_Tuple2', _0: road.width / 2, _1: roadRot - (_elm_lang$core$Basics$pi / 2)}))) * _user$project$Main$renderScale) + model.scroll.y;
+													{ctor: '_Tuple2', _0: road.width / 2, _1: roadRot - (_elm_lang$core$Basics$pi / 2)}))) * model.renderScale) + model.scroll.y;
 											return {
 												ctor: '::',
 												_0: A2(
@@ -10271,11 +10434,11 @@ var _user$project$Main$view = function (model) {
 																							',',
 																							A2(
 																								_elm_lang$core$Basics_ops['++'],
-																								_elm_lang$core$Basics$toString((road.end.x * _user$project$Main$renderScale) + model.scroll.x),
+																								_elm_lang$core$Basics$toString((road.end.x * model.renderScale) + model.scroll.x),
 																								A2(
 																									_elm_lang$core$Basics_ops['++'],
 																									' ',
-																									_elm_lang$core$Basics$toString((road.end.y * _user$project$Main$renderScale) + model.scroll.y)))))))))))),
+																									_elm_lang$core$Basics$toString((road.end.y * model.renderScale) + model.scroll.y)))))))))))),
 														_1: {
 															ctor: '::',
 															_0: _elm_lang$svg$Svg_Attributes$fill('gray'),
@@ -10304,13 +10467,13 @@ var _user$project$Main$view = function (model) {
 																				',',
 																				A2(
 																					_elm_lang$core$Basics_ops['++'],
-																					_elm_lang$core$Basics$toString((road.end.x * _user$project$Main$renderScale) + model.scroll.x),
+																					_elm_lang$core$Basics$toString((road.end.x * model.renderScale) + model.scroll.x),
 																					A2(
 																						_elm_lang$core$Basics_ops['++'],
 																						' ',
 																						A2(
 																							_elm_lang$core$Basics_ops['++'],
-																							_elm_lang$core$Basics$toString((road.end.y * _user$project$Main$renderScale) + model.scroll.y),
+																							_elm_lang$core$Basics$toString((road.end.y * model.renderScale) + model.scroll.y),
 																							A2(
 																								_elm_lang$core$Basics_ops['++'],
 																								',',
@@ -10347,26 +10510,26 @@ var _user$project$Main$view = function (model) {
 										ctor: '::',
 										_0: _elm_lang$svg$Svg_Attributes$x1(
 											_elm_lang$core$Basics$toString(
-												_elm_lang$core$Basics$floor((road.start.x * _user$project$Main$renderScale) + model.scroll.x))),
+												_elm_lang$core$Basics$floor((road.start.x * model.renderScale) + model.scroll.x))),
 										_1: {
 											ctor: '::',
 											_0: _elm_lang$svg$Svg_Attributes$y1(
 												_elm_lang$core$Basics$toString(
-													_elm_lang$core$Basics$floor((road.start.y * _user$project$Main$renderScale) + model.scroll.y))),
+													_elm_lang$core$Basics$floor((road.start.y * model.renderScale) + model.scroll.y))),
 											_1: {
 												ctor: '::',
 												_0: _elm_lang$svg$Svg_Attributes$x2(
 													_elm_lang$core$Basics$toString(
-														_elm_lang$core$Basics$floor((road.end.x * _user$project$Main$renderScale) + model.scroll.x))),
+														_elm_lang$core$Basics$floor((road.end.x * model.renderScale) + model.scroll.x))),
 												_1: {
 													ctor: '::',
 													_0: _elm_lang$svg$Svg_Attributes$y2(
 														_elm_lang$core$Basics$toString(
-															_elm_lang$core$Basics$floor((road.end.y * _user$project$Main$renderScale) + model.scroll.y))),
+															_elm_lang$core$Basics$floor((road.end.y * model.renderScale) + model.scroll.y))),
 													_1: {
 														ctor: '::',
 														_0: _elm_lang$svg$Svg_Attributes$strokeWidth(
-															_elm_lang$core$Basics$toString(_user$project$Main$renderScale * road.width)),
+															_elm_lang$core$Basics$toString(model.renderScale * road.width)),
 														_1: {
 															ctor: '::',
 															_0: _elm_lang$svg$Svg_Attributes$stroke('gray'),
@@ -10396,11 +10559,11 @@ var _user$project$Main$view = function (model) {
 													_0: _elm_lang$svg$Svg_Attributes$x1(
 														_elm_lang$core$Basics$toString(
 															_elm_lang$core$Basics$floor(
-																(_user$project$Main$renderScale * _elm_lang$core$Basics$toFloat(x)) + _elm_lang$core$Basics$toFloat(
+																(model.renderScale * _elm_lang$core$Basics$toFloat(x)) + _elm_lang$core$Basics$toFloat(
 																	A2(
 																		_elm_lang$core$Basics_ops['%'],
 																		_elm_lang$core$Basics$round(model.scroll.x),
-																		_user$project$Main$renderScale))))),
+																		_elm_lang$core$Basics$round(model.renderScale)))))),
 													_1: {
 														ctor: '::',
 														_0: _elm_lang$svg$Svg_Attributes$y1('0'),
@@ -10409,11 +10572,11 @@ var _user$project$Main$view = function (model) {
 															_0: _elm_lang$svg$Svg_Attributes$x2(
 																_elm_lang$core$Basics$toString(
 																	_elm_lang$core$Basics$floor(
-																		(_user$project$Main$renderScale * _elm_lang$core$Basics$toFloat(x)) + _elm_lang$core$Basics$toFloat(
+																		(model.renderScale * _elm_lang$core$Basics$toFloat(x)) + _elm_lang$core$Basics$toFloat(
 																			A2(
 																				_elm_lang$core$Basics_ops['%'],
 																				_elm_lang$core$Basics$round(model.scroll.x),
-																				_user$project$Main$renderScale))))),
+																				_elm_lang$core$Basics$round(model.renderScale)))))),
 															_1: {
 																ctor: '::',
 																_0: _elm_lang$svg$Svg_Attributes$y2(
@@ -10436,7 +10599,7 @@ var _user$project$Main$view = function (model) {
 										A2(
 											_elm_lang$core$List$range,
 											0,
-											_elm_lang$core$Basics$floor(_p8.x / _user$project$Main$renderScale))),
+											_elm_lang$core$Basics$floor(_p8.x / model.renderScale))),
 									A2(
 										_elm_lang$core$List$map,
 										function (y) {
@@ -10450,11 +10613,11 @@ var _user$project$Main$view = function (model) {
 														_0: _elm_lang$svg$Svg_Attributes$y1(
 															_elm_lang$core$Basics$toString(
 																_elm_lang$core$Basics$floor(
-																	(_user$project$Main$renderScale * _elm_lang$core$Basics$toFloat(y)) + _elm_lang$core$Basics$toFloat(
+																	(model.renderScale * _elm_lang$core$Basics$toFloat(y)) + _elm_lang$core$Basics$toFloat(
 																		A2(
 																			_elm_lang$core$Basics_ops['%'],
 																			_elm_lang$core$Basics$round(model.scroll.y),
-																			_user$project$Main$renderScale))))),
+																			_elm_lang$core$Basics$round(model.renderScale)))))),
 														_1: {
 															ctor: '::',
 															_0: _elm_lang$svg$Svg_Attributes$x2(
@@ -10464,11 +10627,11 @@ var _user$project$Main$view = function (model) {
 																_0: _elm_lang$svg$Svg_Attributes$y2(
 																	_elm_lang$core$Basics$toString(
 																		_elm_lang$core$Basics$floor(
-																			(_user$project$Main$renderScale * _elm_lang$core$Basics$toFloat(y)) + _elm_lang$core$Basics$toFloat(
+																			(model.renderScale * _elm_lang$core$Basics$toFloat(y)) + _elm_lang$core$Basics$toFloat(
 																				A2(
 																					_elm_lang$core$Basics_ops['%'],
 																					_elm_lang$core$Basics$round(model.scroll.y),
-																					_user$project$Main$renderScale))))),
+																					_elm_lang$core$Basics$round(model.renderScale)))))),
 																_1: {
 																	ctor: '::',
 																	_0: _elm_lang$svg$Svg_Attributes$stroke('black'),
@@ -10487,7 +10650,7 @@ var _user$project$Main$view = function (model) {
 										A2(
 											_elm_lang$core$List$range,
 											0,
-											_elm_lang$core$Basics$floor(_p8.y / _user$project$Main$renderScale))));
+											_elm_lang$core$Basics$floor(_p8.y / model.renderScale))));
 							} else {
 								return {ctor: '[]'};
 							}
@@ -10538,15 +10701,19 @@ var _user$project$Main$view = function (model) {
 				}
 			}()));
 };
-var _user$project$Main$Position = F2(
+var _loovjo$traffic$Main$pAdd = F2(
+	function (p1, p2) {
+		return {x: p1.x + p2.x, y: p1.y + p2.y};
+	});
+var _loovjo$traffic$Main$Position = F2(
 	function (a, b) {
 		return {x: a, y: b};
 	});
-var _user$project$Main$Car = F8(
+var _loovjo$traffic$Main$Car = F8(
 	function (a, b, c, d, e, f, g, h) {
 		return {name: a, img: b, pos: c, rot: d, speed: e, steering: f, crashed: g, fade: h};
 	});
-var _user$project$Main$decodeCars = _elm_lang$core$Json_Decode$list(
+var _loovjo$traffic$Main$decodeCars = _elm_lang$core$Json_Decode$list(
 	A4(
 		_NoRedInk$elm_decode_pipeline$Json_Decode_Pipeline$optional,
 		'fade',
@@ -10571,7 +10738,7 @@ var _user$project$Main$decodeCars = _elm_lang$core$Json_Decode$list(
 						A3(
 							_NoRedInk$elm_decode_pipeline$Json_Decode_Pipeline$required,
 							'pos',
-							_user$project$Main$decodePosition,
+							_loovjo$traffic$Main$decodePosition,
 							A3(
 								_NoRedInk$elm_decode_pipeline$Json_Decode_Pipeline$required,
 								'img',
@@ -10580,25 +10747,25 @@ var _user$project$Main$decodeCars = _elm_lang$core$Json_Decode$list(
 									_NoRedInk$elm_decode_pipeline$Json_Decode_Pipeline$required,
 									'name',
 									_elm_lang$core$Json_Decode$string,
-									_NoRedInk$elm_decode_pipeline$Json_Decode_Pipeline$decode(_user$project$Main$Car))))))))));
-var _user$project$Main$TrafficLight = F2(
+									_NoRedInk$elm_decode_pipeline$Json_Decode_Pipeline$decode(_loovjo$traffic$Main$Car))))))))));
+var _loovjo$traffic$Main$TrafficLight = F2(
 	function (a, b) {
 		return {greenLeft: a, offset: b};
 	});
-var _user$project$Main$decodeTrafficLight = A3(
+var _loovjo$traffic$Main$decodeTrafficLight = A3(
 	_NoRedInk$elm_decode_pipeline$Json_Decode_Pipeline$required,
 	'offset',
-	_user$project$Main$decodePosition,
+	_loovjo$traffic$Main$decodePosition,
 	A3(
 		_NoRedInk$elm_decode_pipeline$Json_Decode_Pipeline$required,
 		'green_left',
 		_elm_lang$core$Json_Decode$float,
-		_NoRedInk$elm_decode_pipeline$Json_Decode_Pipeline$decode(_user$project$Main$TrafficLight)));
-var _user$project$Main$Road = F5(
+		_NoRedInk$elm_decode_pipeline$Json_Decode_Pipeline$decode(_loovjo$traffic$Main$TrafficLight)));
+var _loovjo$traffic$Main$Road = F5(
 	function (a, b, c, d, e) {
 		return {start: a, end: b, connectedTo: c, trafficLight: d, width: e};
 	});
-var _user$project$Main$decodeRoads = _elm_lang$core$Json_Decode$list(
+var _loovjo$traffic$Main$decodeRoads = _elm_lang$core$Json_Decode$list(
 	A4(
 		_NoRedInk$elm_decode_pipeline$Json_Decode_Pipeline$optional,
 		'width',
@@ -10607,7 +10774,7 @@ var _user$project$Main$decodeRoads = _elm_lang$core$Json_Decode$list(
 		A2(
 			_NoRedInk$elm_decode_pipeline$Json_Decode_Pipeline$custom,
 			_elm_lang$core$Json_Decode$maybe(
-				A2(_elm_lang$core$Json_Decode$field, 'traffic_light', _user$project$Main$decodeTrafficLight)),
+				A2(_elm_lang$core$Json_Decode$field, 'traffic_light', _loovjo$traffic$Main$decodeTrafficLight)),
 			A3(
 				_NoRedInk$elm_decode_pipeline$Json_Decode_Pipeline$required,
 				'connected_to',
@@ -10615,68 +10782,75 @@ var _user$project$Main$decodeRoads = _elm_lang$core$Json_Decode$list(
 				A3(
 					_NoRedInk$elm_decode_pipeline$Json_Decode_Pipeline$required,
 					'end',
-					_user$project$Main$decodePosition,
+					_loovjo$traffic$Main$decodePosition,
 					A3(
 						_NoRedInk$elm_decode_pipeline$Json_Decode_Pipeline$required,
 						'start',
-						_user$project$Main$decodePosition,
-						_NoRedInk$elm_decode_pipeline$Json_Decode_Pipeline$decode(_user$project$Main$Road)))))));
-var _user$project$Main$decodeTraffic = A3(
+						_loovjo$traffic$Main$decodePosition,
+						_NoRedInk$elm_decode_pipeline$Json_Decode_Pipeline$decode(_loovjo$traffic$Main$Road)))))));
+var _loovjo$traffic$Main$decodeTraffic = A3(
 	_elm_lang$core$Json_Decode$map2,
 	F2(
 		function (cars, roads) {
 			return {cars: cars, roads: roads};
 		}),
-	A2(_elm_lang$core$Json_Decode$field, 'cars', _user$project$Main$decodeCars),
-	A2(_elm_lang$core$Json_Decode$field, 'roads', _user$project$Main$decodeRoads));
-var _user$project$Main$Traffic = F2(
+	A2(_elm_lang$core$Json_Decode$field, 'cars', _loovjo$traffic$Main$decodeCars),
+	A2(_elm_lang$core$Json_Decode$field, 'roads', _loovjo$traffic$Main$decodeRoads));
+var _loovjo$traffic$Main$Traffic = F2(
 	function (a, b) {
 		return {cars: a, roads: b};
 	});
-var _user$project$Main$Model = F7(
-	function (a, b, c, d, e, f, g) {
-		return {cars: a, roads: b, err: c, size: d, lasttime: e, scroll: f, lastMouse: g};
+var _loovjo$traffic$Main$Model = F8(
+	function (a, b, c, d, e, f, g, h) {
+		return {cars: a, roads: b, err: c, size: d, lasttime: e, scroll: f, lastMouse: g, renderScale: h};
 	});
-var _user$project$Main$MouseMove = function (a) {
+var _loovjo$traffic$Main$KeyDown = function (a) {
+	return {ctor: 'KeyDown', _0: a};
+};
+var _loovjo$traffic$Main$MouseMove = function (a) {
 	return {ctor: 'MouseMove', _0: a};
 };
-var _user$project$Main$MouseRelease = function (a) {
+var _loovjo$traffic$Main$MouseRelease = function (a) {
 	return {ctor: 'MouseRelease', _0: a};
 };
-var _user$project$Main$MousePress = function (a) {
+var _loovjo$traffic$Main$MousePress = function (a) {
 	return {ctor: 'MousePress', _0: a};
 };
-var _user$project$Main$UpdateServer = function (a) {
+var _loovjo$traffic$Main$UpdateServer = function (a) {
 	return {ctor: 'UpdateServer', _0: a};
 };
-var _user$project$Main$UpdateClient = function (a) {
+var _loovjo$traffic$Main$UpdateClient = function (a) {
 	return {ctor: 'UpdateClient', _0: a};
 };
-var _user$project$Main$CheckSize = {ctor: 'CheckSize'};
-var _user$project$Main$Resize = function (a) {
+var _loovjo$traffic$Main$CheckSize = {ctor: 'CheckSize'};
+var _loovjo$traffic$Main$Resize = function (a) {
 	return {ctor: 'Resize', _0: a};
 };
-var _user$project$Main$subscriptions = function (model) {
+var _loovjo$traffic$Main$subscriptions = function (model) {
 	return _elm_lang$core$Platform_Sub$batch(
 		{
 			ctor: '::',
-			_0: _elm_lang$window$Window$resizes(_user$project$Main$Resize),
+			_0: _elm_lang$window$Window$resizes(_loovjo$traffic$Main$Resize),
 			_1: {
 				ctor: '::',
-				_0: A2(_elm_lang$core$Time$every, _elm_lang$core$Time$second / 30, _user$project$Main$UpdateClient),
+				_0: A2(_elm_lang$core$Time$every, _elm_lang$core$Time$second / 30, _loovjo$traffic$Main$UpdateClient),
 				_1: {
 					ctor: '::',
-					_0: A2(_elm_lang$core$Time$every, _elm_lang$core$Time$second / 10, _user$project$Main$UpdateServer),
+					_0: A2(_elm_lang$core$Time$every, _elm_lang$core$Time$second / 10, _loovjo$traffic$Main$UpdateServer),
 					_1: {
 						ctor: '::',
-						_0: _elm_lang$mouse$Mouse$downs(_user$project$Main$MousePress),
+						_0: _elm_lang$mouse$Mouse$downs(_loovjo$traffic$Main$MousePress),
 						_1: {
 							ctor: '::',
-							_0: _elm_lang$mouse$Mouse$ups(_user$project$Main$MouseRelease),
+							_0: _elm_lang$mouse$Mouse$ups(_loovjo$traffic$Main$MouseRelease),
 							_1: {
 								ctor: '::',
-								_0: _elm_lang$mouse$Mouse$moves(_user$project$Main$MouseMove),
-								_1: {ctor: '[]'}
+								_0: _elm_lang$mouse$Mouse$moves(_loovjo$traffic$Main$MouseMove),
+								_1: {
+									ctor: '::',
+									_0: _elm_lang$keyboard$Keyboard$presses(_loovjo$traffic$Main$KeyDown),
+									_1: {ctor: '[]'}
+								}
 							}
 						}
 					}
@@ -10684,39 +10858,40 @@ var _user$project$Main$subscriptions = function (model) {
 			}
 		});
 };
-var _user$project$Main$SetTrafficState = function (a) {
+var _loovjo$traffic$Main$SetTrafficState = function (a) {
 	return {ctor: 'SetTrafficState', _0: a};
 };
-var _user$project$Main$Request = {ctor: 'Request'};
-var _user$project$Main$init = {
+var _loovjo$traffic$Main$Request = {ctor: 'Request'};
+var _loovjo$traffic$Main$init = {
 	ctor: '_Tuple2',
-	_0: A7(
-		_user$project$Main$Model,
+	_0: A8(
+		_loovjo$traffic$Main$Model,
 		{ctor: '[]'},
 		{ctor: '[]'},
 		_elm_lang$core$Maybe$Nothing,
 		_elm_lang$core$Maybe$Nothing,
 		_elm_lang$core$Maybe$Nothing,
 		{x: 0, y: 0},
-		_elm_lang$core$Maybe$Nothing),
+		_elm_lang$core$Maybe$Nothing,
+		40),
 	_1: _elm_lang$core$Platform_Cmd$batch(
 		{
 			ctor: '::',
 			_0: A2(
 				_elm_lang$core$Task$perform,
 				_elm_lang$core$Basics$identity,
-				_elm_lang$core$Task$succeed(_user$project$Main$Request)),
+				_elm_lang$core$Task$succeed(_loovjo$traffic$Main$Request)),
 			_1: {
 				ctor: '::',
 				_0: A2(
 					_elm_lang$core$Task$perform,
 					_elm_lang$core$Basics$identity,
-					_elm_lang$core$Task$succeed(_user$project$Main$CheckSize)),
+					_elm_lang$core$Task$succeed(_loovjo$traffic$Main$CheckSize)),
 				_1: {ctor: '[]'}
 			}
 		})
 };
-var _user$project$Main$update = F2(
+var _loovjo$traffic$Main$update = F2(
 	function (msg, model) {
 		var _p10 = msg;
 		switch (_p10.ctor) {
@@ -10747,8 +10922,8 @@ var _user$project$Main$update = F2(
 					_0: model,
 					_1: A2(
 						_elm_lang$http$Http$send,
-						_user$project$Main$SetTrafficState,
-						A2(_elm_lang$http$Http$get, '/Cars', _user$project$Main$decodeTraffic))
+						_loovjo$traffic$Main$SetTrafficState,
+						A2(_elm_lang$http$Http$get, '/Cars', _loovjo$traffic$Main$decodeTraffic))
 				};
 			case 'Resize':
 				var _p12 = _p10._0;
@@ -10769,7 +10944,7 @@ var _user$project$Main$update = F2(
 				return {
 					ctor: '_Tuple2',
 					_0: model,
-					_1: A2(_elm_lang$core$Task$perform, _user$project$Main$Resize, _elm_lang$window$Window$size)
+					_1: A2(_elm_lang$core$Task$perform, _loovjo$traffic$Main$Resize, _elm_lang$window$Window$size)
 				};
 			case 'UpdateClient':
 				var _p18 = _p10._0;
@@ -10799,7 +10974,7 @@ var _user$project$Main$update = F2(
 											car,
 											{
 												pos: A2(
-													_user$project$Main$pAdd,
+													_loovjo$traffic$Main$pAdd,
 													car.pos,
 													function (_p14) {
 														var _p15 = _p14;
@@ -10842,7 +11017,7 @@ var _user$project$Main$update = F2(
 					_1: A2(
 						_elm_lang$core$Task$perform,
 						_elm_lang$core$Basics$identity,
-						_elm_lang$core$Task$succeed(_user$project$Main$Request))
+						_elm_lang$core$Task$succeed(_loovjo$traffic$Main$Request))
 				};
 			case 'MouseRelease':
 				return {
@@ -10867,7 +11042,7 @@ var _user$project$Main$update = F2(
 						}),
 					_1: _elm_lang$core$Platform_Cmd$none
 				};
-			default:
+			case 'MouseMove':
 				var _p22 = _p10._0;
 				var _p20 = model.lastMouse;
 				if (_p20.ctor === 'Just') {
@@ -10893,14 +11068,40 @@ var _user$project$Main$update = F2(
 				} else {
 					return {ctor: '_Tuple2', _0: model, _1: _elm_lang$core$Platform_Cmd$none};
 				}
+			default:
+				var _p25 = _p10._0;
+				return _elm_lang$core$Native_Utils.eq(_p25, 43) ? {
+					ctor: '_Tuple2',
+					_0: _elm_lang$core$Native_Utils.update(
+						model,
+						{
+							renderScale: model.renderScale * 1.2,
+							scroll: function () {
+								var _p23 = model.size;
+								if (_p23.ctor === 'Just') {
+									var _p24 = _p23._0;
+									return {x: model.scroll.x - (_p24.x / model.renderScale), y: model.scroll.y - (_p24.y / model.renderScale)};
+								} else {
+									return model.scroll;
+								}
+							}()
+						}),
+					_1: _elm_lang$core$Platform_Cmd$none
+				} : (_elm_lang$core$Native_Utils.eq(_p25, 45) ? {
+					ctor: '_Tuple2',
+					_0: _elm_lang$core$Native_Utils.update(
+						model,
+						{renderScale: model.renderScale / 1.2}),
+					_1: _elm_lang$core$Platform_Cmd$none
+				} : {ctor: '_Tuple2', _0: model, _1: _elm_lang$core$Platform_Cmd$none});
 		}
 	});
-var _user$project$Main$main = _elm_lang$html$Html$program(
-	{init: _user$project$Main$init, view: _user$project$Main$view, update: _user$project$Main$update, subscriptions: _user$project$Main$subscriptions})();
+var _loovjo$traffic$Main$main = _elm_lang$html$Html$program(
+	{init: _loovjo$traffic$Main$init, view: _loovjo$traffic$Main$view, update: _loovjo$traffic$Main$update, subscriptions: _loovjo$traffic$Main$subscriptions})();
 var Elm = {};
 Elm['Main'] = Elm['Main'] || {};
-if (typeof _user$project$Main$main !== 'undefined') {
-    _user$project$Main$main(Elm['Main'], 'Main', undefined);
+if (typeof _loovjo$traffic$Main$main !== 'undefined') {
+    _loovjo$traffic$Main$main(Elm['Main'], 'Main', undefined);
 }
 
 if (typeof define === "function" && define['amd'])
