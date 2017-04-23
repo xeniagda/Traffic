@@ -56,11 +56,11 @@ type alias Car =
     , speed : Float -- How many pixels forwards the car should move every second in the direction it's facing
     , steering : Float
     , crashed : Bool
+    , fade : Float
     }
 
-type TrafficLightColor = Green | Red
 type alias TrafficLight =
-    { color : TrafficLightColor
+    { greenLeft : Float
     , offset : Position
     }
 
@@ -82,11 +82,14 @@ getImg : Car -> String
 getImg car =
     (if car.crashed then car.img ++ "Trasig" else car.img) ++ ".png"
 
-getTrafficLightPath : TrafficLightColor -> String
-getTrafficLightPath col =
-    case col of
-        Green -> "Textures/TrafficLights/Light_green.png"
-        Red   -> "Textures/TrafficLights/Light_red.png"
+getTrafficLightPath : TrafficLight -> String
+getTrafficLightPath light =
+    if light.greenLeft <= 0 then 
+        "Textures/TrafficLights/Light_red.png"
+    else if light.greenLeft < 1 then
+        "Textures/TrafficLights/Light_yellow.png"
+    else 
+        "Textures/TrafficLights/Light_green.png"
 
 decodeTraffic : Decoder Traffic
 decodeTraffic =
@@ -106,6 +109,7 @@ decodeCars =
             |> P.required "speed" Decode.float
             |> P.required "steering" Decode.float
             |> P.required "crashed" Decode.bool
+            |> P.optional "fade" Decode.float 1
         )
 
 
@@ -123,7 +127,7 @@ decodeRoads =
 decodeTrafficLight : Decoder TrafficLight
 decodeTrafficLight =
     P.decode TrafficLight
-        |> P.required "is_green" (Decode.map (\is_green -> if is_green then Green else Red) Decode.bool)
+        |> P.required "green_left" Decode.float
         |> P.required "offset" decodePosition
 
 
@@ -241,7 +245,7 @@ view model =
           S.svg
             [ Sa.width <| Maybe.withDefault "10" <| Maybe.map (toString << .x) model.size
             , Sa.height <| Maybe.withDefault "10" <| Maybe.map (toString << .y) model.size
-            , Sa.style "background: green"
+            , Sa.style "background: #004400"
             ]
             (let
                 lines =
@@ -352,6 +356,7 @@ view model =
                               , Sa.width <| toString <| carWidth
                               , Sa.height <| toString <| carHeight
                               , Sa.xlinkHref <| "Textures/Cars/" ++ getImg car
+                              , Sa.opacity <| toString car.fade
                               , Sa.transform <|
                                   "rotate("
                                       ++ (toString car.rot)
@@ -389,7 +394,7 @@ view model =
                                               " " ++ (toString <| (road.end.x + light.offset.x) * renderScale + model.scroll.x) ++
                                               " " ++ (toString <| (road.end.y + light.offset.y) * renderScale + model.scroll.y) ++
                                               ")"
-                                    , Sa.xlinkHref <| getTrafficLightPath light.color
+                                    , Sa.xlinkHref <| getTrafficLightPath light
                                     ] []
                                 ]
                             Nothing -> []

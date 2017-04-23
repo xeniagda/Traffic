@@ -97,17 +97,18 @@ function init() {
             },
         ],
         roads: [
-            {start: {x: 12, y: 22}, end: {x: 12, y: 12}, connected_to: [3,5,7], speed_rec: 5, traffic_light: {is_green: false, green_left: 0, offset: {x: 1, y: 1}}}, // Goes upwards
+            {start: {x: 12, y: 22}, end: {x: 12, y: 12}, connected_to: [3,5,7], speed_rec: 5, traffic_light: {green_left: 0, offset: {x: 1, y: 1}}}, // Goes upwards
             {start: {x: 10, y: 12}, end: {x: 10, y: 22}, connected_to: [], speed_rec: 5},
-            {start: {x: 0, y: 12}, end: {x: 10, y: 12}, connected_to: [1,5,7], speed_rec: 5, traffic_light: {is_green: false, green_left: 0, offset: {x: -1, y: 1}}}, // Goes to the right
+            {start: {x: 0, y: 12}, end: {x: 10, y: 12}, connected_to: [1,5,7], speed_rec: 5, traffic_light: {green_left: 0, offset: {x: -1, y: 1}}}, // Goes to the right
             {start: {x: 10, y: 10}, end: {x: 0, y: 10}, connected_to: [], speed_rec: 5},
-            {start: {x: 10, y: 0}, end: {x: 10, y: 10}, connected_to: [1,3,7], speed_rec: 5, traffic_light: {is_green: false, green_left: 0, offset: {x: -1, y: -1}}}, // Goes downwards
+            {start: {x: 10, y: 0}, end: {x: 10, y: 10}, connected_to: [1,3,7], speed_rec: 5, traffic_light: {green_left: 0, offset: {x: -1, y: -1}}}, // Goes downwards
             {start: {x: 12, y: 10}, end: {x: 12, y: 0}, connected_to: [], speed_rec: 5},
-            {start: {x: 22, y: 10}, end: {x: 12, y: 10}, connected_to: [1,3,5], speed_rec: 5, traffic_light: {is_green: false, green_left: 0, offset: {x: 1, y: -1}}}, // Goes to the left
+            {start: {x: 22, y: 10}, end: {x: 12, y: 10}, connected_to: [1,3,5], speed_rec: 5, traffic_light: {green_left: 0, offset: {x: 1, y: -1}}}, // Goes to the left
             {start: {x: 12, y: 12}, end: {x: 22, y: 12}, connected_to: [], speed_rec: 5},
         ]
     }
 }
+
 
 DEBUG = false
 
@@ -135,11 +136,11 @@ var physics = timers.setInterval(() => {
             return
         road.traffic_light.waiting_cars = []
 
-        if (road.traffic_light.is_green) {
+        if (road.traffic_light.green_left > 0) {
             road.traffic_light.green_left -= delta
+
             if (road.traffic_light.green_left <= 0) {
                 road.traffic_light.green_left = 0
-                road.traffic_light.is_green = false
             }
         }
     })
@@ -243,7 +244,7 @@ var physics = timers.setInterval(() => {
             }
 
             // Check if there's a traffic light
-            if (road.traffic_light && !road.traffic_light.is_green && dist_to_finish - 1 < break_dist) {
+            if (road.traffic_light && road.traffic_light.green_left <= 0 && dist_to_finish - 1 < break_dist) {
                 car.hand_breaks = true
                 car.accel = 0
             }
@@ -277,9 +278,11 @@ var physics = timers.setInterval(() => {
                 road.traffic_light.waiting_cars.push(car)
             }
 
+            car.fade = 1
         }
         else {
             car.hand_breaks = true
+            car.fade -= delta / 3
         }
 
         if (car.hand_breaks) {
@@ -288,7 +291,8 @@ var physics = timers.setInterval(() => {
         }
 
         return car
-    })
+    }).filter(car => car.fade > 0)
+
 
     any_green = false
 
@@ -300,7 +304,7 @@ var physics = timers.setInterval(() => {
             continue
 
         amount_of_cars = traffic.roads[i].traffic_light.waiting_cars.length
-        if (traffic.roads[i].traffic_light.is_green) {
+        if (traffic.roads[i].traffic_light.green_left > 0) {
             any_green = true
             max_cars_idx = i
             break
@@ -313,8 +317,7 @@ var physics = timers.setInterval(() => {
     }
     
     if (!any_green && max_cars_idx != -1) {
-        traffic.roads[max_cars_idx].traffic_light.is_green = true
-        traffic.roads[max_cars_idx].traffic_light.green_left = max_cars
+        traffic.roads[max_cars_idx].traffic_light.green_left = max_cars + 2
     }
 
 
