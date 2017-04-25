@@ -1,0 +1,1 @@
+elm-make Base.elm --output ../main.js 2>&1 | more

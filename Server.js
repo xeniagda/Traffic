@@ -42,32 +42,16 @@ CARS = ["Car1", "Car2", "Car3", "Car4"]
 
 function init() {
     traffic = {
-        cars: [
-            {
-                name: "Peter",
-                img: "Car1",
-                pos: { x: 0, y: 0 },
-                rot: 0,
-                steering: 0,
-                accel: 0,
-                speed: 0,
-                maxSpeed: 3,
-                hand_breaks: false,
-                break_strength: 0.1,
-                crashed: false,
-                fade: 1,
-                controlled_by : "::1"
-            }
-        ],
+        cars: [],
         roads: [
-            {start: {x: 12, y: 22}, end: {x: 12, y: 12}, connected_to: [3,5,7], speed_rec: 5, traffic_light: {green_left: 0, offset: {x: 1, y: 1}}}, // Goes upwards
-            {start: {x: 10, y: 12}, end: {x: 10, y: 22}, connected_to: [], speed_rec: 5},
-            {start: {x: 0, y: 12}, end: {x: 10, y: 12}, connected_to: [1,5,7], speed_rec: 5, traffic_light: {green_left: 0, offset: {x: -1, y: 1}}}, // Goes to the right
-            {start: {x: 10, y: 10}, end: {x: 0, y: 10}, connected_to: [], speed_rec: 5},
-            {start: {x: 10, y: 0}, end: {x: 10, y: 10}, connected_to: [1,3,7], speed_rec: 5, traffic_light: {green_left: 0, offset: {x: -1, y: -1}}}, // Goes downwards
-            {start: {x: 12, y: 10}, end: {x: 12, y: 0}, connected_to: [], speed_rec: 5},
-            {start: {x: 22, y: 10}, end: {x: 12, y: 10}, connected_to: [1,3,5], speed_rec: 5, traffic_light: {green_left: 0, offset: {x: 1, y: -1}}}, // Goes to the left
-            {start: {x: 12, y: 12}, end: {x: 22, y: 12}, connected_to: [], speed_rec: 5},
+            {start: {x: 12, y: 32}, end: {x: 12, y: 12}, connected_to: [3,5,7], speed_rec: 5, traffic_light: {green_left: 0, offset: {x: 1, y: 1}}}, // Goes upwards
+            {start: {x: 10, y: 12}, end: {x: 10, y: 32}, connected_to: [], speed_rec: 5},
+            {start: {x: -10, y: 12}, end: {x: 10, y: 12}, connected_to: [1,5,7], speed_rec: 5, traffic_light: {green_left: 0, offset: {x: -1, y: 1}}}, // Goes to the right
+            {start: {x: 10, y: 10}, end: {x: -10, y: 10}, connected_to: [], speed_rec: 5},
+            {start: {x: 10, y: -10}, end: {x: 10, y: 10}, connected_to: [1,3,7], speed_rec: 5, traffic_light: {green_left: 0, offset: {x: -1, y: -1}}}, // Goes downwards
+            {start: {x: 12, y: 10}, end: {x: 12, y: -10}, connected_to: [], speed_rec: 5},
+            {start: {x: 32, y: 10}, end: {x: 12, y: 10}, connected_to: [1,3,5], speed_rec: 5, traffic_light: {green_left: 0, offset: {x: 1, y: -1}}}, // Goes to the left
+            {start: {x: 12, y: 12}, end: {x: 32, y: 12}, connected_to: [], speed_rec: 5},
         ],
         timeUntilNextCar: 0
     }
@@ -122,7 +106,7 @@ var physics = timers.setInterval(() => {
         // if (car.speed > car.maxSpeed)
         //     car.speed = car.maxSpeed
 
-        car.rot += car.steering * delta * 5
+        car.rot += car.steering * delta
 
         if (!car.crashed && traffic.cars.filter(car2 => car != car2 && distance(car.pos, car2.pos) < 0.8).length > 0) {
             car.crashed = true
@@ -166,17 +150,13 @@ var physics = timers.setInterval(() => {
 
             wanted_rot = (toDegrees(Math.atan2(car.pos.y - (closest.y * dist_exag + wanted_end_pos.y) / (dist_exag + 1), car.pos.x - (closest.x * dist_exag + wanted_end_pos.x) / (dist_exag + 1)))) % 360 + 180
 
-            car.steering = wanted_rot - car.rot
+            car.steering = (wanted_rot - car.rot) * 5
 
             car.steering = (car.steering + 180) % 360 - 180
 
             dwx = wanted_end_pos.x - car.pos.x
             dwy = wanted_end_pos.y - car.pos.y
             dist_to_finish = Math.sqrt(dwx * dwx + dwy * dwy)
-
-            if (dist_to_finish < 1) {
-                car.ai.road_queue.shift()
-            }
 
             // How far would the car go if the breaks were all down? Use the geometric series b+b^2+b^3... where b = break factor
             break_dist = 3 * (car.speed * car.break_strength / (1 + car.break_strength) + 1)
@@ -232,7 +212,7 @@ var physics = timers.setInterval(() => {
                     car.accel = 0
                 }
 
-                any_waiting = cars_in_front.map(car => car.ai.waiting).reduce((a, b) => (a || b))
+                any_waiting = cars_in_front.map(car => car.ai && car.ai.waiting).reduce((a, b) => (a || b))
                 car.ai.waiting |= any_waiting
             }
             else {
@@ -244,9 +224,16 @@ var physics = timers.setInterval(() => {
                 road.traffic_light.waiting_cars.push(car)
             }
 
+            if (dist_to_finish < 1) {
+                car.ai.road_queue.shift()
+                if (car.ai.road_queue.length == 0) {
+                    delete car.ai
+                }
+            }
+
             car.fade = 1
         }
-        else if (!car.controlled_by) {
+        if (!car.ai && !car.controlled_by && !car.non_fade || car.crashed) {
             car.hand_breaks = true
             car.fade -= delta / 3
         }
@@ -263,7 +250,7 @@ var physics = timers.setInterval(() => {
     any_green = false
 
     max_cars = 0
-    max_cars_idx = -1
+    max_cars_idx = []
 
     for (i = 0; i < traffic.roads.length; i++) {
         if (!traffic.roads[i].traffic_light)
@@ -272,18 +259,22 @@ var physics = timers.setInterval(() => {
         amount_of_cars = traffic.roads[i].traffic_light.waiting_cars.length
         if (traffic.roads[i].traffic_light.green_left > 0) {
             any_green = true
-            max_cars_idx = i
+            max_cars_idx = [i]
             break
         }
 
+        if (amount_of_cars == max_cars) {
+            max_cars_idx.push(i)
+        }
         if (amount_of_cars > max_cars) {
+            max_cars_idx = [i]
             max_cars = amount_of_cars
-            max_cars_idx = i
         }
     }
     
-    if (!any_green && max_cars_idx != -1) {
-        traffic.roads[max_cars_idx].traffic_light.green_left = max_cars + 2
+    if (!any_green && max_cars_idx != []) {
+        selected_idx = max_cars_idx[Math.random() * max_cars_idx.length | 0]
+        traffic.roads[selected_idx].traffic_light.green_left = max_cars + 2
     }
     
     traffic.timeUntilNextCar -= delta
@@ -368,44 +359,6 @@ var server = http.createServer((req, res) => {
             res.end("NOEXIST!")
         }
     }
-    else if (method === "POST") {
-        // Type of POSTs:
-        // carName/c     -> Set the cars controller to the sender's IP address
-        // carName/r/val -> Set the steering of a specific car
-        // carName/a/val -> Set the accel of a specific car
-        
-        var body = ""
-        req.on("data", chunk => body += chunk)
-        req.on("end", () => {
-            console.log("POST " + body)
-
-            parts = body.split("/")
-            cars = traffic.cars.filter(car => car.name == parts[0])
-            if (cars.length === 0) {
-                res.status = 400
-                res.end("NOEXIST")
-            }
-            else if (cars.length > 1) {
-                res.status = 409
-                res.end("AMBIGUOUS")
-            }
-            else {
-                car = cars[0]
-                if (parts.length > 1) {
-                    if (parts[1] === "r" && parts.length > 2) {
-                        car.steering = parts[2] | 0
-                        res.status = 200
-                        res.end("steering=" + parts[2])
-                    }
-                    if (parts[1] === "s" && parts.length > 2) {
-                        car.accel = parts[2] | 0
-                        res.status = 200
-                        res.end("accel=" + parts[2])
-                    }
-                }
-            }
-        })
-    }
 })
 
 server.listen(8000)
@@ -416,7 +369,79 @@ var wss = new ws.Server({server: server})
 var broadcast = timers.setInterval(() => {
     wss.clients.forEach(client => {
         if (client.readyState === ws.OPEN) {
+            ip = client.upgradeReq.connection.remoteAddress
+            traffic["ip"] = ip
             client.send(JSON.stringify(traffic))
         }
+        delete traffic["ip"]
     })   
 }, 100)
+
+wss.on('connection', (socket => {
+    ip = socket.upgradeReq.connection.remoteAddress
+
+    console.log("Connected: ")
+    console.log(ip)
+
+    socket.on('message', (data, flags) => {
+        console.log("Recieved " + data + " from " + ip)
+        parts = data.split("/")
+        if (parts.length > 0) {
+            cmd = parts[0]
+            if (cmd === "claim" && parts.length > 1) {
+                carName = parts[1]
+                cars = traffic.cars.filter(car => car.name == carName)
+                cars.forEach(car => car.controlled_by = ip)
+                console.log(ip + " claimed " + cars.map(car => car.name))
+            }
+            if (cmd === "create" && parts.length > 2) {
+                x = parseFloat(parts[1])
+                y = parseFloat(parts[2])
+
+                texture = CARS[Math.random() * CARS.length | 0]
+
+                car = {
+                    name: "Car" + carCount,
+                    img: texture,
+                    pos: {x: x, y: y},
+                    rot: 0,
+                    accel: 0,
+                    speed: 0,
+                    maxSpeed: 8,
+                    steering: 0,
+                    hand_breaks: false,
+                    break_strength: 0.2,
+                    fade: 1,
+                    non_fade: true,
+                    crashed: false,
+                    controlled_by: ip
+                }
+
+                traffic.cars.push(car)
+            }
+            else {
+                cars = traffic.cars.filter(car => car.controlled_by === ip)
+
+                if (cmd === "steer" && parts.length > 1) {
+                    rot = parseFloat(parts[1])
+                    cars.forEach(car => car.steering = rot)
+                    console.log("Steering: " + cars.map(car => car.steering))
+                }
+                if (cmd === "accel" && parts.length > 1) {
+                    accel = parseFloat(parts[1])
+                    cars.forEach(car => car.accel = accel)
+                    console.log("Steering: " + cars.map(car => car.accel))
+                }
+                if (cmd === "breaks") {
+                    cars.forEach(car => car.hand_breaks = true)
+                    console.log("Steering: " + cars.map(car => car.hand_breaks))
+                }
+                if (cmd === "no_breaks") {
+                    cars.forEach(car => car.hand_breaks = false)
+                    console.log("Steering: " + cars.map(car => car.hand_breaks))
+                }
+            }
+        }
+        
+    })
+}))
