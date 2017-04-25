@@ -11659,7 +11659,7 @@ var _loovjo$traffic$Main$init = function (flags) {
 			{ctor: '[]'})(
 			{ctor: '[]'})(_elm_lang$core$Maybe$Nothing)(_elm_lang$core$Maybe$Nothing)(_elm_lang$core$Maybe$Nothing)(
 			{x: 0, y: 0})(_elm_lang$core$Maybe$Nothing)(40)(
-			A2(_elm_lang$core$Debug$log, 'Websocket url: ', flags.webSocketUrl))('')(_elm_lang$core$Maybe$Nothing)(3)(100)(_elm_lang$core$Maybe$Nothing),
+			A2(_elm_lang$core$Debug$log, 'Websocket url: ', flags.webSocketUrl))('')(_elm_lang$core$Maybe$Nothing)(3)(200)(_elm_lang$core$Maybe$Nothing),
 		_1: A2(
 			_elm_lang$core$Task$perform,
 			_elm_lang$core$Basics$identity,

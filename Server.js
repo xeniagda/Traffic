@@ -42,15 +42,15 @@ CARS = ["Car1", "Car2", "Car3", "Car4"]
 
 function init() {
     traffic = {
-        cars: [],
+        cars: [ ],
         roads: [
-            {start: {x: 12, y: 32}, end: {x: 12, y: 12}, connected_to: [3,5,7], speed_rec: 5, traffic_light: {green_left: 0, offset: {x: 1, y: 1}}}, // Goes upwards
+            {start: {x: 12, y: 32}, end: {x: 12, y: 12}, connected_to: [3,5,7], speed_rec: 5, traffic_light: {green_left: 0, last_green: 0, offset: {x: 1, y: 1}}}, // Goes upwards
             {start: {x: 10, y: 12}, end: {x: 10, y: 32}, connected_to: [], speed_rec: 5},
-            {start: {x: -10, y: 12}, end: {x: 10, y: 12}, connected_to: [1,5,7], speed_rec: 5, traffic_light: {green_left: 0, offset: {x: -1, y: 1}}}, // Goes to the right
+            {start: {x: -10, y: 12}, end: {x: 10, y: 12}, connected_to: [1,5,7], speed_rec: 5, traffic_light: {green_left: 0, last_green: 0, offset: {x: -1, y: 1}}}, // Goes to the right
             {start: {x: 10, y: 10}, end: {x: -10, y: 10}, connected_to: [], speed_rec: 5},
-            {start: {x: 10, y: -10}, end: {x: 10, y: 10}, connected_to: [1,3,7], speed_rec: 5, traffic_light: {green_left: 0, offset: {x: -1, y: -1}}}, // Goes downwards
+            {start: {x: 10, y: -10}, end: {x: 10, y: 10}, connected_to: [1,3,7], speed_rec: 5, traffic_light: {green_left: 0, last_green: 0, offset: {x: -1, y: -1}}}, // Goes downwards
             {start: {x: 12, y: 10}, end: {x: 12, y: -10}, connected_to: [], speed_rec: 5},
-            {start: {x: 32, y: 10}, end: {x: 12, y: 10}, connected_to: [1,3,5], speed_rec: 5, traffic_light: {green_left: 0, offset: {x: 1, y: -1}}}, // Goes to the left
+            {start: {x: 32, y: 10}, end: {x: 12, y: 10}, connected_to: [1,3,5], speed_rec: 5, traffic_light: {green_left: 0, last_green: 0, offset: {x: 1, y: -1}}}, // Goes to the left
             {start: {x: 12, y: 12}, end: {x: 32, y: 12}, connected_to: [], speed_rec: 5},
         ],
         timeUntilNextCar: 0
@@ -111,7 +111,9 @@ var physics = timers.setInterval(() => {
         if (!car.crashed && traffic.cars.filter(car2 => car != car2 && distance(car.pos, car2.pos) < 0.8).length > 0) {
             car.crashed = true
             car.speed *= -1
-            car.ai = {}
+            delete car.ai
+            car.accel = 0
+            delete car.controlled_by
         }
 
         // Calculate AI
@@ -142,6 +144,7 @@ var physics = timers.setInterval(() => {
                 else
                     closest = road.end
             }
+
             dist = distance(car.pos, closest)
             dist_exag = Math.exp(3 * dist)
 
@@ -150,9 +153,10 @@ var physics = timers.setInterval(() => {
 
             wanted_rot = (toDegrees(Math.atan2(car.pos.y - (closest.y * dist_exag + wanted_end_pos.y) / (dist_exag + 1), car.pos.x - (closest.x * dist_exag + wanted_end_pos.x) / (dist_exag + 1)))) % 360 + 180
 
-            car.steering = (wanted_rot - car.rot) * 5
 
-            car.steering = (car.steering + 180) % 360 - 180
+            car.steering = (wanted_rot - car.rot)
+
+            car.steering = ((car.steering + 180) % 360 - 180) * 5
 
             dwx = wanted_end_pos.x - car.pos.x
             dwy = wanted_end_pos.y - car.pos.y
@@ -163,10 +167,10 @@ var physics = timers.setInterval(() => {
 
             // What cars are in front?
             cars_in_front = traffic.cars.filter(check => {
-                if (check == car)
+                if (check === car)
                     return false
 
-                if (distance(car.pos, check.pos) > break_dist)
+                if (distance(car.pos, check.pos) > break_dist * 2)
                     return false
 
                 pos_delta = {x: car.pos.x - check.pos.x, y: car.pos.y - check.pos.y}
@@ -182,7 +186,7 @@ var physics = timers.setInterval(() => {
 
             car.hand_breaks = false
 
-            if (road.traffic_light && dist_to_finish < 5) {
+            if (road.traffic_light && dist_to_finish < 10) {
                 car.ai.waiting = true
             }
             else {
@@ -249,37 +253,44 @@ var physics = timers.setInterval(() => {
 
     any_green = false
 
-    max_cars = 0
+    max_score = 0
     max_cars_idx = []
 
     for (i = 0; i < traffic.roads.length; i++) {
-        if (!traffic.roads[i].traffic_light)
+        road = traffic.roads[i]
+        if (!road.traffic_light)
             continue
 
-        amount_of_cars = traffic.roads[i].traffic_light.waiting_cars.length
-        if (traffic.roads[i].traffic_light.green_left > 0) {
+        amount_of_cars = road.traffic_light.waiting_cars.length
+
+        score = amount_of_cars - road.traffic_light.last_green / 10
+
+        if (road.traffic_light.green_left > 0) {
             any_green = true
             max_cars_idx = [i]
             break
         }
 
-        if (amount_of_cars == max_cars) {
+        if (score == max_score) {
             max_cars_idx.push(i)
         }
-        if (amount_of_cars > max_cars) {
+
+        if (score > max_score) {
             max_cars_idx = [i]
-            max_cars = amount_of_cars
+            max_score = score
         }
     }
     
-    if (!any_green && max_cars_idx != []) {
+    if (!any_green && max_cars_idx.length > 0) {
         selected_idx = max_cars_idx[Math.random() * max_cars_idx.length | 0]
-        traffic.roads[selected_idx].traffic_light.green_left = max_cars + 2
+        light = traffic.roads[selected_idx].traffic_light
+        light.green_left = light.waiting_cars.length + 2
+        light.last_green = totalTime
     }
     
     traffic.timeUntilNextCar -= delta
     if (traffic.timeUntilNextCar <= 0) {
-        traffic.timeUntilNextCar = 1
+        traffic.timeUntilNextCar = 3
 
         // Add new car
 

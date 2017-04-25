@@ -39,8 +39,6 @@ type alias Position =
     { x : Float, y : Float }
 
 
-
-
 carHeight : Float
 carHeight =
     0.8
@@ -169,7 +167,7 @@ type alias Model =
 
 init : Flags -> ( Model, Cmd Msg )
 init flags =
-    ( Model [] [] Nothing Nothing Nothing {x=0, y=0} Nothing 40 (Debug.log "Websocket url: " flags.webSocketUrl) "" Nothing 3 100 Nothing
+    ( Model [] [] Nothing Nothing Nothing {x=0, y=0} Nothing 40 (Debug.log "Websocket url: " flags.webSocketUrl) "" Nothing 3 200 Nothing
     , Task.perform identity <| Task.succeed CheckSize
     )
 
