@@ -12,3 +12,4 @@ Stuff currently in the simulator:
 * Traffic lights
 * Cars with AI
 * Four hi-quality car textures (yellow, blue, tiger and Elm), with broken variants to (called "trasig", Swedish for "broken").
+* The ability to control cars from the browser
