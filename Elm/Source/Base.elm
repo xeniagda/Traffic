@@ -264,9 +264,9 @@ update msg model =
         KeyDown key ->
             case model.ip of
                 Just myIp ->
-                    if key == 43 then -- Plus key
+                    if key == 187 then -- Plus key
                         ( {model | renderScale = model.renderScale * 1.2}, Cmd.none )
-                    else if key == 45 then -- Minus key
+                    else if key == 189 then -- Minus key
                         ( {model | renderScale = model.renderScale / 1.2}, Cmd.none )
                     else if key == 75 then -- k
                         ( { model | cars = List.map (\car ->
