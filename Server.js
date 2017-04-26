@@ -11,6 +11,8 @@ BACKWARD = 1
 
 CARS = ["Car1", "Car2", "Car3", "Car4"]
 
+IP_CREATE_TABLE = {}
+
 /*
  * Car properties:
  *      name : String           The name of the car
@@ -186,7 +188,7 @@ var physics = timers.setInterval(() => {
 
             car.hand_breaks = false
 
-            if (road.traffic_light && dist_to_finish < 10) {
+            if (road.traffic_light) {
                 car.ai.waiting = true
             }
             else {
@@ -389,12 +391,13 @@ var broadcast = timers.setInterval(() => {
 }, 100)
 
 wss.on('connection', (socket => {
-    ip = socket.upgradeReq.connection.remoteAddress
-
-    console.log("Connected: ")
-    console.log(ip)
 
     socket.on('message', (data, flags) => {
+        ip = socket.upgradeReq.connection.remoteAddress
+        if (IP_CREATE_TABLE[ip] > 5) {
+            return
+        }
+
         console.log("Recieved " + data + " from " + ip)
         parts = data.split("/")
         if (parts.length > 0) {
@@ -429,6 +432,16 @@ wss.on('connection', (socket => {
                 }
 
                 traffic.cars.push(car)
+
+                if (ip !== "::1") {
+                    if (IP_CREATE_TABLE[ip] > 0) {
+                        IP_CREATE_TABLE[ip]++
+                    }
+                    else {
+                        IP_CREATE_TABLE[ip] = 1
+                    }
+
+                }
             }
             else {
                 cars = traffic.cars.filter(car => car.controlled_by === ip)
