@@ -17,6 +17,7 @@ import WebSocket
 
 import Debug
 
+zoomFactor = 1.2
 controlUp = 87      -- W
 controlLeft = 65    -- A
 controlRight = 68   -- D
@@ -177,7 +178,7 @@ type alias Model =
 
 init : Flags -> ( Model, Cmd Msg )
 init flags =
-    ( Model [] [] Nothing Nothing Nothing {x=0, y=0} Nothing 40 (Debug.log "Websocket url: " flags.webSocketUrl) "" Nothing 3 200 Nothing (Just "Car1")
+    ( Model [] [] Nothing Nothing Nothing {x=0, y=0} Nothing 40 (Debug.log "Websocket url: " flags.webSocketUrl) "" Nothing 3 200 Nothing Nothing
     , Task.perform identity <| Task.succeed CheckSize
     )
 
@@ -287,9 +288,25 @@ update msg model =
             case model.ip of
                 Just myIp ->
                     if key == 187 then -- Plus key
-                        ( {model | renderScale = model.renderScale * 1.2}, Cmd.none )
+                        ( {model 
+                            | renderScale = model.renderScale * zoomFactor
+                            , scroll = 
+                                case model.size of
+                                    Just size -> 
+                                        {x = (model.scroll.x - size.x / 2) * zoomFactor + size.x / 2, y = (model.scroll.y - size.y / 2) * zoomFactor + size.y / 2}
+                                    Nothing ->
+                                        model.scroll
+                        }, Cmd.none )
                     else if key == 189 then -- Minus key
-                        ( {model | renderScale = model.renderScale / 1.2}, Cmd.none )
+                        ( {model 
+                            | renderScale = model.renderScale / zoomFactor
+                            , scroll = 
+                                case model.size of
+                                    Just size -> 
+                                        {x = (model.scroll.x - size.x / 2) / zoomFactor + size.x / 2, y = (model.scroll.y - size.y / 2) / zoomFactor + size.y / 2}
+                                    Nothing ->
+                                        model.scroll
+                        }, Cmd.none )
                     else if key == controlBreak then -- k
                         ( { model | cars = List.map (\car ->
                                 case car.controlledBy of
@@ -461,7 +478,7 @@ view model =
                                 , Sa.y1 <| toString <| floor <| (road.start.y * model.renderScale) + model.scroll.y
                                 , Sa.x2 <| toString <| floor <| (road.end.x * model.renderScale) + model.scroll.x
                                 , Sa.y2 <| toString <| floor <| (road.end.y * model.renderScale) + model.scroll.y
-                                , Sa.strokeWidth <| toString <| model.renderScale * road.width + 1
+                                , Sa.strokeWidth <| toString <| model.renderScale * road.width + 2
                                 , Sa.stroke "gray"
                                 ] []
                         )
@@ -485,8 +502,8 @@ view model =
                                             in [ S.polygon
                                                     [ Sa.points <| (toString roadEdge1x) ++ " " ++ (toString roadEdge1y)
                                                          ++ "," ++ (toString otherRoadEdge1x) ++ " " ++ (toString otherRoadEdge1y)
-                                                         ++ "," ++ (toString roadEdge2x) ++ " " ++ (toString roadEdge2y)
                                                          ++ "," ++ (toString otherRoadEdge2x) ++ " " ++ (toString otherRoadEdge2y)
+                                                         ++ "," ++ (toString roadEdge2x) ++ " " ++ (toString roadEdge2y)
                                                     , Sa.style "fill:gray;stroke:gray;stroke-width:1"
                                                     ] []
 
