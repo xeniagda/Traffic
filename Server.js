@@ -46,14 +46,21 @@ function init() {
     traffic = {
         cars: [ ],
         roads: [
-            {start: {x: 12, y: 32}, end: {x: 12, y: 12}, connected_to: [3,5,7], speed_rec: 5, traffic_light: {green_left: 0, last_green: 0, offset: {x: 1, y: 1}}}, // Goes upwards
-            {start: {x: 10, y: 12}, end: {x: 10, y: 32}, connected_to: [], speed_rec: 5},
-            {start: {x: -10, y: 12}, end: {x: 10, y: 12}, connected_to: [1,5,7], speed_rec: 5, traffic_light: {green_left: 0, last_green: 0, offset: {x: -1, y: 1}}}, // Goes to the right
-            {start: {x: 10, y: 10}, end: {x: -10, y: 10}, connected_to: [], speed_rec: 5},
-            {start: {x: 10, y: -10}, end: {x: 10, y: 10}, connected_to: [1,3,7], speed_rec: 5, traffic_light: {green_left: 0, last_green: 0, offset: {x: -1, y: -1}}}, // Goes downwards
-            {start: {x: 12, y: 10}, end: {x: 12, y: -10}, connected_to: [], speed_rec: 5},
-            {start: {x: 32, y: 10}, end: {x: 12, y: 10}, connected_to: [1,3,5], speed_rec: 5, traffic_light: {green_left: 0, last_green: 0, offset: {x: 1, y: -1}}}, // Goes to the left
-            {start: {x: 12, y: 12}, end: {x: 32, y: 12}, connected_to: [], speed_rec: 5},
+            {width: 1.5, start: {x: 12, y: 32}, end: {x: 12, y: 12}, connected_to: [3,5,7], speed_rec: 5, traffic_light: {green_left: 0, last_green: 0, offset: {x: 1, y: 1}}}, // Goes upwards
+            {width: 1.5, start: {x: 10, y: 12}, end: {x: 10, y: 32}, connected_to: [], speed_rec: 5},
+            {width: 1.5, start: {x: -10, y: 12}, end: {x: 10, y: 12}, connected_to: [1,5,7], speed_rec: 5, traffic_light: {green_left: 0, last_green: 0, offset: {x: -1, y: 1}}}, // Goes to the right
+            {width: 1.5, start: {x: 10, y: 10}, end: {x: -10, y: 10}, connected_to: [], speed_rec: 5},
+            {width: 1.5, start: {x: 10, y: -10}, end: {x: 10, y: 10}, connected_to: [1,3,7], speed_rec: 5, traffic_light: {green_left: 0, last_green: 0, offset: {x: -1, y: -1}}}, // Goes downwards
+            {width: 1.5, start: {x: 12, y: 10}, end: {x: 12, y: -10}, connected_to: [], speed_rec: 5},
+            {width: 1.5, start: {x: 33, y: 10}, end: {x: 12, y: 10}, connected_to: [1,3,5], speed_rec: 5, traffic_light: {green_left: 0, last_green: 0, offset: {x: 1, y: -1}}}, // Goes to the left
+            {width: 1.5, start: {x: 12, y: 12}, end: {x: 32, y: 12}, connected_to: [8], speed_rec: 5},
+            {width: 1.3, start: {x: 32, y: 12}, end: {x: 37, y: 17}, connected_to: [9], speed_rec: 5},
+            {width: 1.3, start: {x: 37, y: 17}, end: {x: 42, y: 17}, connected_to: [], speed_rec: 5},
+            {width: 1.3, start: {x: 38, y: 15}, end: {x: 33, y: 10}, connected_to: [6], speed_rec: 5},
+            {width: 1.3, start: {x: 42, y: 15}, end: {x: 38, y: 15}, connected_to: [10], speed_rec: 5},
+        ],
+        intersections: [
+            {roads: [0, 2, 4, 6]}
         ],
         timeUntilNextCar: 0
     }
@@ -165,14 +172,14 @@ var physics = timers.setInterval(() => {
             dist_to_finish = Math.sqrt(dwx * dwx + dwy * dwy)
 
             // How far would the car go if the breaks were all down? Use the geometric series b+b^2+b^3... where b = break factor
-            break_dist = 3 * (car.speed * car.break_strength / (1 + car.break_strength) + 1)
+            break_dist = 2 * (car.speed * car.break_strength / (1 + car.break_strength) + 1)
 
             // What cars are in front?
             cars_in_front = traffic.cars.filter(check => {
                 if (check === car)
                     return false
 
-                if (distance(car.pos, check.pos) > break_dist * 2)
+                if (distance(car.pos, check.pos) > break_dist * 1.5)
                     return false
 
                 pos_delta = {x: car.pos.x - check.pos.x, y: car.pos.y - check.pos.y}
@@ -196,24 +203,25 @@ var physics = timers.setInterval(() => {
             }
 
             // Check if there's a traffic light
-            if (road.traffic_light && road.traffic_light.green_left <= 0 && dist_to_finish < break_dist) {
+            if (road.traffic_light && road.traffic_light.green_left <= 0 && dist_to_finish < break_dist * 1.5) {
                 car.hand_breaks = true
-                car.accel = 0
+                car.accel = (dist_to_finish - break_dist * 1.5) / 3
             }
 
             else if (cars_in_front.length > 0) {
                 if (DEBUG)
                     console.log(car.name + " is behind " + cars_in_front.map(car => car.name))
                 // Match the speed
-                avg_speed = cars_in_front.map(car => car.speed).reduce((a, b) => a + b) / cars_in_front.length
+                avg_speed = cars_in_front.map(check_car => check_car.speed * Math.cos(toRadians(check_car.rot - car.rot))).reduce((a, b) => a + b) / cars_in_front.length
                 min_dist = cars_in_front.map(check_car => distance(car.pos, check_car.pos)).reduce((a, b) => a < b ? a : b)
 
-                if (avg_speed < car.speed - 4) {
+                if (avg_speed < car.speed - 4 && avg_speed > 0) {
                     car.hand_breaks = true
                 }
-                car.accel = (cars_in_front[0].speed - car.speed) * 3
 
-                if (min_dist < 5) {
+                car.accel = (avg_speed - car.speed) * 3
+
+                if (min_dist < 5 && avg_speed > 0) {
                     car.hand_breaks = true
                     car.accel = 0
                 }
@@ -246,53 +254,64 @@ var physics = timers.setInterval(() => {
 
         if (car.hand_breaks) {
             car.speed *= Math.pow(car.break_strength, delta)
+            if (Math.abs(car.speed) < 0.3) {
+                car.speed = 0
+            }
             car.steering /= Math.pow(5, delta)
         }
 
         return car
     }).filter(car => car.fade > 0)
 
+    traffic.intersections.forEach(intersection => {
+        any_green = false
 
-    any_green = false
+        max_score = 0
+        max_cars_idx = []
+        roads = intersection.roads
 
-    max_score = 0
-    max_cars_idx = []
+        for (i = 0; i < roads.length; i++) {
+            r = roads[i]
+            road = traffic.roads[r]
 
-    for (i = 0; i < traffic.roads.length; i++) {
-        road = traffic.roads[i]
-        if (!road.traffic_light)
-            continue
+            if (!road.traffic_light)
+                continue
 
-        amount_of_cars = road.traffic_light.waiting_cars.length
+            amount_of_cars = road.traffic_light.waiting_cars.length
 
-        score = amount_of_cars - road.traffic_light.last_green / 10
+            score = amount_of_cars
 
-        if (road.traffic_light.green_left > 0) {
-            any_green = true
-            max_cars_idx = [i]
-            break
+            if (road.traffic_light.green_left > 0) {
+                any_green = true
+                max_cars_idx = [r]
+                break
+            }
+
+            if (score == max_score) {
+                max_cars_idx.push(r)
+            }
+
+            if (score > max_score) {
+                max_cars_idx = [r]
+                max_score = score
+            }
         }
+        
+        if (!any_green && max_cars_idx.length > 0) {
+            console.log(max_cars_idx)
+            selected_idx = max_cars_idx[Math.random() * max_cars_idx.length | 0]
 
-        if (score == max_score) {
-            max_cars_idx.push(i)
+            light = traffic.roads[selected_idx].traffic_light
+            light.green_left = light.waiting_cars.length + 2
+            light.last_green = totalTime
         }
+        
 
-        if (score > max_score) {
-            max_cars_idx = [i]
-            max_score = score
-        }
-    }
-    
-    if (!any_green && max_cars_idx.length > 0) {
-        selected_idx = max_cars_idx[Math.random() * max_cars_idx.length | 0]
-        light = traffic.roads[selected_idx].traffic_light
-        light.green_left = light.waiting_cars.length + 2
-        light.last_green = totalTime
-    }
-    
+    })
+
     traffic.timeUntilNextCar -= delta
     if (traffic.timeUntilNextCar <= 0) {
-        traffic.timeUntilNextCar = 3
+        traffic.timeUntilNextCar = 1
 
         // Add new car
 
@@ -394,7 +413,7 @@ wss.on('connection', (socket => {
 
     socket.on('message', (data, flags) => {
         ip = socket.upgradeReq.connection.remoteAddress
-        if (IP_CREATE_TABLE[ip] > 5) {
+        if (IP_CREATE_TABLE[ip] >= 20) {
             return
         }
 
@@ -415,7 +434,7 @@ wss.on('connection', (socket => {
                 texture = CARS[Math.random() * CARS.length | 0]
 
                 car = {
-                    name: "Car" + carCount,
+                    name: "Car" + carCount++,
                     img: texture,
                     pos: {x: x, y: y},
                     rot: 0,
@@ -435,7 +454,7 @@ wss.on('connection', (socket => {
 
                 if (ip !== "::1") {
                     if (IP_CREATE_TABLE[ip] > 0) {
-                        IP_CREATE_TABLE[ip]++
+                        IP_CREATE_TABLE[ip] += 1
                     }
                     else {
                         IP_CREATE_TABLE[ip] = 1
