@@ -41,28 +41,46 @@ IP_CREATE_TABLE = {}
  *      controlled_by : string  If the car is controlled by a player, this is that player's IP address.
  */
 
+ROADS_PRESET = [
+    {width: 1.5, start: {x: 12, y: 32}, end: {x: 12, y: 12}, connected_to: [3,5,7], speed_rec: 5, traffic_light: {green_left: 0, last_green: 0, offset: {x: 1, y: 1}}}, // Goes upwards
+    {width: 1.5, start: {x: 10, y: 12}, end: {x: 10, y: 32}, connected_to: [], speed_rec: 5},
+    {width: 1.5, start: {x: -10, y: 12}, end: {x: 10, y: 12}, connected_to: [1,5,7], speed_rec: 5, traffic_light: {green_left: 0, last_green: 0, offset: {x: -1, y: 1}}}, // Goes to the right
+    {width: 1.5, start: {x: 10, y: 10}, end: {x: -10, y: 10}, connected_to: [], speed_rec: 5},
+    {width: 1.5, start: {x: 10, y: -10}, end: {x: 10, y: 10}, connected_to: [1,3,7], speed_rec: 5, traffic_light: {green_left: 0, last_green: 0, offset: {x: -1, y: -1}}}, // Goes downwards
+    {width: 1.5, start: {x: 12, y: 10}, end: {x: 12, y: -10}, connected_to: [], speed_rec: 5},
+    {width: 1.5, start: {x: 33, y: 10}, end: {x: 12, y: 10}, connected_to: [1,3,5], speed_rec: 5, traffic_light: {green_left: 0, last_green: 0, offset: {x: 1, y: -1}}}, // Goes to the left
+    {width: 1.5, start: {x: 12, y: 12}, end: {x: 32, y: 12}, connected_to: [8], speed_rec: 5},
+    {width: 1.3, start: {x: 32, y: 12}, end: {x: 37, y: 17}, connected_to: [9], speed_rec: 5},
+    {width: 1.3, start: {x: 37, y: 17}, end: {x: 42, y: 17}, connected_to: [], speed_rec: 5},
+    {width: 1.3, start: {x: 38, y: 15}, end: {x: 33, y: 10}, connected_to: [6], speed_rec: 5},
+    {width: 1.3, start: {x: 42, y: 15}, end: {x: 38, y: 15}, connected_to: [10], speed_rec: 5},
+]
 
 function init() {
     traffic = {
         cars: [ ],
         roads: [
-            {width: 1.5, start: {x: 12, y: 32}, end: {x: 12, y: 12}, connected_to: [3,5,7], speed_rec: 5, traffic_light: {green_left: 0, last_green: 0, offset: {x: 1, y: 1}}}, // Goes upwards
-            {width: 1.5, start: {x: 10, y: 12}, end: {x: 10, y: 32}, connected_to: [], speed_rec: 5},
-            {width: 1.5, start: {x: -10, y: 12}, end: {x: 10, y: 12}, connected_to: [1,5,7], speed_rec: 5, traffic_light: {green_left: 0, last_green: 0, offset: {x: -1, y: 1}}}, // Goes to the right
-            {width: 1.5, start: {x: 10, y: 10}, end: {x: -10, y: 10}, connected_to: [], speed_rec: 5},
-            {width: 1.5, start: {x: 10, y: -10}, end: {x: 10, y: 10}, connected_to: [1,3,7], speed_rec: 5, traffic_light: {green_left: 0, last_green: 0, offset: {x: -1, y: -1}}}, // Goes downwards
-            {width: 1.5, start: {x: 12, y: 10}, end: {x: 12, y: -10}, connected_to: [], speed_rec: 5},
-            {width: 1.5, start: {x: 33, y: 10}, end: {x: 12, y: 10}, connected_to: [1,3,5], speed_rec: 5, traffic_light: {green_left: 0, last_green: 0, offset: {x: 1, y: -1}}}, // Goes to the left
-            {width: 1.5, start: {x: 12, y: 12}, end: {x: 32, y: 12}, connected_to: [8], speed_rec: 5},
-            {width: 1.3, start: {x: 32, y: 12}, end: {x: 37, y: 17}, connected_to: [9], speed_rec: 5},
-            {width: 1.3, start: {x: 37, y: 17}, end: {x: 42, y: 17}, connected_to: [], speed_rec: 5},
-            {width: 1.3, start: {x: 38, y: 15}, end: {x: 33, y: 10}, connected_to: [6], speed_rec: 5},
-            {width: 1.3, start: {x: 42, y: 15}, end: {x: 38, y: 15}, connected_to: [10], speed_rec: 5},
+            {width: 1.5, start: {x: 0, y: 23}, end: {x: 1, y: 8}, connected_to: [1], speed_rec: 5},
+            {width: 1.5, start: {x: 1, y: 8}, end: {x: 1, y: 1}, connected_to: [6, 7, 10], speed_rec: 5, traffic_light: {green_left: 0, last_green: 0, offset: {x: 1, y: 1}}},
+            {width: 1.5, start: {x: -1, y: 1}, end: {x: -1, y: 8}, connected_to: [3], speed_rec: 5},
+            {width: 1.5, start: {x: -1, y: 8}, end: {x: -2, y: 23}, connected_to: [3], speed_rec: 5},
+            {width: 1.5, start: {x: -47, y: 1}, end: {x: -10, y: 1}, connected_to: [5], speed_rec: 5},
+            {width: 1.5, start: {x: -10, y: 1}, end: {x: -1, y: 1}, connected_to: [2, 7, 10], speed_rec: 5, traffic_light: {green_left: 0, last_green: 0, offset: {x: -1, y: 1}}},
+            {width: 1.5, start: {x: -1, y: -2}, end: {x: -47, y: -3}, connected_to: [], speed_rec: 5},
+            {width: 1.5, start: {x: 1, y: 1}, end: {x: 10, y: 1}, connected_to: [8], speed_rec: 5},
+            {width: 1.5, start: {x: 10, y: 1}, end: {x: 38, y: 1}, connected_to: [], speed_rec: 5},
+            {width: 1.5, start: {x: 38, y: -1}, end: {x: 1, y: -2}, connected_to: [2, 6, 10], speed_rec: 5, traffic_light: {green_left: 0, last_green: 0, offset: {x: 1, y: -1}}},
+            {width: 1.5, start: {x: 1, y: -2}, end: {x: 1, y: -9}, connected_to: [11], speed_rec: 5},
+            {width: 1.5, start: {x: 1, y: -9}, end: {x: 0, y: -16}, connected_to: [12], speed_rec: 5},
+            {width: 1.5, start: {x: 0, y: -16}, end: {x: -7, y: -23}, connected_to: [13], speed_rec: 5},
+            {width: 1.5, start: {x: -7, y: -23}, end: {x: -12, y: -25}, connected_to: [14], speed_rec: 5},
+            {width: 1.5, start: {x: -12, y: -25}, end: {x: -16, y: -30}, connected_to: [15], speed_rec: 5},
+            {width: 1.5, start: {x: -16, y: -30}, end: {x: -24, y: -42}, connected_to: [], speed_rec: 5},
         ],
         intersections: [
-            {roads: [0, 2, 4, 6]}
+            {roads: [1, 5, 9]}
         ],
-        timeUntilNextCar: 0
+        timeUntilNextCar: 3
     }
 }
 
@@ -147,7 +165,7 @@ var physics = timers.setInterval(() => {
                 cy = k * cx + m
             }
             closest = {x:cx, y:cy}
-            if (distance(closest, road.start) + distance(closest, road.end) > distance(road.start, road.end)) {
+            if (distance(closest, road.start) + distance(closest, road.end) > distance(road.start, road.end) + 5) {
                 if (distance(closest, road.start) < distance(closest, road.end))
                     closest = road.start
                 else
@@ -155,7 +173,7 @@ var physics = timers.setInterval(() => {
             }
 
             dist = distance(car.pos, closest)
-            dist_exag = Math.exp(3 * dist)
+            dist_exag = Math.exp(3 * dist) + 1
 
             // Steer car towards closest point
             wanted_end_pos = current_path.direction == FORWARD ? road.end : road.start
@@ -226,7 +244,7 @@ var physics = timers.setInterval(() => {
                     car.accel = 0
                 }
 
-                any_waiting = cars_in_front.map(car => car.ai && car.ai.waiting).reduce((a, b) => (a || b))
+                any_waiting = cars_in_front.map(car => car.ai && car.ai.waiting || car.controlled_by).reduce((a, b) => (a || b))
                 car.ai.waiting |= any_waiting
             }
             else {
@@ -250,6 +268,7 @@ var physics = timers.setInterval(() => {
         if (!car.ai && !car.controlled_by && !car.non_fade || car.crashed) {
             car.hand_breaks = true
             car.fade -= delta / 3
+            car.steering /= Math.pow(5, delta)
         }
 
         if (car.hand_breaks) {
@@ -298,7 +317,6 @@ var physics = timers.setInterval(() => {
         }
         
         if (!any_green && max_cars_idx.length > 0) {
-            console.log(max_cars_idx)
             selected_idx = max_cars_idx[Math.random() * max_cars_idx.length | 0]
 
             light = traffic.roads[selected_idx].traffic_light
@@ -311,7 +329,7 @@ var physics = timers.setInterval(() => {
 
     traffic.timeUntilNextCar -= delta
     if (traffic.timeUntilNextCar <= 0) {
-        traffic.timeUntilNextCar = 1
+        traffic.timeUntilNextCar = 2
 
         // Add new car
 
