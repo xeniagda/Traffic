@@ -1,5 +1,6 @@
 let http = require("http")
 let fs = require("fs")
+let url = require("url")
 let timers = require("timers")
 let ws = require("ws")
 
@@ -39,6 +40,7 @@ IP_CREATE_TABLE = {}
  *          waiting : bool      If the car is waiting for at a traffic light
  *      }
  *      controlled_by : string  If the car is controlled by a player, this is that player's IP address.
+ *      is_police : bool        Is the car a police car
  */
 
 ROADS_PRESET = [
@@ -130,12 +132,12 @@ var physics = timers.setInterval(() => {
 
         car.speed += car.accel * delta
 
-        // if (car.speed > car.maxSpeed)
-        //     car.speed = car.maxSpeed
+        if (car.speed > car.maxSpeed)
+            car.speed = car.maxSpeed
 
         car.rot += car.steering * delta
 
-        if (!car.crashed && traffic.cars.filter(car2 => car != car2 && distance(car.pos, car2.pos) < 0.8).length > 0) {
+        if (!car.crashed && traffic.cars.filter(car2 => car != car2 && distance(car.pos, car2.pos) < 0.8).length > 0 && !car.is_police) {
             car.crashed = true
             car.speed *= -1
             delete car.ai
@@ -372,6 +374,7 @@ var physics = timers.setInterval(() => {
                 hand_breaks: false,
                 break_strength: 0.2,
                 crashed: false,
+                is_police: false,
                 ai: {
                     waiting: false,
                     road_queue: path
@@ -392,12 +395,12 @@ var physics = timers.setInterval(() => {
 
 var server = http.createServer((req, res) => {
     method = req.method
-    url = req.url
+    url = url.parse(req.url)
     ip  = req.connection.remoteAddress
     if (method === "GET") {
-        filePath = "Web" + url
+        filePath = "Web" + url.pathname
         if (fs.existsSync(filePath)) {
-            console.log(method + " " + url)
+            console.log(method + " " + JSON.stringify(url))
             if (!fs.lstatSync(filePath).isFile()) {
                 filePath = "Web/traffic.html"
             }
@@ -411,7 +414,7 @@ var server = http.createServer((req, res) => {
     }
 })
 
-server.listen(8000)
+server.listen(8001)
 console.log("Started")
 
 var wss = new ws.Server({server: server})
@@ -431,9 +434,6 @@ wss.on('connection', (socket => {
 
     socket.on('message', (data, flags) => {
         ip = socket.upgradeReq.connection.remoteAddress
-        if (IP_CREATE_TABLE[ip] >= 20) {
-            return
-        }
 
         console.log("Recieved " + data + " from " + ip)
         parts = data.split("/")
@@ -446,26 +446,35 @@ wss.on('connection', (socket => {
                 console.log(ip + " claimed " + cars.map(car => car.name))
             }
             if (cmd === "create" && parts.length > 2) {
+                if (IP_CREATE_TABLE[ip] >= 20) {
+                    return
+                }
                 x = parseFloat(parts[1])
                 y = parseFloat(parts[2])
+                isPolice = false
+                if (parts.length > 2) {
+                    isPolice = parts[3] === "polis"
+                }
+                console.log(isPolice)
 
                 texture = CARS[Math.random() * CARS.length | 0]
 
                 car = {
                     name: "Car" + carCount++,
-                    img: texture,
+                    img: isPolice ? "CarPolis" : texture,
                     pos: {x: x, y: y},
                     rot: 0,
                     accel: 0,
                     speed: 0,
-                    maxSpeed: 8,
+                    maxSpeed: isPolice ? 16 : 8,
                     steering: 0,
                     hand_breaks: false,
                     break_strength: 0.2,
                     fade: 1,
                     non_fade: true,
                     crashed: false,
-                    controlled_by: ip
+                    controlled_by: ip,
+                    is_police: isPolice
                 }
 
                 traffic.cars.push(car)

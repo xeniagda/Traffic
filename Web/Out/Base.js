@@ -10846,13 +10846,11 @@ var _loovjo$traffic$Main$view = function (model) {
 									{
 										ctor: '::',
 										_0: _elm_lang$svg$Svg_Attributes$x(
-											_elm_lang$core$Basics$toString(
-												_elm_lang$core$Basics$floor((model.scroll.x + (car.pos.x * model.renderScale)) - ((_loovjo$traffic$Main$carWidth / 2) * model.renderScale)))),
+											_elm_lang$core$Basics$toString((model.scroll.x + (car.pos.x * model.renderScale)) - ((_loovjo$traffic$Main$carWidth / 2) * model.renderScale))),
 										_1: {
 											ctor: '::',
 											_0: _elm_lang$svg$Svg_Attributes$y(
-												_elm_lang$core$Basics$toString(
-													_elm_lang$core$Basics$floor((model.scroll.y + (car.pos.y * model.renderScale)) - ((_loovjo$traffic$Main$carHeight / 2) * model.renderScale)))),
+												_elm_lang$core$Basics$toString((model.scroll.y + (car.pos.y * model.renderScale)) - ((_loovjo$traffic$Main$carHeight / 2) * model.renderScale))),
 											_1: {
 												ctor: '::',
 												_0: _elm_lang$svg$Svg_Attributes$width(
@@ -10913,23 +10911,19 @@ var _loovjo$traffic$Main$view = function (model) {
 									{
 										ctor: '::',
 										_0: _elm_lang$svg$Svg_Attributes$x1(
-											_elm_lang$core$Basics$toString(
-												_elm_lang$core$Basics$floor((road.start.x * model.renderScale) + model.scroll.x))),
+											_elm_lang$core$Basics$toString((road.start.x * model.renderScale) + model.scroll.x)),
 										_1: {
 											ctor: '::',
 											_0: _elm_lang$svg$Svg_Attributes$y1(
-												_elm_lang$core$Basics$toString(
-													_elm_lang$core$Basics$floor((road.start.y * model.renderScale) + model.scroll.y))),
+												_elm_lang$core$Basics$toString((road.start.y * model.renderScale) + model.scroll.y)),
 											_1: {
 												ctor: '::',
 												_0: _elm_lang$svg$Svg_Attributes$x2(
-													_elm_lang$core$Basics$toString(
-														_elm_lang$core$Basics$floor((road.end.x * model.renderScale) + model.scroll.x))),
+													_elm_lang$core$Basics$toString((road.end.x * model.renderScale) + model.scroll.x)),
 												_1: {
 													ctor: '::',
 													_0: _elm_lang$svg$Svg_Attributes$y2(
-														_elm_lang$core$Basics$toString(
-															_elm_lang$core$Basics$floor((road.end.y * model.renderScale) + model.scroll.y))),
+														_elm_lang$core$Basics$toString((road.end.y * model.renderScale) + model.scroll.y)),
 													_1: {
 														ctor: '::',
 														_0: _elm_lang$svg$Svg_Attributes$strokeWidth(
@@ -11072,23 +11066,19 @@ var _loovjo$traffic$Main$view = function (model) {
 									{
 										ctor: '::',
 										_0: _elm_lang$svg$Svg_Attributes$x1(
-											_elm_lang$core$Basics$toString(
-												_elm_lang$core$Basics$floor((road.start.x * model.renderScale) + model.scroll.x))),
+											_elm_lang$core$Basics$toString((road.start.x * model.renderScale) + model.scroll.x)),
 										_1: {
 											ctor: '::',
 											_0: _elm_lang$svg$Svg_Attributes$y1(
-												_elm_lang$core$Basics$toString(
-													_elm_lang$core$Basics$floor((road.start.y * model.renderScale) + model.scroll.y))),
+												_elm_lang$core$Basics$toString((road.start.y * model.renderScale) + model.scroll.y)),
 											_1: {
 												ctor: '::',
 												_0: _elm_lang$svg$Svg_Attributes$x2(
-													_elm_lang$core$Basics$toString(
-														_elm_lang$core$Basics$floor((road.end.x * model.renderScale) + model.scroll.x))),
+													_elm_lang$core$Basics$toString((road.end.x * model.renderScale) + model.scroll.x)),
 												_1: {
 													ctor: '::',
 													_0: _elm_lang$svg$Svg_Attributes$y2(
-														_elm_lang$core$Basics$toString(
-															_elm_lang$core$Basics$floor((road.end.y * model.renderScale) + model.scroll.y))),
+														_elm_lang$core$Basics$toString((road.end.y * model.renderScale) + model.scroll.y)),
 													_1: {
 														ctor: '::',
 														_0: _elm_lang$svg$Svg_Attributes$strokeWidth(
@@ -11121,12 +11111,11 @@ var _loovjo$traffic$Main$view = function (model) {
 													ctor: '::',
 													_0: _elm_lang$svg$Svg_Attributes$x1(
 														_elm_lang$core$Basics$toString(
-															_elm_lang$core$Basics$floor(
-																(model.renderScale * _elm_lang$core$Basics$toFloat(x)) + _elm_lang$core$Basics$toFloat(
-																	A2(
-																		_elm_lang$core$Basics_ops['%'],
-																		_elm_lang$core$Basics$round(model.scroll.x),
-																		_elm_lang$core$Basics$round(model.renderScale)))))),
+															(model.renderScale * _elm_lang$core$Basics$toFloat(x)) + _elm_lang$core$Basics$toFloat(
+																A2(
+																	_elm_lang$core$Basics_ops['%'],
+																	_elm_lang$core$Basics$round(model.scroll.x),
+																	_elm_lang$core$Basics$round(model.renderScale))))),
 													_1: {
 														ctor: '::',
 														_0: _elm_lang$svg$Svg_Attributes$y1('0'),
@@ -11134,12 +11123,11 @@ var _loovjo$traffic$Main$view = function (model) {
 															ctor: '::',
 															_0: _elm_lang$svg$Svg_Attributes$x2(
 																_elm_lang$core$Basics$toString(
-																	_elm_lang$core$Basics$floor(
-																		(model.renderScale * _elm_lang$core$Basics$toFloat(x)) + _elm_lang$core$Basics$toFloat(
-																			A2(
-																				_elm_lang$core$Basics_ops['%'],
-																				_elm_lang$core$Basics$round(model.scroll.x),
-																				_elm_lang$core$Basics$round(model.renderScale)))))),
+																	(model.renderScale * _elm_lang$core$Basics$toFloat(x)) + _elm_lang$core$Basics$toFloat(
+																		A2(
+																			_elm_lang$core$Basics_ops['%'],
+																			_elm_lang$core$Basics$round(model.scroll.x),
+																			_elm_lang$core$Basics$round(model.renderScale))))),
 															_1: {
 																ctor: '::',
 																_0: _elm_lang$svg$Svg_Attributes$y2(
@@ -11175,12 +11163,11 @@ var _loovjo$traffic$Main$view = function (model) {
 														ctor: '::',
 														_0: _elm_lang$svg$Svg_Attributes$y1(
 															_elm_lang$core$Basics$toString(
-																_elm_lang$core$Basics$floor(
-																	(model.renderScale * _elm_lang$core$Basics$toFloat(y)) + _elm_lang$core$Basics$toFloat(
-																		A2(
-																			_elm_lang$core$Basics_ops['%'],
-																			_elm_lang$core$Basics$round(model.scroll.y),
-																			_elm_lang$core$Basics$round(model.renderScale)))))),
+																(model.renderScale * _elm_lang$core$Basics$toFloat(y)) + _elm_lang$core$Basics$toFloat(
+																	A2(
+																		_elm_lang$core$Basics_ops['%'],
+																		_elm_lang$core$Basics$round(model.scroll.y),
+																		_elm_lang$core$Basics$round(model.renderScale))))),
 														_1: {
 															ctor: '::',
 															_0: _elm_lang$svg$Svg_Attributes$x2(
@@ -11189,12 +11176,11 @@ var _loovjo$traffic$Main$view = function (model) {
 																ctor: '::',
 																_0: _elm_lang$svg$Svg_Attributes$y2(
 																	_elm_lang$core$Basics$toString(
-																		_elm_lang$core$Basics$floor(
-																			(model.renderScale * _elm_lang$core$Basics$toFloat(y)) + _elm_lang$core$Basics$toFloat(
-																				A2(
-																					_elm_lang$core$Basics_ops['%'],
-																					_elm_lang$core$Basics$round(model.scroll.y),
-																					_elm_lang$core$Basics$round(model.renderScale)))))),
+																		(model.renderScale * _elm_lang$core$Basics$toFloat(y)) + _elm_lang$core$Basics$toFloat(
+																			A2(
+																				_elm_lang$core$Basics_ops['%'],
+																				_elm_lang$core$Basics$round(model.scroll.y),
+																				_elm_lang$core$Basics$round(model.renderScale))))),
 																_1: {
 																	ctor: '::',
 																	_0: _elm_lang$svg$Svg_Attributes$stroke('black'),
@@ -11411,17 +11397,27 @@ var _loovjo$traffic$Main$pAdd = F2(
 	function (p1, p2) {
 		return {x: p1.x + p2.x, y: p1.y + p2.y};
 	});
-var _loovjo$traffic$Main$switchCarFree = 27;
-var _loovjo$traffic$Main$switchCarDown = 37;
-var _loovjo$traffic$Main$switchCarUp = 39;
-var _loovjo$traffic$Main$controlBack = 88;
-var _loovjo$traffic$Main$controlBreak = 83;
-var _loovjo$traffic$Main$controlRight = 68;
-var _loovjo$traffic$Main$controlLeft = 65;
-var _loovjo$traffic$Main$controlUp = 87;
 var _loovjo$traffic$Main$zoomFactor = 1.2;
-var _loovjo$traffic$Main$Flags = function (a) {
-	return {webSocketUrl: a};
+var _loovjo$traffic$Main$Controls = function (a) {
+	return function (b) {
+		return function (c) {
+			return function (d) {
+				return function (e) {
+					return function (f) {
+						return function (g) {
+							return function (h) {
+								return function (i) {
+									return function (j) {
+										return {up: a, left: b, right: c, $break: d, back: e, carUp: f, carDown: g, carFree: h, zoomIn: i, zoomOut: j};
+									};
+								};
+							};
+						};
+					};
+				};
+			};
+		};
+	};
 };
 var _loovjo$traffic$Main$Position = F2(
 	function (a, b) {
@@ -11575,7 +11571,11 @@ var _loovjo$traffic$Main$Model = function (a) {
 												return function (m) {
 													return function (n) {
 														return function (o) {
-															return {cars: a, roads: b, err: c, size: d, lasttime: e, scroll: f, lastMouse: g, renderScale: h, webSocketUrl: i, msg: j, ip: k, accel_rate: l, steer_rate: m, lastClickTime: n, trackingCar: o};
+															return function (p) {
+																return function (q) {
+																	return {cars: a, roads: b, err: c, size: d, lasttime: e, scroll: f, lastMouse: g, renderScale: h, webSocketUrl: i, msg: j, ip: k, accelRate: l, steerRate: m, lastClickTime: n, trackingCar: o, controls: p, isPolis: q};
+																};
+															};
 														};
 													};
 												};
@@ -11591,6 +11591,10 @@ var _loovjo$traffic$Main$Model = function (a) {
 		};
 	};
 };
+var _loovjo$traffic$Main$Flags = F3(
+	function (a, b, c) {
+		return {webSocketUrl: a, controls: b, isRubs: c};
+	});
 var _loovjo$traffic$Main$SendWebSocketMsg = {ctor: 'SendWebSocketMsg'};
 var _loovjo$traffic$Main$SetMsg = function (a) {
 	return {ctor: 'SetMsg', _0: a};
@@ -11622,7 +11626,8 @@ var _loovjo$traffic$Main$init = function (flags) {
 			{ctor: '[]'})(
 			{ctor: '[]'})(_elm_lang$core$Maybe$Nothing)(_elm_lang$core$Maybe$Nothing)(_elm_lang$core$Maybe$Nothing)(
 			{x: 0, y: 0})(_elm_lang$core$Maybe$Nothing)(40)(
-			A2(_elm_lang$core$Debug$log, 'Websocket url: ', flags.webSocketUrl))('')(_elm_lang$core$Maybe$Nothing)(3)(200)(_elm_lang$core$Maybe$Nothing)(_elm_lang$core$Maybe$Nothing),
+			A2(_elm_lang$core$Debug$log, 'Websocket url: ', flags.webSocketUrl))('')(_elm_lang$core$Maybe$Nothing)(3)(200)(_elm_lang$core$Maybe$Nothing)(_elm_lang$core$Maybe$Nothing)(flags.controls)(
+			A2(_elm_lang$core$Debug$log, 'is rubs', flags.isRubs)),
 		_1: A2(
 			_elm_lang$core$Task$perform,
 			_elm_lang$core$Basics$identity,
@@ -11825,7 +11830,10 @@ var _loovjo$traffic$Main$update = F2(
 											A2(
 												_elm_lang$core$Basics_ops['++'],
 												'/',
-												_elm_lang$core$Basics$toString(y)))))
+												A2(
+													_elm_lang$core$Basics_ops['++'],
+													_elm_lang$core$Basics$toString(y),
+													model.isPolis ? '/polis' : '')))))
 							};
 						}
 					} else {
@@ -11909,7 +11917,7 @@ var _loovjo$traffic$Main$update = F2(
 				var _p31 = model.ip;
 				if (_p31.ctor === 'Just') {
 					var _p49 = _p31._0;
-					return _elm_lang$core$Native_Utils.eq(_p50, 187) ? {
+					return _elm_lang$core$Native_Utils.eq(_p50, model.controls.zoomIn) ? {
 						ctor: '_Tuple2',
 						_0: _elm_lang$core$Native_Utils.update(
 							model,
@@ -11926,7 +11934,7 @@ var _loovjo$traffic$Main$update = F2(
 								}()
 							}),
 						_1: _elm_lang$core$Platform_Cmd$none
-					} : (_elm_lang$core$Native_Utils.eq(_p50, 189) ? {
+					} : (_elm_lang$core$Native_Utils.eq(_p50, model.controls.zoomOut) ? {
 						ctor: '_Tuple2',
 						_0: _elm_lang$core$Native_Utils.update(
 							model,
@@ -11943,7 +11951,7 @@ var _loovjo$traffic$Main$update = F2(
 								}()
 							}),
 						_1: _elm_lang$core$Platform_Cmd$none
-					} : (_elm_lang$core$Native_Utils.eq(_p50, _loovjo$traffic$Main$controlBreak) ? {
+					} : (_elm_lang$core$Native_Utils.eq(_p50, model.controls.$break) ? {
 						ctor: '_Tuple2',
 						_0: _elm_lang$core$Native_Utils.update(
 							model,
@@ -11963,7 +11971,7 @@ var _loovjo$traffic$Main$update = F2(
 									model.cars)
 							}),
 						_1: A2(_elm_lang$websocket$WebSocket$send, model.webSocketUrl, 'breaks')
-					} : (_elm_lang$core$Native_Utils.eq(_p50, _loovjo$traffic$Main$controlUp) ? {
+					} : (_elm_lang$core$Native_Utils.eq(_p50, model.controls.up) ? {
 						ctor: '_Tuple2',
 						_0: _elm_lang$core$Native_Utils.update(
 							model,
@@ -11975,7 +11983,7 @@ var _loovjo$traffic$Main$update = F2(
 										if (_p37.ctor === 'Just') {
 											return (!_elm_lang$core$Native_Utils.eq(_p37._0, _p49)) ? car : _elm_lang$core$Native_Utils.update(
 												car,
-												{handBreaks: false, accel: model.accel_rate});
+												{handBreaks: false, accel: model.accelRate});
 										} else {
 											return car;
 										}
@@ -11988,8 +11996,8 @@ var _loovjo$traffic$Main$update = F2(
 							A2(
 								_elm_lang$core$Basics_ops['++'],
 								'accel/',
-								_elm_lang$core$Basics$toString(model.accel_rate)))
-					} : (_elm_lang$core$Native_Utils.eq(_p50, _loovjo$traffic$Main$controlBack) ? {
+								_elm_lang$core$Basics$toString(model.accelRate)))
+					} : (_elm_lang$core$Native_Utils.eq(_p50, model.controls.back) ? {
 						ctor: '_Tuple2',
 						_0: _elm_lang$core$Native_Utils.update(
 							model,
@@ -12003,7 +12011,7 @@ var _loovjo$traffic$Main$update = F2(
 												car,
 												{
 													handBreaks: false,
-													accel: _elm_lang$core$Basics$negate(model.accel_rate)
+													accel: _elm_lang$core$Basics$negate(model.accelRate)
 												});
 										} else {
 											return car;
@@ -12018,8 +12026,8 @@ var _loovjo$traffic$Main$update = F2(
 								_elm_lang$core$Basics_ops['++'],
 								'accel/',
 								_elm_lang$core$Basics$toString(
-									_elm_lang$core$Basics$negate(model.accel_rate))))
-					} : (_elm_lang$core$Native_Utils.eq(_p50, _loovjo$traffic$Main$controlLeft) ? {
+									_elm_lang$core$Basics$negate(model.accelRate))))
+					} : (_elm_lang$core$Native_Utils.eq(_p50, model.controls.left) ? {
 						ctor: '_Tuple2',
 						_0: _elm_lang$core$Native_Utils.update(
 							model,
@@ -12032,7 +12040,7 @@ var _loovjo$traffic$Main$update = F2(
 											return (!_elm_lang$core$Native_Utils.eq(_p39._0, _p49)) ? car : _elm_lang$core$Native_Utils.update(
 												car,
 												{
-													steering: _elm_lang$core$Basics$negate(model.steer_rate)
+													steering: _elm_lang$core$Basics$negate(model.steerRate)
 												});
 										} else {
 											return car;
@@ -12047,8 +12055,8 @@ var _loovjo$traffic$Main$update = F2(
 								_elm_lang$core$Basics_ops['++'],
 								'steer/',
 								_elm_lang$core$Basics$toString(
-									_elm_lang$core$Basics$negate(model.steer_rate))))
-					} : (_elm_lang$core$Native_Utils.eq(_p50, _loovjo$traffic$Main$controlRight) ? {
+									_elm_lang$core$Basics$negate(model.steerRate))))
+					} : (_elm_lang$core$Native_Utils.eq(_p50, model.controls.right) ? {
 						ctor: '_Tuple2',
 						_0: _elm_lang$core$Native_Utils.update(
 							model,
@@ -12060,7 +12068,7 @@ var _loovjo$traffic$Main$update = F2(
 										if (_p40.ctor === 'Just') {
 											return (!_elm_lang$core$Native_Utils.eq(_p40._0, _p49)) ? car : _elm_lang$core$Native_Utils.update(
 												car,
-												{steering: model.steer_rate});
+												{steering: model.steerRate});
 										} else {
 											return car;
 										}
@@ -12073,14 +12081,14 @@ var _loovjo$traffic$Main$update = F2(
 							A2(
 								_elm_lang$core$Basics_ops['++'],
 								'steer/',
-								_elm_lang$core$Basics$toString(model.steer_rate)))
-					} : (_elm_lang$core$Native_Utils.eq(_p50, _loovjo$traffic$Main$switchCarFree) ? {
+								_elm_lang$core$Basics$toString(model.steerRate)))
+					} : (_elm_lang$core$Native_Utils.eq(_p50, model.controls.carFree) ? {
 						ctor: '_Tuple2',
 						_0: _elm_lang$core$Native_Utils.update(
 							model,
 							{trackingCar: _elm_lang$core$Maybe$Nothing}),
 						_1: _elm_lang$core$Platform_Cmd$none
-					} : ((_elm_lang$core$Native_Utils.eq(_p50, _loovjo$traffic$Main$switchCarUp) || _elm_lang$core$Native_Utils.eq(_p50, _loovjo$traffic$Main$switchCarDown)) ? {
+					} : ((_elm_lang$core$Native_Utils.eq(_p50, model.controls.carUp) || _elm_lang$core$Native_Utils.eq(_p50, model.controls.carDown)) ? {
 						ctor: '_Tuple2',
 						_0: _elm_lang$core$Native_Utils.update(
 							model,
@@ -12136,7 +12144,7 @@ var _loovjo$traffic$Main$update = F2(
 										var _p46 = track;
 										if (_p46.ctor === 'Just') {
 											var _p48 = _p46._0._0;
-											var res = _elm_lang$core$Native_Utils.eq(_p50, _loovjo$traffic$Main$switchCarUp) ? A2(
+											var res = _elm_lang$core$Native_Utils.eq(_p50, model.controls.carUp) ? A2(
 												_elm_lang$core$Maybe$map,
 												function (_) {
 													return _.name;
@@ -12159,7 +12167,7 @@ var _loovjo$traffic$Main$update = F2(
 											if (_p47.ctor === 'Just') {
 												return _elm_lang$core$Maybe$Just(_p47._0);
 											} else {
-												return _elm_lang$core$Native_Utils.eq(_p50, _loovjo$traffic$Main$switchCarUp) ? A2(
+												return _elm_lang$core$Native_Utils.eq(_p50, model.controls.carUp) ? A2(
 													_elm_lang$core$Maybe$map,
 													function (_) {
 														return _.name;
@@ -12196,7 +12204,7 @@ var _loovjo$traffic$Main$update = F2(
 				var _p51 = model.ip;
 				if (_p51.ctor === 'Just') {
 					var _p55 = _p51._0;
-					return _elm_lang$core$Native_Utils.eq(_p56, _loovjo$traffic$Main$controlBreak) ? {
+					return _elm_lang$core$Native_Utils.eq(_p56, model.controls.$break) ? {
 						ctor: '_Tuple2',
 						_0: _elm_lang$core$Native_Utils.update(
 							model,
@@ -12216,7 +12224,7 @@ var _loovjo$traffic$Main$update = F2(
 									model.cars)
 							}),
 						_1: A2(_elm_lang$websocket$WebSocket$send, model.webSocketUrl, 'no_breaks')
-					} : ((_elm_lang$core$Native_Utils.eq(_p56, _loovjo$traffic$Main$controlUp) || _elm_lang$core$Native_Utils.eq(_p56, _loovjo$traffic$Main$controlBack)) ? {
+					} : ((_elm_lang$core$Native_Utils.eq(_p56, model.controls.up) || _elm_lang$core$Native_Utils.eq(_p56, model.controls.back)) ? {
 						ctor: '_Tuple2',
 						_0: _elm_lang$core$Native_Utils.update(
 							model,
@@ -12236,7 +12244,7 @@ var _loovjo$traffic$Main$update = F2(
 									model.cars)
 							}),
 						_1: A2(_elm_lang$websocket$WebSocket$send, model.webSocketUrl, 'accel/0')
-					} : ((_elm_lang$core$Native_Utils.eq(_p56, _loovjo$traffic$Main$controlLeft) || _elm_lang$core$Native_Utils.eq(_p56, _loovjo$traffic$Main$controlRight)) ? {
+					} : ((_elm_lang$core$Native_Utils.eq(_p56, model.controls.left) || _elm_lang$core$Native_Utils.eq(_p56, model.controls.right)) ? {
 						ctor: '_Tuple2',
 						_0: _elm_lang$core$Native_Utils.update(
 							model,
@@ -12322,11 +12330,75 @@ var _loovjo$traffic$Main$main = _elm_lang$html$Html$programWithFlags(
 	{init: _loovjo$traffic$Main$init, view: _loovjo$traffic$Main$view, update: _loovjo$traffic$Main$update, subscriptions: _loovjo$traffic$Main$subscriptions})(
 	A2(
 		_elm_lang$core$Json_Decode$andThen,
-		function (webSocketUrl) {
-			return _elm_lang$core$Json_Decode$succeed(
-				{webSocketUrl: webSocketUrl});
+		function (controls) {
+			return A2(
+				_elm_lang$core$Json_Decode$andThen,
+				function (isRubs) {
+					return A2(
+						_elm_lang$core$Json_Decode$andThen,
+						function (webSocketUrl) {
+							return _elm_lang$core$Json_Decode$succeed(
+								{controls: controls, isRubs: isRubs, webSocketUrl: webSocketUrl});
+						},
+						A2(_elm_lang$core$Json_Decode$field, 'webSocketUrl', _elm_lang$core$Json_Decode$string));
+				},
+				A2(_elm_lang$core$Json_Decode$field, 'isRubs', _elm_lang$core$Json_Decode$bool));
 		},
-		A2(_elm_lang$core$Json_Decode$field, 'webSocketUrl', _elm_lang$core$Json_Decode$string)));
+		A2(
+			_elm_lang$core$Json_Decode$field,
+			'controls',
+			A2(
+				_elm_lang$core$Json_Decode$andThen,
+				function (back) {
+					return A2(
+						_elm_lang$core$Json_Decode$andThen,
+						function ($break) {
+							return A2(
+								_elm_lang$core$Json_Decode$andThen,
+								function (carDown) {
+									return A2(
+										_elm_lang$core$Json_Decode$andThen,
+										function (carFree) {
+											return A2(
+												_elm_lang$core$Json_Decode$andThen,
+												function (carUp) {
+													return A2(
+														_elm_lang$core$Json_Decode$andThen,
+														function (left) {
+															return A2(
+																_elm_lang$core$Json_Decode$andThen,
+																function (right) {
+																	return A2(
+																		_elm_lang$core$Json_Decode$andThen,
+																		function (up) {
+																			return A2(
+																				_elm_lang$core$Json_Decode$andThen,
+																				function (zoomIn) {
+																					return A2(
+																						_elm_lang$core$Json_Decode$andThen,
+																						function (zoomOut) {
+																							return _elm_lang$core$Json_Decode$succeed(
+																								{back: back, $break: $break, carDown: carDown, carFree: carFree, carUp: carUp, left: left, right: right, up: up, zoomIn: zoomIn, zoomOut: zoomOut});
+																						},
+																						A2(_elm_lang$core$Json_Decode$field, 'zoomOut', _elm_lang$core$Json_Decode$int));
+																				},
+																				A2(_elm_lang$core$Json_Decode$field, 'zoomIn', _elm_lang$core$Json_Decode$int));
+																		},
+																		A2(_elm_lang$core$Json_Decode$field, 'up', _elm_lang$core$Json_Decode$int));
+																},
+																A2(_elm_lang$core$Json_Decode$field, 'right', _elm_lang$core$Json_Decode$int));
+														},
+														A2(_elm_lang$core$Json_Decode$field, 'left', _elm_lang$core$Json_Decode$int));
+												},
+												A2(_elm_lang$core$Json_Decode$field, 'carUp', _elm_lang$core$Json_Decode$int));
+										},
+										A2(_elm_lang$core$Json_Decode$field, 'carFree', _elm_lang$core$Json_Decode$int));
+								},
+								A2(_elm_lang$core$Json_Decode$field, 'carDown', _elm_lang$core$Json_Decode$int));
+						},
+						A2(_elm_lang$core$Json_Decode$field, 'break', _elm_lang$core$Json_Decode$int));
+				},
+				A2(_elm_lang$core$Json_Decode$field, 'back', _elm_lang$core$Json_Decode$int)))));
 
 var Elm = {};
 Elm['Main'] = Elm['Main'] || {};

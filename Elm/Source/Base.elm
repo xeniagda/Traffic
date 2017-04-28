@@ -18,14 +18,20 @@ import WebSocket
 import Debug
 
 zoomFactor = 1.2
-controlUp = 87      -- W
-controlLeft = 65    -- A
-controlRight = 68   -- D
-controlBreak = 83   -- S
-controlBack = 88    -- X
-switchCarUp = 39    -- Right
-switchCarDown = 37  -- Left
-switchCarFree = 27  -- Escape
+
+type alias Controls = 
+    { up      : Int
+    , left    : Int
+    , right   : Int
+    , break   : Int
+    , back    : Int
+    , carUp    : Int
+    , carDown  : Int
+    , carFree  : Int
+    , zoomIn  : Int
+    , zoomOut : Int
+    }
+
 
 pAdd : Position -> Position -> Position
 pAdd p1 p2 =
@@ -36,13 +42,6 @@ pAdd p1 p2 =
     List.head <| List.drop n lst
 
 infixr 0 !!
-
-type alias Flags =
-    { webSocketUrl : String
-    }
-
-main =
-    Html.programWithFlags { init = init, view = view, update = update, subscriptions = subscriptions }
 
 
 type alias Position =
@@ -169,16 +168,27 @@ type alias Model =
     , webSocketUrl : String
     , msg : String -- Remove!
     , ip : Maybe String
-    , accel_rate : Float
-    , steer_rate : Float
+    , accelRate : Float
+    , steerRate : Float
     , lastClickTime : Maybe Float
     , trackingCar : Maybe String
+    , controls : Controls
+    , isPolis : Bool
     }
 
 
+type alias Flags =
+    { webSocketUrl : String
+    , controls : Controls
+    , isRubs : Bool
+    }
+
+main =
+    Html.programWithFlags { init = init, view = view, update = update, subscriptions = subscriptions }
+
 init : Flags -> ( Model, Cmd Msg )
 init flags =
-    ( Model [] [] Nothing Nothing Nothing {x=0, y=0} Nothing 40 (Debug.log "Websocket url: " flags.webSocketUrl) "" Nothing 3 200 Nothing Nothing
+    ( Model [] [] Nothing Nothing Nothing {x=0, y=0} Nothing 40 (Debug.log "Websocket url: " flags.webSocketUrl) "" Nothing 3 200 Nothing Nothing flags.controls (Debug.log "is rubs" flags.isRubs)
     , Task.perform identity <| Task.succeed CheckSize
     )
 
@@ -269,7 +279,7 @@ update msg model =
                             else
                                 let x = (toFloat pos.x - model.scroll.x) / model.renderScale
                                     y = (toFloat pos.y - model.scroll.y) / model.renderScale
-                                in ( model, WebSocket.send model.webSocketUrl <| "create/" ++ toString x ++ "/" ++ toString y )
+                                in ( model, WebSocket.send model.webSocketUrl <| "create/" ++ toString x ++ "/" ++ toString y ++ (if model.isPolis then "/polis" else "") )
                         Nothing -> ( {model | lastMouse = Just {x = toFloat pos.x, y = toFloat pos.y}}, Cmd.none )
 
                 Nothing -> ( {model | lastMouse = Just {x = toFloat pos.x, y = toFloat pos.y}}, Cmd.none )
@@ -291,7 +301,7 @@ update msg model =
         KeyDown key ->
             case model.ip of
                 Just myIp ->
-                    if key == 187 then -- Plus key
+                    if key == model.controls.zoomIn then -- Plus key
                         ( {model 
                             | renderScale = model.renderScale * zoomFactor
                             , scroll = 
@@ -301,7 +311,7 @@ update msg model =
                                     Nothing ->
                                         model.scroll
                         }, Cmd.none )
-                    else if key == 189 then -- Minus key
+                    else if key == model.controls.zoomOut then -- Minus key
                         ( {model 
                             | renderScale = model.renderScale / zoomFactor
                             , scroll = 
@@ -311,7 +321,7 @@ update msg model =
                                     Nothing ->
                                         model.scroll
                         }, Cmd.none )
-                    else if key == controlBreak then -- k
+                    else if key == model.controls.break then -- k
                         ( { model | cars = List.map (\car ->
                                 case car.controlledBy of
                                     Just ip -> if ip /= myIp then car else
@@ -319,41 +329,41 @@ update msg model =
                                     Nothing -> car
                             ) model.cars},
                         WebSocket.send model.webSocketUrl "breaks" )
-                    else if key == controlUp then -- i
+                    else if key == model.controls.up then -- i
                         ( { model | cars = List.map (\car ->
                                 case car.controlledBy of
                                     Just ip -> if ip /= myIp then car else
-                                                  {car | handBreaks = False, accel = model.accel_rate}
+                                                  {car | handBreaks = False, accel = model.accelRate}
                                     Nothing -> car
                             ) model.cars},
-                            WebSocket.send model.webSocketUrl ( "accel/" ++ (toString model.accel_rate) ) )
-                    else if key == controlBack then -- m
+                            WebSocket.send model.webSocketUrl ( "accel/" ++ (toString model.accelRate) ) )
+                    else if key == model.controls.back then -- m
                         ( { model | cars = List.map (\car ->
                                 case car.controlledBy of
                                     Just ip -> if ip /= myIp then car else
-                                                  {car | handBreaks = False, accel = negate model.accel_rate}
+                                                  {car | handBreaks = False, accel = negate model.accelRate}
                                     Nothing -> car
                             ) model.cars},
-                            WebSocket.send model.webSocketUrl ( "accel/" ++ (toString <| negate model.accel_rate) ) )
-                    else if key == controlLeft then -- j
+                            WebSocket.send model.webSocketUrl ( "accel/" ++ (toString <| negate model.accelRate) ) )
+                    else if key == model.controls.left then -- j
                         ( { model | cars = List.map (\car ->
                                 case car.controlledBy of
                                     Just ip -> if ip /= myIp then car else
-                                                  {car | steering = negate model.steer_rate}
+                                                  {car | steering = negate model.steerRate}
                                     Nothing -> car
                             ) model.cars},
-                            WebSocket.send model.webSocketUrl ( "steer/" ++ (toString <| negate model.steer_rate)) )
-                    else if key == controlRight then -- l
+                            WebSocket.send model.webSocketUrl ( "steer/" ++ (toString <| negate model.steerRate)) )
+                    else if key == model.controls.right then -- l
                         ( { model | cars = List.map (\car ->
                                 case car.controlledBy of
                                     Just ip -> if ip /= myIp then car else
-                                                  {car | steering = model.steer_rate}
+                                                  {car | steering = model.steerRate}
                                     Nothing -> car
                             ) model.cars},
-                        WebSocket.send model.webSocketUrl ( "steer/" ++ (toString model.steer_rate)))
-                    else if key == switchCarFree then
+                        WebSocket.send model.webSocketUrl ( "steer/" ++ (toString model.steerRate)))
+                    else if key == model.controls.carFree then
                         ( {model | trackingCar = Nothing }, Cmd.none )
-                    else if key == switchCarUp || key == switchCarDown then
+                    else if key == model.controls.carUp || key == model.controls.carDown then
                         ( { model | 
                             trackingCar =
                                 let controlledByMe =
@@ -371,14 +381,14 @@ update msg model =
                                         in case track of
                                             Just (idx, car) -> 
                                                 let res = 
-                                                    if key == switchCarUp then 
+                                                    if key == model.controls.carUp then 
                                                         Maybe.map .name <| List.head <| List.drop (idx+1) <| Debug.log "controlled" controlledByMe
                                                     else
                                                         if idx == 0 then Nothing else Maybe.map .name <| List.head <| List.drop (idx-1) <| Debug.log "controlled" controlledByMe
                                                 in case res of
                                                     Just x -> Just x
                                                     Nothing -> 
-                                                        if key == switchCarUp then 
+                                                        if key == model.controls.carUp then 
                                                             Maybe.map .name <| List.head controlledByMe
                                                         else
                                                             Maybe.map .name <| List.head <| List.reverse controlledByMe
@@ -391,7 +401,7 @@ update msg model =
         KeyUp key ->
             case model.ip of
                 Just myIp ->
-                    if key == controlBreak then -- k
+                    if key == model.controls.break then -- k
                         ( { model | cars = List.map (\car ->
                                 case car.controlledBy of
                                     Just ip -> if ip /= myIp then car else
@@ -399,7 +409,7 @@ update msg model =
                                     Nothing -> car
                             ) model.cars},
                         WebSocket.send model.webSocketUrl "no_breaks" )
-                    else if key == controlUp || key == controlBack then
+                    else if key == model.controls.up || key == model.controls.back then
                         ( { model | cars = List.map (\car ->
                                 case car.controlledBy of
                                     Just ip -> if ip /= myIp then car else
@@ -407,7 +417,7 @@ update msg model =
                                     Nothing -> car
                             ) model.cars},
                         WebSocket.send model.webSocketUrl "accel/0" )
-                    else if key == controlLeft || key == controlRight then
+                    else if key == model.controls.left || key == model.controls.right then
                         ( { model | cars = List.map (\car ->
                                 case car.controlledBy of
                                     Just ip -> if ip /= myIp then car else
@@ -439,9 +449,9 @@ view model =
                         Just pos ->
                             (List.map (\x ->
                                     S.line
-                                        [ Sa.x1 <| toString <| floor <| model.renderScale * toFloat x + toFloat (round model.scroll.x % round model.renderScale)
+                                        [ Sa.x1 <| toString <| model.renderScale * toFloat x + toFloat (round model.scroll.x % round model.renderScale)
                                         , Sa.y1 "0"
-                                        , Sa.x2 <| toString <| floor <| model.renderScale * toFloat x + toFloat (round model.scroll.x % round model.renderScale)
+                                        , Sa.x2 <| toString <| model.renderScale * toFloat x + toFloat (round model.scroll.x % round model.renderScale)
                                         , Sa.y2 <| toString <| pos.y
                                         , Sa.stroke "black"
                                         , Sa.strokeWidth "0.2"
@@ -457,9 +467,9 @@ view model =
                                         (\y ->
                                             S.line
                                                 [ Sa.x1 "0"
-                                                , Sa.y1 <| toString <| floor <| model.renderScale * toFloat y + toFloat (round model.scroll.y % round model.renderScale)
+                                                , Sa.y1 <| toString <| model.renderScale * toFloat y + toFloat (round model.scroll.y % round model.renderScale)
                                                 , Sa.x2 <| toString <| pos.x
-                                                , Sa.y2 <| toString <| floor <| model.renderScale * toFloat y + toFloat (round model.scroll.y % round model.renderScale)
+                                                , Sa.y2 <| toString <| model.renderScale * toFloat y + toFloat (round model.scroll.y % round model.renderScale)
                                                 , Sa.stroke "black"
                                                 , Sa.strokeWidth "0.2"
                                                 ]
@@ -478,10 +488,10 @@ view model =
                 roads =
                     List.map (\road ->
                             S.line
-                                [ Sa.x1 <| toString <| floor <| (road.start.x * model.renderScale) + model.scroll.x
-                                , Sa.y1 <| toString <| floor <| (road.start.y * model.renderScale) + model.scroll.y
-                                , Sa.x2 <| toString <| floor <| (road.end.x * model.renderScale) + model.scroll.x
-                                , Sa.y2 <| toString <| floor <| (road.end.y * model.renderScale) + model.scroll.y
+                                [ Sa.x1 <| toString <| (road.start.x * model.renderScale) + model.scroll.x
+                                , Sa.y1 <| toString <| (road.start.y * model.renderScale) + model.scroll.y
+                                , Sa.x2 <| toString <| (road.end.x * model.renderScale) + model.scroll.x
+                                , Sa.y2 <| toString <| (road.end.y * model.renderScale) + model.scroll.y
                                 , Sa.strokeWidth <| toString <| model.renderScale * road.width + 2
                                 , Sa.stroke "gray"
                                 ] []
@@ -519,10 +529,10 @@ view model =
                 roadLines =
                     List.map (\road ->
                             S.line
-                                [ Sa.x1 <| toString <| floor <| road.start.x * model.renderScale + model.scroll.x
-                                , Sa.y1 <| toString <| floor <| road.start.y * model.renderScale + model.scroll.y
-                                , Sa.x2 <| toString <| floor <| road.end.x * model.renderScale + model.scroll.x
-                                , Sa.y2 <| toString <| floor <| road.end.y * model.renderScale + model.scroll.y
+                                [ Sa.x1 <| toString <| road.start.x * model.renderScale + model.scroll.x
+                                , Sa.y1 <| toString <| road.start.y * model.renderScale + model.scroll.y
+                                , Sa.x2 <| toString <| road.end.x * model.renderScale + model.scroll.x
+                                , Sa.y2 <| toString <| road.end.y * model.renderScale + model.scroll.y
                                 , Sa.strokeWidth <| toString <| model.renderScale / 6
                                 , Sa.stroke "yellow"
                                 , Sa.strokeDasharray <| (toString <| model.renderScale / 6) ++ ", " ++ (toString <| model.renderScale / 3)
@@ -532,8 +542,8 @@ view model =
                 cars =
                     List.map (\car ->
                             S.image
-                              [ Sa.x <| toString <| floor <| model.scroll.x + car.pos.x * model.renderScale - carWidth / 2 * model.renderScale
-                              , Sa.y <| toString <| floor <| model.scroll.y + car.pos.y * model.renderScale - carHeight / 2 * model.renderScale
+                              [ Sa.x <| toString <| model.scroll.x + car.pos.x * model.renderScale - carWidth / 2 * model.renderScale
+                              , Sa.y <| toString <| model.scroll.y + car.pos.y * model.renderScale - carHeight / 2 * model.renderScale
                               , Sa.width <| toString <| carWidth * model.renderScale
                               , Sa.height <| toString <| carHeight * model.renderScale
                               , Sa.xlinkHref <| "Textures/Cars/" ++ getImg car

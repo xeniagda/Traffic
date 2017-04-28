@@ -9,8 +9,36 @@
         <div id="main"></div>
         <script src="Out/Base.js"></script>
         <script>
-            var node = document.getElementById("main")
-            var app = Elm.Main.embed(node, {webSocketUrl: "ws://" + document.location.hostname + ":" + document.location.port});
+
+var node = document.getElementById("main")
+var defaultControls = { 
+    up: 87, // W
+    left: 65, // A
+    right: 68, // D
+    break: 83, // S
+    back: 88, // X
+    carUp: 39, // Right
+    carDown: 37, // Left
+    carFree: 27, // Escape
+    zoomIn: 187, // Plus
+    zoomOut: 189 // Minus
+}
+var query = location.search.substr(1)
+var result = {}
+query.split("&").forEach(function(part) {
+    var item = part.split("=");
+    result[item[0]] = decodeURIComponent(item[1])
+});
+Object.keys(defaultControls).forEach(control => {
+    if (result[control] !== undefined) {
+        defaultControls[control] = result[control] | 0
+    }
+})
+
+var app = Elm.Main.embed(node, {webSocketUrl: "ws://" + document.location.hostname + ":" + document.location.port, controls: defaultControls, isRubs: result["rub"] === "en"})
+
+
+
         </script>
     </body>
 </html>
