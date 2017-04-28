@@ -188,6 +188,7 @@ type Msg
     | Resize Window.Size
     | CheckSize
     | UpdateClient Time
+    | FixScroll
     | MousePress Mouse.Position
     | MouseRelease Mouse.Position
     | MouseMove Mouse.Position
@@ -204,7 +205,7 @@ update msg model =
             let result = decodeString decodeTraffic json
             in case result of
                 Ok traffic ->
-                    ( { model | cars = traffic.cars, roads = traffic.roads, ip = Just traffic.ip, err = Nothing }, Cmd.none )
+                    ( { model | cars = traffic.cars, roads = traffic.roads, ip = Just traffic.ip, err = Nothing }, Task.perform identity <| Task.succeed FixScroll )
                 Err error ->
                     ( { model | err = Just error }, Cmd.none )
 
@@ -226,14 +227,6 @@ update msg model =
                     in
                         ( { model
                             | lasttime = Just time
-                            , scroll =
-                                case (model.size, model.trackingCar) of
-                                    (Just size, Just carName) ->
-                                        let car_ = List.head <| List.filter (\car -> car.name == carName) model.cars
-                                        in case car_ of
-                                            Just car -> { x = -car.pos.x * model.renderScale + size.x / 2, y = -car.pos.y * model.renderScale + size.y / 2 }
-                                            Nothing -> model.scroll
-                                    _ -> model.scroll
                             , cars =
                                 List.map (\car ->
                                         { car
@@ -249,9 +242,20 @@ update msg model =
                                     )
                                     model.cars
                           }
-                        , Cmd.none
+                        , Task.perform identity <| Task.succeed FixScroll
                         )
 
+        FixScroll ->
+            ( {model | scroll =
+                case (model.size, model.trackingCar) of
+                    (Just size, Just carName) ->
+                        let car_ = List.head <| List.filter (\car -> car.name == carName) model.cars
+                        in case car_ of
+                            Just car -> { x = -car.pos.x * model.renderScale + size.x / 2, y = -car.pos.y * model.renderScale + size.y / 2 }
+                            Nothing -> model.scroll
+                    _ -> model.scroll
+                        
+              }, Cmd.none )
         MouseRelease _ ->
             ( {model | lastMouse = Nothing, lastClickTime = model.lasttime}, Cmd.none )
 
@@ -585,18 +589,18 @@ view model =
             [ pre [] [text "+ Zoom in"]
             , pre [] [text "- Zoom out"]
             , pre [] [text "Double-click to make a car"]
-            , pre [] [text "k Active breaks"]
-            , pre [] [text "j/l Steer left/right"]
-            , pre [] [text "i Accelerate"]
-            , pre [] [text "m Drive backwards"]
+            , pre [] [text "w Accelerate"]
+            , pre [] [text "s Active breaks"]
+            , pre [] [text "a/d Steer left/right"]
+            , pre [] [text "x Drive backwards"]
             ] ++ (
                 case model.ip of
-                    Just ip -> [p [] [text <| "IP: " ++ ip]]
+                    Just ip -> [p [] [text <| "Your IP: " ++ ip]]
                     Nothing -> [p [] [text "No IP assigned."]]
             ) ++ (
             case model.err of
                 Just err ->
-                    [ p [style [("color", "red")]] [text <| toString err]
+                    [ p [style [("color", "red")]] [text <| "An error occured. Error was: " ++ toString err]
                     ]
                 Nothing ->
                     []

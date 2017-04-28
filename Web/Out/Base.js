@@ -11297,7 +11297,7 @@ var _loovjo$traffic$Main$view = function (model) {
 												{ctor: '[]'},
 												{
 													ctor: '::',
-													_0: _elm_lang$html$Html$text('k Active breaks'),
+													_0: _elm_lang$html$Html$text('w Accelerate'),
 													_1: {ctor: '[]'}
 												}),
 											_1: {
@@ -11307,7 +11307,7 @@ var _loovjo$traffic$Main$view = function (model) {
 													{ctor: '[]'},
 													{
 														ctor: '::',
-														_0: _elm_lang$html$Html$text('j/l Steer left/right'),
+														_0: _elm_lang$html$Html$text('s Active breaks'),
 														_1: {ctor: '[]'}
 													}),
 												_1: {
@@ -11317,7 +11317,7 @@ var _loovjo$traffic$Main$view = function (model) {
 														{ctor: '[]'},
 														{
 															ctor: '::',
-															_0: _elm_lang$html$Html$text('i Accelerate'),
+															_0: _elm_lang$html$Html$text('a/d Steer left/right'),
 															_1: {ctor: '[]'}
 														}),
 													_1: {
@@ -11327,7 +11327,7 @@ var _loovjo$traffic$Main$view = function (model) {
 															{ctor: '[]'},
 															{
 																ctor: '::',
-																_0: _elm_lang$html$Html$text('m Drive backwards'),
+																_0: _elm_lang$html$Html$text('x Drive backwards'),
 																_1: {ctor: '[]'}
 															}),
 														_1: {ctor: '[]'}
@@ -11351,7 +11351,7 @@ var _loovjo$traffic$Main$view = function (model) {
 												{
 													ctor: '::',
 													_0: _elm_lang$html$Html$text(
-														A2(_elm_lang$core$Basics_ops['++'], 'IP: ', _p9._0)),
+														A2(_elm_lang$core$Basics_ops['++'], 'Your IP: ', _p9._0)),
 													_1: {ctor: '[]'}
 												}),
 											_1: {ctor: '[]'}
@@ -11391,7 +11391,10 @@ var _loovjo$traffic$Main$view = function (model) {
 												{
 													ctor: '::',
 													_0: _elm_lang$html$Html$text(
-														_elm_lang$core$Basics$toString(_p10._0)),
+														A2(
+															_elm_lang$core$Basics_ops['++'],
+															'An error occured. Error was: ',
+															_elm_lang$core$Basics$toString(_p10._0))),
 													_1: {ctor: '[]'}
 												}),
 											_1: {ctor: '[]'}
@@ -11607,6 +11610,7 @@ var _loovjo$traffic$Main$MouseRelease = function (a) {
 var _loovjo$traffic$Main$MousePress = function (a) {
 	return {ctor: 'MousePress', _0: a};
 };
+var _loovjo$traffic$Main$FixScroll = {ctor: 'FixScroll'};
 var _loovjo$traffic$Main$UpdateClient = function (a) {
 	return {ctor: 'UpdateClient', _0: a};
 };
@@ -11647,7 +11651,10 @@ var _loovjo$traffic$Main$update = F2(
 								ip: _elm_lang$core$Maybe$Just(_p13.ip),
 								err: _elm_lang$core$Maybe$Nothing
 							}),
-						_1: _elm_lang$core$Platform_Cmd$none
+						_1: A2(
+							_elm_lang$core$Task$perform,
+							_elm_lang$core$Basics$identity,
+							_elm_lang$core$Task$succeed(_loovjo$traffic$Main$FixScroll))
 					};
 				} else {
 					return {
@@ -11682,7 +11689,7 @@ var _loovjo$traffic$Main$update = F2(
 					_1: A2(_elm_lang$core$Task$perform, _loovjo$traffic$Main$Resize, _elm_lang$window$Window$size)
 				};
 			case 'UpdateClient':
-				var _p23 = _p11._0;
+				var _p19 = _p11._0;
 				var _p15 = model.lasttime;
 				if (_p15.ctor === 'Nothing') {
 					return {
@@ -11690,40 +11697,18 @@ var _loovjo$traffic$Main$update = F2(
 						_0: _elm_lang$core$Native_Utils.update(
 							model,
 							{
-								lasttime: _elm_lang$core$Maybe$Just(_p23)
+								lasttime: _elm_lang$core$Maybe$Just(_p19)
 							}),
 						_1: _elm_lang$core$Platform_Cmd$none
 					};
 				} else {
-					var delta = _elm_lang$core$Time$inSeconds(_p23 - _p15._0);
+					var delta = _elm_lang$core$Time$inSeconds(_p19 - _p15._0);
 					return {
 						ctor: '_Tuple2',
 						_0: _elm_lang$core$Native_Utils.update(
 							model,
 							{
-								lasttime: _elm_lang$core$Maybe$Just(_p23),
-								scroll: function () {
-									var _p16 = {ctor: '_Tuple2', _0: model.size, _1: model.trackingCar};
-									if (((_p16.ctor === '_Tuple2') && (_p16._0.ctor === 'Just')) && (_p16._1.ctor === 'Just')) {
-										var _p19 = _p16._0._0;
-										var car_ = _elm_lang$core$List$head(
-											A2(
-												_elm_lang$core$List$filter,
-												function (car) {
-													return _elm_lang$core$Native_Utils.eq(car.name, _p16._1._0);
-												},
-												model.cars));
-										var _p17 = car_;
-										if (_p17.ctor === 'Just') {
-											var _p18 = _p17._0;
-											return {x: ((0 - _p18.pos.x) * model.renderScale) + (_p19.x / 2), y: ((0 - _p18.pos.y) * model.renderScale) + (_p19.y / 2)};
-										} else {
-											return model.scroll;
-										}
-									} else {
-										return model.scroll;
-									}
-								}(),
+								lasttime: _elm_lang$core$Maybe$Just(_p19),
 								cars: A2(
 									_elm_lang$core$List$map,
 									function (car) {
@@ -11733,9 +11718,9 @@ var _loovjo$traffic$Main$update = F2(
 												pos: A2(
 													_loovjo$traffic$Main$pAdd,
 													car.pos,
-													function (_p20) {
-														var _p21 = _p20;
-														return {x: _p21._0, y: _p21._1};
+													function (_p16) {
+														var _p17 = _p16;
+														return {x: _p17._0, y: _p17._1};
 													}(
 														_elm_lang$core$Basics$fromPolar(
 															{
@@ -11746,8 +11731,8 @@ var _loovjo$traffic$Main$update = F2(
 												speed: (car.handBreaks ? (car.speed * Math.pow(car.breakStrength, delta)) : car.speed) + (car.accel * delta),
 												rot: car.rot + (car.steering * delta),
 												steering: function () {
-													var _p22 = model.err;
-													if (_p22.ctor === 'Just') {
+													var _p18 = model.err;
+													if (_p18.ctor === 'Just') {
 														return car.steering / Math.pow(2, delta);
 													} else {
 														return car.steering;
@@ -11757,9 +11742,43 @@ var _loovjo$traffic$Main$update = F2(
 									},
 									model.cars)
 							}),
-						_1: _elm_lang$core$Platform_Cmd$none
+						_1: A2(
+							_elm_lang$core$Task$perform,
+							_elm_lang$core$Basics$identity,
+							_elm_lang$core$Task$succeed(_loovjo$traffic$Main$FixScroll))
 					};
 				}
+			case 'FixScroll':
+				return {
+					ctor: '_Tuple2',
+					_0: _elm_lang$core$Native_Utils.update(
+						model,
+						{
+							scroll: function () {
+								var _p20 = {ctor: '_Tuple2', _0: model.size, _1: model.trackingCar};
+								if (((_p20.ctor === '_Tuple2') && (_p20._0.ctor === 'Just')) && (_p20._1.ctor === 'Just')) {
+									var _p23 = _p20._0._0;
+									var car_ = _elm_lang$core$List$head(
+										A2(
+											_elm_lang$core$List$filter,
+											function (car) {
+												return _elm_lang$core$Native_Utils.eq(car.name, _p20._1._0);
+											},
+											model.cars));
+									var _p21 = car_;
+									if (_p21.ctor === 'Just') {
+										var _p22 = _p21._0;
+										return {x: ((0 - _p22.pos.x) * model.renderScale) + (_p23.x / 2), y: ((0 - _p22.pos.y) * model.renderScale) + (_p23.y / 2)};
+									} else {
+										return model.scroll;
+									}
+								} else {
+									return model.scroll;
+								}
+							}()
+						}),
+					_1: _elm_lang$core$Platform_Cmd$none
+				};
 			case 'MouseRelease':
 				return {
 					ctor: '_Tuple2',
