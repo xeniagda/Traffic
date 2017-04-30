@@ -19,7 +19,7 @@ IP_CREATE_TABLE = {}
  *      name : String           The name of the car
  *      img : String            The image of the car. Implicit ".png" is added to the end
  *      pos : {                 The position of the car
- *          x : float, 
+ *          x : float,
  *          y : float
  *      }
  *      rot : float             The rotation of the car
@@ -65,7 +65,7 @@ function init() {
             {width: 1.5, start: {x: 0, y: 23}, end: {x: 1, y: 8}, connected_to: [1], speed_rec: 5},
             {width: 1.5, start: {x: 1, y: 8}, end: {x: 1, y: 1}, connected_to: [6, 7, 10], speed_rec: 5, traffic_light: {green_left: 0, last_green: 0, offset: {x: 1, y: 1}}},
             {width: 1.5, start: {x: -1, y: 1}, end: {x: -1, y: 8}, connected_to: [3], speed_rec: 5},
-            {width: 1.5, start: {x: -1, y: 8}, end: {x: -2, y: 23}, connected_to: [3], speed_rec: 5},
+            {width: 1.5, start: {x: -1, y: 8}, end: {x: -2, y: 23}, connected_to: [], speed_rec: 5},
             {width: 1.5, start: {x: -47, y: 1}, end: {x: -10, y: 1}, connected_to: [5], speed_rec: 5},
             {width: 1.5, start: {x: -10, y: 1}, end: {x: -1, y: 1}, connected_to: [2, 7, 10], speed_rec: 5, traffic_light: {green_left: 0, last_green: 0, offset: {x: -1, y: 1}}},
             {width: 1.5, start: {x: -1, y: -2}, end: {x: -47, y: -3}, connected_to: [], speed_rec: 5},
@@ -78,6 +78,7 @@ function init() {
             {width: 1.5, start: {x: -7, y: -23}, end: {x: -12, y: -25}, connected_to: [14], speed_rec: 5},
             {width: 1.5, start: {x: -12, y: -25}, end: {x: -16, y: -30}, connected_to: [15], speed_rec: 5},
             {width: 1.5, start: {x: -16, y: -30}, end: {x: -24, y: -42}, connected_to: [], speed_rec: 5},
+            // {width: 1.5, start: {x: -47, y: -3}, end: {x: -47, y: 1}, connected_to: [4], speed_rec: 5},
         ],
         intersections: [
             {roads: [1, 5, 9]}
@@ -104,6 +105,15 @@ function distance(a, b) {
     return Math.sqrt(dx * dx + dy * dy)
 }
 
+
+function add_car(car) {
+    if (traffic.cars.filter(check => check.name === car.name).length === 0) {
+        traffic.cars.push(car)
+        return true
+    }
+    return false
+}
+
 var physics = timers.setInterval(() => {
     delta = (Date.now() - lastTime) / 1000
     totalTime += delta
@@ -123,7 +133,12 @@ var physics = timers.setInterval(() => {
         }
     })
 
+    traffic.cars = traffic.cars.filter(car => traffic.cars.filter(check => car.name === check.name && car !== check).length === 0)
+
+
     traffic.cars = traffic.cars.map(car => {
+        car = JSON.parse(JSON.stringify(car))
+
         theta = toRadians(car.rot)
         rx = Math.cos(theta) * delta * car.speed
         ry = Math.sin(theta) * delta * car.speed
@@ -137,12 +152,25 @@ var physics = timers.setInterval(() => {
 
         car.rot += car.steering * delta
 
-        if (!car.crashed && traffic.cars.filter(car2 => car != car2 && distance(car.pos, car2.pos) < 0.8).length > 0 && !car.is_police) {
-            car.crashed = true
-            car.speed *= -1
-            delete car.ai
-            car.accel = 0
-            delete car.controlled_by
+        if (!car.crashed && !car.is_police) {
+            crashingCars = traffic.cars.filter(car2 => car.name !== car2.name && distance(car.pos, car2.pos) < 0.8)
+            if (crashingCars.length > 0) {
+                collision = crashingCars[0]
+                rotDiff = (car.rot - collision.rot + 180) % 360 - 180
+
+                car.steering = rotDiff
+
+                car.rot -= rotDiff
+
+                car.speed += collision.speed * Math.cos(toRadians(collision.rot - car.rot))
+
+
+                car.crashed = true
+                delete car.ai
+                car.accel = 0
+                delete car.controlled_by
+            }
+
         }
 
         // Calculate AI
@@ -167,6 +195,7 @@ var physics = timers.setInterval(() => {
                 cy = k * cx + m
             }
             closest = {x:cx, y:cy}
+
             if (distance(closest, road.start) + distance(closest, road.end) > distance(road.start, road.end) + 5) {
                 if (distance(closest, road.start) < distance(closest, road.end))
                     closest = road.start
@@ -180,8 +209,13 @@ var physics = timers.setInterval(() => {
             // Steer car towards closest point
             wanted_end_pos = current_path.direction == FORWARD ? road.end : road.start
 
-            wanted_rot = (toDegrees(Math.atan2(car.pos.y - (closest.y * dist_exag + wanted_end_pos.y) / (dist_exag + 1), car.pos.x - (closest.x * dist_exag + wanted_end_pos.x) / (dist_exag + 1)))) % 360 + 180
+            towards = {x: (closest.x * dist_exag + wanted_end_pos.x) / (dist_exag + 1),
+                       y: (closest.y * dist_exag + wanted_end_pos.y) / (dist_exag + 1)}
 
+
+            wanted_rot = (toDegrees(Math.atan2(car.pos.y - towards.y,
+                                               car.pos.x - towards.x
+                                    ))) % 360 + 180
 
             car.steering = (wanted_rot - car.rot)
 
@@ -196,7 +230,7 @@ var physics = timers.setInterval(() => {
 
             // What cars are in front?
             cars_in_front = traffic.cars.filter(check => {
-                if (check === car)
+                if (check.name === car.name)
                     return false
 
                 if (distance(car.pos, check.pos) > break_dist * 1.5)
@@ -270,7 +304,6 @@ var physics = timers.setInterval(() => {
         if (!car.ai && !car.controlled_by && !car.non_fade || car.crashed) {
             car.hand_breaks = true
             car.fade -= delta / 3
-            car.steering /= Math.pow(5, delta)
         }
 
         if (car.hand_breaks) {
@@ -288,7 +321,7 @@ var physics = timers.setInterval(() => {
         any_green = false
 
         max_score = 0
-        max_cars_idx = []
+        max_cars_idx = -1
         roads = intersection.roads
 
         for (i = 0; i < roads.length; i++) {
@@ -304,28 +337,28 @@ var physics = timers.setInterval(() => {
 
             if (road.traffic_light.green_left > 0) {
                 any_green = true
-                max_cars_idx = [r]
+                max_cars_idx = r
                 break
             }
 
-            if (score == max_score) {
-                max_cars_idx.push(r)
-            }
-
-            if (score > max_score) {
-                max_cars_idx = [r]
+            if (score > max_score || max_cars_idx == -1) {
+                max_cars_idx = r
                 max_score = score
             }
-        }
-        
-        if (!any_green && max_cars_idx.length > 0) {
-            selected_idx = max_cars_idx[Math.random() * max_cars_idx.length | 0]
+            else if (score == max_score) {
+                other_time = traffic.roads[max_cars_idx].traffic_light.last_green
+                if (road.traffic_light.last_green < other_time)
+                    max_cars_idx = r
+            }
 
-            light = traffic.roads[selected_idx].traffic_light
+        }
+
+        if (!any_green) {
+
+            light = traffic.roads[max_cars_idx].traffic_light
             light.green_left = light.waiting_cars.length + 2
             light.last_green = totalTime
         }
-        
 
     })
 
@@ -341,12 +374,12 @@ var physics = timers.setInterval(() => {
         do {
             road_idx = Math.random() * traffic.roads.length | 0
             attempt -= 1
-        } while (
-            attempt > 0 && (
+        } while ((
                 traffic.roads.map(road => road.connected_to.indexOf(road_idx) != -1).reduce((a, b) => a || b) ||
                 traffic.cars.length > 0 && !traffic.cars.map(car => distance(car.pos, traffic.roads[road_idx].start) > 2).reduce((a, b) => a && b)
-            )
+            ) && attempt > 0
         )
+
         if (attempt != 0) {
             road = traffic.roads[road_idx]
             road_rot = toDegrees(Math.atan2(road.end.y - road.start.y, road.end.x - road.start.x))
@@ -380,8 +413,8 @@ var physics = timers.setInterval(() => {
                     road_queue: path
                 },
             }
-            traffic.cars.push(car)
-            
+            add_car(car)
+
             carCount += 1
         }
     }
@@ -400,7 +433,7 @@ var server = http.createServer((req, res) => {
     if (method === "GET") {
         filePath = "Web" + url.pathname
         if (fs.existsSync(filePath)) {
-            console.log(method + " " + JSON.stringify(url))
+            console.log(method + " " + url.href)
             if (!fs.lstatSync(filePath).isFile()) {
                 filePath = "Web/traffic.html"
             }
@@ -427,7 +460,7 @@ var broadcast = timers.setInterval(() => {
             client.send(JSON.stringify(traffic))
         }
         delete traffic["ip"]
-    })   
+    })
 }, 100)
 
 wss.on('connection', (socket => {
@@ -455,39 +488,48 @@ wss.on('connection', (socket => {
                 if (parts.length > 2) {
                     isPolice = parts[3] === "polis"
                 }
-                console.log(isPolice)
+                if (traffic.cars.filter(car => distance(car.pos, {x:x, y:y}) < 1).length == 0) {
 
-                texture = CARS[Math.random() * CARS.length | 0]
+                    console.log(isPolice)
 
-                car = {
-                    name: "Car" + carCount++,
-                    img: isPolice ? "CarPolis" : texture,
-                    pos: {x: x, y: y},
-                    rot: 0,
-                    accel: 0,
-                    speed: 0,
-                    maxSpeed: isPolice ? 16 : 8,
-                    steering: 0,
-                    hand_breaks: false,
-                    break_strength: 0.2,
-                    fade: 1,
-                    non_fade: true,
-                    crashed: false,
-                    controlled_by: ip,
-                    is_police: isPolice
-                }
+                    texture = CARS[Math.random() * CARS.length | 0]
 
-                traffic.cars.push(car)
-
-                if (ip !== "::1") {
-                    if (IP_CREATE_TABLE[ip] > 0) {
-                        IP_CREATE_TABLE[ip] += 1
-                    }
-                    else {
-                        IP_CREATE_TABLE[ip] = 1
+                    car = {
+                        name: "Car" + carCount++,
+                        img: isPolice ? "CarPolis" : texture,
+                        pos: {x: x, y: y},
+                        rot: 0,
+                        accel: 0,
+                        speed: 0,
+                        maxSpeed: isPolice ? 16 : 8,
+                        steering: 0,
+                        hand_breaks: false,
+                        break_strength: 0.2,
+                        fade: 1,
+                        non_fade: true,
+                        crashed: false,
+                        controlled_by: ip,
+                        is_police: isPolice
                     }
 
+                    add_car(car)
+
+                    if (ip !== "::1") {
+                        if (IP_CREATE_TABLE[ip] > 0) {
+                            IP_CREATE_TABLE[ip] += 1
+                        }
+                        else {
+                            IP_CREATE_TABLE[ip] = 1
+                        }
+
+                    }
                 }
+            }
+            if (cmd === "remove" && parts.length > 1) {
+                carName = parts[1]
+                traffic.cars = traffic.cars.filter(car => {
+                    return !(car.controlled_by === ip && car.name == carName)
+                })
             }
             else {
                 cars = traffic.cars.filter(car => car.controlled_by === ip)
@@ -512,6 +554,6 @@ wss.on('connection', (socket => {
                 }
             }
         }
-        
+
     })
 }))

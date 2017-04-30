@@ -30,6 +30,7 @@ type alias Controls =
     , carFree  : Int
     , zoomIn  : Int
     , zoomOut : Int
+    , remove : Int
     }
 
 
@@ -321,6 +322,17 @@ update msg model =
                                     Nothing ->
                                         model.scroll
                         }, Cmd.none )
+                    else if key == model.controls.remove then
+                        ( model
+                        ,
+                            let distToScroll car = Tuple.first <| toPolar <| (car.pos.x - model.scroll.x, car.pos.y - model.scroll.y)
+                                closestCar = List.head <| Debug.log "cars" 
+                                    <| List.sortWith (\c1 c2 -> compare (distToScroll c2) (distToScroll c1) ) 
+                                    <| List.filter (\c -> c.controlledBy == model.ip) model.cars
+                            in case closestCar of
+                                Just {name} -> WebSocket.send model.webSocketUrl <| "remove/" ++ name
+                                Nothing -> Cmd.none
+                        )
                     else if key == model.controls.break then -- k
                         ( { model | cars = List.map (\car ->
                                 case car.controlledBy of
