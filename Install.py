@@ -1,5 +1,6 @@
 import subprocess
 import sys
+import os
 
 
 def command_exists(command):
@@ -35,3 +36,9 @@ if errorCode != 0:
         print("Cancelling installation")
         sys.exit(1)
     subprocess.run(["npm", "install", "ws"])
+
+if not os.path.isdir("uglfiy"):
+    res = input("Install uglifyjs? (Not requiered) [y/N] ").lower()
+    if res == "y":
+        os.system("git clone git://github.com/mishoo/UglifyJS.git")
+
