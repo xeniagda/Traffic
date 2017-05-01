@@ -4,7 +4,7 @@
     "repository": "https://github.com/loovjo/traffic.git",
     "license": "BSD3",
     "source-directories": [
-        "."
+        "Source"
     ],
     "exposed-modules": [],
     "dependencies": {

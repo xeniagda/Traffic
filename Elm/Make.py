@@ -10,18 +10,15 @@ if "-h" in sys.argv[1:] or "--help" in sys.argv[1:]:
         Usage: python3 %s [-a] [-h]
         
         %s is a program to compile this project. It compiles and minifies every file in the Source/ directory. 
-        One thing this program does to speed up the process is saving a sha256 hash of all the files that are 
-        compiled and compares the files to the hashes to only compile the files that have been modified the
-        next time the program is called. The hashes are stored in the .hashes file.
 
         Options:
-            -a      Ignores the hash, compiles everything anyway
+            -a      Only compiles modified files by checking the file hashes from the last compile
             -h      Show this help message
             -H      Set the file to read the hashes from. Default is .hashes
         """ % (__file__, __file__)))
     sys.exit()
 
-CHECK_HASH = not ("--all" in sys.argv[1:] or "-a" in sys.argv[1:])
+CHECK_HASH = "-a" in sys.argv[1:]
 HASH_PATH = ".hashes"
 
 if "-H" in sys.argv[1:] and sys.argv[-1] != "-H":
