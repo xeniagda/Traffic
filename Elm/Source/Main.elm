@@ -30,21 +30,6 @@ type alias Flags =
 main =
     Html.programWithFlags { init = init, view = view, update = update, subscriptions = subscriptions }
 
-firstCarGrab : Car
-firstCarGrab =
-    { name = "Petter"
-    , img = "Car1"
-    , pos = {x=0,y=0}
-    , rot = 0
-    , speed = 0
-    , accel = 0
-    , steering = 0
-    , handBreaks = False
-    , breakStrength = 0
-    , fade = 0.5
-    , controlledBy = Nothing
-    , crashed = False
-    }
 
 init : Flags -> ( Model, Cmd Msg )
 init flags =
@@ -123,7 +108,7 @@ update msg model =
                 | lastMouse = Just {x = toFloat pos.x, y = toFloat pos.y}
                 , currentDragCar = Nothing}
             , case model.currentDragCar of
-                Just car -> WebSocket.send model.webSocketUrl <| "create/" ++ (Http.encodeUri <| encode 0 <| encodeSimpleCar car)
+                Just car -> WebSocket.send model.webSocketUrl <| "create/" ++ (Http.encodeUri <| encode 0 <| encodeProtoCar car)
                 Nothing -> Cmd.none
             )
 
@@ -302,9 +287,10 @@ update msg model =
                                                 Out -> In
             }
             }, Cmd.none )
+
         AddCarClicked ->
             ( { model 
-            | currentDragCar = Just firstCarGrab
+            | currentDragCar = Just {pos = {x = 0, y = 0}, img = "Car1", isPolice = model.isPolice}
             , menu = let menu = model.menu
                      in { menu | state = In }
             }, Cmd.none )
@@ -328,7 +314,7 @@ view model =
                 lines ++ roads ++ cars ++ trafficLights ++ menu
             ++ (
                 case model.currentDragCar of
-                    Just car -> renderCars model [car]
+                    Just car -> renderCars model [toCar car]
                     Nothing -> []
             ))
         ] ++

@@ -51,8 +51,12 @@ baseMenu =
     , height = 55
     , rotation = 0
     , state = In
-    , buttons = [MenuButton "AddCar" AddCarClicked]
+    , buttons = 
+        [ MenuButton "AddCar" AddCarClicked
+        -- , MenuButton "Command" ExecuteCommand
+        ]
     }
+
 
 type alias Controls = 
     { up      : Int
@@ -71,6 +75,28 @@ type alias Controls =
 
 type alias Position =
     { x : Float, y : Float }
+
+type alias ProtoCar =
+    { pos : Position
+    , img : String
+    , isPolice : Bool
+    }
+
+toCar : ProtoCar -> Car
+toCar prot =
+    { name = "_"
+    , img = prot.img
+    , pos = prot.pos
+    , rot = 0
+    , speed = 0
+    , accel = 0
+    , steering = 0
+    , crashed = False
+    , handBreaks = False
+    , breakStrength = 0.2
+    , fade = 0.5
+    , controlledBy = Nothing
+    }
 
 type alias Car =
     { name : String
@@ -146,11 +172,12 @@ decodeCars =
             |> P.custom (Decode.maybe (Decode.field "controlled_by" Decode.string))
         )
 
-encodeSimpleCar : Car -> Enc.Value
-encodeSimpleCar car =
+encodeProtoCar : ProtoCar -> Enc.Value
+encodeProtoCar car =
     Enc.object
         [ ("img", Enc.string car.img)
         , ("pos", encodePos car.pos)
+        , ("is_police", Enc.bool car.isPolice)
         ]
 
 encodePos pos =
@@ -199,8 +226,8 @@ type alias Model =
     , lastClickTime : Maybe Float
     , trackingCar : Maybe String
     , controls : Controls
-    , isPolis : Bool
-    , currentDragCar : Maybe Car
+    , isPolice : Bool
+    , currentDragCar : Maybe ProtoCar
 
     , menu : Menu
     }

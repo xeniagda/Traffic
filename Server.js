@@ -4,6 +4,12 @@ let url = require("url")
 let timers = require("timers")
 let ws = require("ws")
 
+
+Array.prototype.contains = function(element){
+    return this.indexOf(element) > -1;
+}
+
+
 halfCarHeight = 50
 halfCarWidth = halfCarHeight / 2
 
@@ -13,7 +19,26 @@ BACKWARD = 1
 CARS = ["Car1", "Car2", "Car3", "Car4"]
 
 
-IP_CREATE_TABLE = {
+/*
+ * Permissions and stuff:
+ *  view - Be able to view the traffic simulator
+ *  place - Be able to place cars and interact
+ *  police - Be able to place police cars
+ *  command - Be able to run moderator commands
+ *
+ * Moderator commands:
+ *  GRANT/[ip]/[permission] - Grant a specific permission to an IP
+ *  DENY/[ip]/[permission] - Remove a specific permission from an IP
+ *  QUERY/[ip]/[level] - Give a detailed info about an IP
+ */
+
+IP_INFO = {
+    '::1': {placed_cars_names: [], perms: ["view", "place", "police", "command"]}
+}
+
+DEFAULT_USER = {
+    amount_of_placed_cars: 0,
+    perms: ["view", "place"]
 }
 
 /*
@@ -134,9 +159,9 @@ function add_car(car) {
 
     if (traffic.cars.filter(check => check.name === car.name).length === 0) {
         traffic.cars.push(car)
-        return true
+        return car.name
     }
-    return false
+    return undefined
 }
 
 var physics = timers.setInterval(() => {
@@ -487,8 +512,10 @@ var broadcast = timers.setInterval(() => {
     wss.clients.forEach(client => {
         if (client.readyState === ws.OPEN) {
             ip = client.upgradeReq.connection.remoteAddress
-            traffic["ip"] = ip
-            client.send(JSON.stringify(traffic))
+            if (IP_INFO[ip].perms.contains("view")) {
+                traffic["ip"] = ip
+                client.send(JSON.stringify(traffic))
+            }
         }
         delete traffic["ip"]
     })
@@ -499,35 +526,34 @@ wss.on('connection', (socket => {
     socket.on('message', (data, flags) => {
         ip = socket.upgradeReq.connection.remoteAddress
 
-        console.log("Recieved " + data + " from " + ip)
+        if (IP_INFO[ip] === undefined) {
+            IP_INFO[ip] = DEFAULT_USER
+        }
+        permissions = IP_INFO[ip].perms || []
+
+
         parts = data.split("/")
+
+        console.log("Recieved " + data + " from " + ip)
         if (parts.length > 0) {
             cmd = parts[0]
             if (cmd === "claim" && parts.length > 1) {
                 carName = parts[1]
                 cars = traffic.cars.filter(car => car.name == carName)
                 cars.forEach(car => car.controlled_by = ip)
-                console.log(ip + " claimed " + cars.map(car => car.name))
             }
-            if (cmd === "create" && parts.length == 2) {
-                if (IP_CREATE_TABLE[ip] >= 20) {
-                    return
-                }
+            if (cmd === "create" && parts.length == 2 && permissions.contains("place")) {
+                proto_car = JSON.parse(decodeURIComponent(parts[1]))
+                console.log(proto_car)
                 
-                car = JSON.parse(decodeURIComponent(parts[1]))
+                car = JSON.parse(JSON.stringify(DEFAULT_CAR_PROPERTIES))
+                car.img = proto_car.img
+                car.pos = proto_car.pos
+                car.is_police = proto_car.is_police && permissions.contians("police")
                 car.controlled_by = ip
 
                 add_car(car)
 
-                if (ip !== "::1") {
-                    if (IP_CREATE_TABLE[ip] > 0) {
-                        IP_CREATE_TABLE[ip] += 1
-                    }
-                    else {
-                        IP_CREATE_TABLE[ip] = 1
-                    }
-
-                }
             }
             if (cmd === "remove" && parts.length > 1) {
                 carName = parts[1]
@@ -561,6 +587,4 @@ wss.on('connection', (socket => {
 
     })
 }))
-
-
 
