@@ -5,7 +5,9 @@ import Mouse
 import Keyboard
 import Json.Decode as Decode exposing (Decoder)
 import Json.Decode.Pipeline as P
+import Json.Encode as Enc
 import Window
+import Svg as S
 
 zoomFactor = 1.2
 
@@ -29,6 +31,28 @@ pAdd p1 p2 =
 
 infixr 0 !!
 
+type MenuState = In | Out
+type alias Menu =
+    { radius : Float
+    , height : Float
+    , rotation : Float
+    , state : MenuState
+    , buttons : List MenuButton
+    }
+
+type alias MenuButton =
+    { image : String
+    , message : Msg
+    }
+
+baseMenu : Menu
+baseMenu =
+    { radius = 30
+    , height = 55
+    , rotation = 0
+    , state = In
+    , buttons = [MenuButton "AddCar" AddCarClicked]
+    }
 
 type alias Controls = 
     { up      : Int
@@ -42,6 +66,7 @@ type alias Controls =
     , zoomIn  : Int
     , zoomOut : Int
     , remove : Int
+    , place : Int
     }
 
 type alias Position =
@@ -121,6 +146,18 @@ decodeCars =
             |> P.custom (Decode.maybe (Decode.field "controlled_by" Decode.string))
         )
 
+encodeSimpleCar : Car -> Enc.Value
+encodeSimpleCar car =
+    Enc.object
+        [ ("img", Enc.string car.img)
+        , ("pos", encodePos car.pos)
+        ]
+
+encodePos pos =
+    Enc.object
+        [ ("x", Enc.float pos.x)
+        , ("y", Enc.float pos.y)
+        ]
 
 decodeRoads : Decoder (List Road)
 decodeRoads =
@@ -163,6 +200,9 @@ type alias Model =
     , trackingCar : Maybe String
     , controls : Controls
     , isPolis : Bool
+    , currentDragCar : Maybe Car
+
+    , menu : Menu
     }
 
 
@@ -179,4 +219,6 @@ type Msg
     | KeyUp Keyboard.KeyCode
     | SetMsg String
     | SendWebSocketMsg
+    | MenuBallClicked
+    | AddCarClicked
 

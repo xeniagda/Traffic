@@ -12,7 +12,9 @@ BACKWARD = 1
 
 CARS = ["Car1", "Car2", "Car3", "Car4"]
 
-IP_CREATE_TABLE = {}
+
+IP_PERM_BASE = {
+}
 
 /*
  * Car properties:
@@ -42,6 +44,20 @@ IP_CREATE_TABLE = {}
  *      controlled_by : string  If the car is controlled by a player, this is that player's IP address.
  *      is_police : bool        Is the car a police car
  */
+
+DEFAULT_CAR_PROPERTIES = {
+    img: "Car1",
+    pos: {x: 0, y: 0},
+    rot: 0,
+    steering: 0,
+    speed: 0,
+    accel: 0,
+    maxSpeed: 6,
+    hand_breaks: false,
+    break_strength: 0.2,
+    crashed: false,
+    fade: 1
+}
 
 ROADS_PRESET = [
     {width: 1.5, start: {x: 12, y: 32}, end: {x: 12, y: 12}, connected_to: [3,5,7], speed_rec: 5, traffic_light: {green_left: 0, last_green: 0, offset: {x: 1, y: 1}}}, // Goes upwards
@@ -107,6 +123,15 @@ function distance(a, b) {
 
 
 function add_car(car) {
+    Object.keys(DEFAULT_CAR_PROPERTIES).forEach(prop => {
+        if (car[prop] === undefined)
+            car[prop] = DEFAULT_CAR_PROPERTIES[prop]
+    })
+
+    if (car.name === undefined) {
+        car.name = "Car" + carCount
+    }
+
     if (traffic.cars.filter(check => check.name === car.name).length === 0) {
         traffic.cars.push(car)
         return true
@@ -151,6 +176,15 @@ var physics = timers.setInterval(() => {
             car.speed = car.maxSpeed
 
         car.rot += car.steering * delta
+
+        if (car.hand_breaks) {
+            car.speed *= Math.pow(car.break_strength, delta)
+
+            if (Math.abs(car.speed) < 0.3) {
+                car.speed = 0
+            }
+            car.steering /= Math.pow(5, delta)
+        }
 
         if (!car.crashed && !car.is_police) {
             crashingCars = traffic.cars.filter(car2 => car.name !== car2.name && distance(car.pos, car2.pos) < 0.8)
@@ -306,13 +340,6 @@ var physics = timers.setInterval(() => {
             car.fade -= delta / 3
         }
 
-        if (car.hand_breaks) {
-            car.speed *= Math.pow(car.break_strength, delta)
-            if (Math.abs(car.speed) < 0.3) {
-                car.speed = 0
-            }
-            car.steering /= Math.pow(5, delta)
-        }
 
         return car
     }).filter(car => car.fade > 0)
@@ -441,7 +468,7 @@ var server = http.createServer((req, res) => {
             res.setHeader("Content-Type", "text/html")
             res.end(content)
         } else {
-            console.log(method + " " + url + " (NOEXIST!)")
+            console.log(method + " " + url.href + " (NOEXIST!)")
             res.end("NOEXIST!")
         }
     }
@@ -478,51 +505,24 @@ wss.on('connection', (socket => {
                 cars.forEach(car => car.controlled_by = ip)
                 console.log(ip + " claimed " + cars.map(car => car.name))
             }
-            if (cmd === "create" && parts.length > 2) {
+            if (cmd === "create" && parts.length == 2) {
                 if (IP_CREATE_TABLE[ip] >= 20) {
                     return
                 }
-                x = parseFloat(parts[1])
-                y = parseFloat(parts[2])
-                isPolice = false
-                if (parts.length > 2) {
-                    isPolice = parts[3] === "polis"
-                }
-                if (traffic.cars.filter(car => distance(car.pos, {x:x, y:y}) < 1).length == 0) {
+                
+                car = JSON.parse(decodeURIComponent(parts[1]))
+                car.controlled_by = ip
 
-                    console.log(isPolice)
+                add_car(car)
 
-                    texture = CARS[Math.random() * CARS.length | 0]
-
-                    car = {
-                        name: "Car" + carCount++,
-                        img: isPolice ? "CarPolis" : texture,
-                        pos: {x: x, y: y},
-                        rot: 0,
-                        accel: 0,
-                        speed: 0,
-                        maxSpeed: isPolice ? 16 : 8,
-                        steering: 0,
-                        hand_breaks: false,
-                        break_strength: 0.2,
-                        fade: 1,
-                        non_fade: true,
-                        crashed: false,
-                        controlled_by: ip,
-                        is_police: isPolice
+                if (ip !== "::1") {
+                    if (IP_CREATE_TABLE[ip] > 0) {
+                        IP_CREATE_TABLE[ip] += 1
+                    }
+                    else {
+                        IP_CREATE_TABLE[ip] = 1
                     }
 
-                    add_car(car)
-
-                    if (ip !== "::1") {
-                        if (IP_CREATE_TABLE[ip] > 0) {
-                            IP_CREATE_TABLE[ip] += 1
-                        }
-                        else {
-                            IP_CREATE_TABLE[ip] = 1
-                        }
-
-                    }
                 }
             }
             if (cmd === "remove" && parts.length > 1) {
@@ -557,3 +557,6 @@ wss.on('connection', (socket => {
 
     })
 }))
+
+
+

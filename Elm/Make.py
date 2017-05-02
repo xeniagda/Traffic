@@ -15,6 +15,7 @@ if "-h" in sys.argv[1:] or "--help" in sys.argv[1:]:
             -a      Only compiles modified files by checking the file hashes from the last compile
             -h      Show this help message
             -H      Set the file to read the hashes from. Default is .hashes
+            -M      Don't minify the output, makes the compile faster but less efficient
         """ % (__file__, __file__)))
     sys.exit()
 
@@ -73,7 +74,7 @@ for root, dirs, files in os.walk("Source"):
                 print("Cancelling compile")
                 sys.exit(1)
 
-            if os.path.exists("../UglifyJS/bin/uglifyjs"):
+            if os.path.exists("../UglifyJS/bin/uglifyjs") and not "-M" in sys.argv[1:]:
                 print("Minifying %s" % output)
                 proc = subprocess.Popen(["../UglifyJS/bin/uglifyjs", "--output", output, output])
                 if proc.wait() != 0:

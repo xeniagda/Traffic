@@ -1,11 +1,11 @@
-module Render exposing (renderRoads, renderCars, renderTrafficLights, renderBackgroundLines)
+module TrafficRenderer exposing (renderRoads, renderCars, renderTrafficLights, renderBackgroundLines)
 
 import Base exposing (..)
 import Svg as S
 import Svg.Attributes as Sa
 
-renderRoads : Model -> List (S.Svg Msg)
-renderRoads model =
+renderRoads : Model -> List Road -> List (S.Svg Msg)
+renderRoads model roads =
     (
         List.map (\road ->
             S.line
@@ -17,12 +17,12 @@ renderRoads model =
             , Sa.stroke "gray"
             ] []
         )
-        model.roads
-    ) ++ renderRoadsCaps model
-      ++ renderRoadLines model
+        roads
+    ) ++ renderRoadsCaps model roads
+      ++ renderRoadLines model roads
 
-renderRoadsCaps : Model -> List (S.Svg Msg)
-renderRoadsCaps model =
+renderRoadsCaps : Model -> List Road -> List (S.Svg Msg)
+renderRoadsCaps model roads =
         List.concatMap (\road ->
                 List.concatMap (\idx ->
                         let maybeOtherRoad = model.roads !! idx
@@ -50,10 +50,10 @@ renderRoadsCaps model =
                             Nothing ->
                                 []
                     ) road.connectedTo
-            ) model.roads
+            ) roads
 
-renderRoadLines : Model -> List (S.Svg Msg)
-renderRoadLines model =
+renderRoadLines : Model -> List Road -> List (S.Svg Msg)
+renderRoadLines model roads =
     List.map (\road ->
             S.line
                 [ Sa.x1 <| toString <| road.start.x * model.renderScale + model.scroll.x
@@ -65,11 +65,11 @@ renderRoadLines model =
                 , Sa.strokeDasharray <| (toString <| model.renderScale / 6) ++ ", " ++ (toString <| model.renderScale / 3)
                 ]
                 []
-        ) model.roads
+        ) roads
 
 
-renderCars : Model -> List (S.Svg Msg)
-renderCars model =
+renderCars : Model -> List Car -> List (S.Svg Msg)
+renderCars model cars =
     List.map (\car ->
             S.image
               [ Sa.x <| toString <| model.scroll.x + car.pos.x * model.renderScale - carWidth / 2 * model.renderScale
@@ -90,11 +90,11 @@ renderCars model =
               []
 
         )
-        model.cars
+        cars
 
 
-renderTrafficLights : Model -> List (S.Svg Msg)
-renderTrafficLights model =
+renderTrafficLights : Model -> List Road -> List (S.Svg Msg)
+renderTrafficLights model roads =
     List.concatMap (\road ->
         case road.trafficLight of
             Just light ->
@@ -114,7 +114,7 @@ renderTrafficLights model =
                     ] []
                 ]
             Nothing -> []
-    ) model.roads
+    ) roads
 
 
 renderBackgroundLines : Model -> List (S.Svg Msg)
