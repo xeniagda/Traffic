@@ -194,10 +194,9 @@ var physics = timers.setInterval(() => {
 
                 car.steering = rotDiff
 
-                car.rot -= rotDiff
+                car.rot -= rotDiff / 3
 
                 car.speed += collision.speed * Math.cos(toRadians(collision.rot - car.rot))
-
 
                 car.crashed = true
                 delete car.ai
@@ -474,8 +473,13 @@ var server = http.createServer((req, res) => {
     }
 })
 
-server.listen(8001)
-console.log("Started")
+if (process.argv.length > 2) {
+    port = process.argv[2] | 0
+} else {
+    port = 8000
+}
+server.listen(port)
+console.log("Started Server on port " + port)
 
 var wss = new ws.Server({server: server})
 
