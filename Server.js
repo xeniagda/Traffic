@@ -13,7 +13,7 @@ BACKWARD = 1
 CARS = ["Car1", "Car2", "Car3", "Car4"]
 
 
-IP_PERM_BASE = {
+IP_CREATE_TABLE = {
 }
 
 /*
