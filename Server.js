@@ -3,12 +3,7 @@ let fs = require("fs")
 let url = require("url")
 let timers = require("timers")
 let ws = require("ws")
-
-
-Array.prototype.contains = function(element){
-    return this.indexOf(element) > -1;
-}
-
+let readline = require("readline")
 
 halfCarHeight = 50
 halfCarWidth = halfCarHeight / 2
@@ -33,12 +28,77 @@ CARS = ["Car1", "Car2", "Car3", "Car4"]
  */
 
 IP_INFO = {
-    '::1': {placed_cars_names: [], perms: ["view", "place", "police", "command"]}
+    //'::1': {placed_cars_names: [], perms: new Set(["view", "place", "police", "command"])}
 }
+var rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+    terminal: false
+})
+
+function matches(ip, ip_pattern) {
+    if (ip === ip_pattern === "" || ip_pattern === "**") {
+        return true
+    }
+    if (ip[0] === ip_pattern[0]) {
+        return true
+    }
+    if (ip_pattern[0] === "*") {
+        return matches(ip.substr(ip.indexOf(".")+1), ip_pattern.substr(ip_pattern.indexOf("*")+1))
+    }
+    return false
+}
+
+rl.on('line', function(line) {
+    parts = line.split("/")
+    if (parts[0] === "GRANT") {
+        if (parts.length != 3) {
+            console.log("GRANT syntax: GRANT/[ip]/[permission]")
+        }
+        else {
+            ip_pattern = parts[1]
+            selected = Object.keys(IP_INFO).filter(ip => matches(ip, ip_pattern))
+            perm = parts[2]
+            selected.forEach(ip => IP_INFO[ip].perms.add(perm))
+            console.log("Gave %s to %s", perm, selected.join(", "))
+        }
+    }
+    else if (parts[0] === "DENY") {
+        if (parts.length != 3) {
+            console.log("DENY syntax: DENY/[ip]/[permission]")
+        }
+        else {
+            ip_pattern = parts[1]
+            selected = Object.keys(IP_INFO).filter(ip => matches(ip, ip_pattern))
+            perm = parts[2]
+            selected.forEach(ip => IP_INFO[ip].perms.delete(perm))
+            console.log("Denied %s from %s", perm, selected.join(", "))
+        }
+    }
+    else if (parts[0] === "QUERY") {
+        if (parts.length != 2) {
+            console.log("QUERY syntax: QUERY/[ip]")
+        }
+        else {
+            ip_pattern = parts[1]
+            selected = Object.keys(IP_INFO).filter(ip => matches(ip, ip_pattern))
+
+            selected.forEach(ip => {
+                console.log(ip)
+                Object.keys(IP_INFO[ip]).forEach(prop => {
+                    val = IP_INFO[ip][prop]
+                    if (val instanceof Set)
+                        val = [...val]
+                    console.log("\t%s: %s", prop, JSON.stringify(val))
+                })
+            })
+        }
+    }
+})
 
 DEFAULT_USER = {
     amount_of_placed_cars: 0,
-    perms: ["view", "place"]
+    perms: new Set(["view", "place"])
 }
 
 /*
@@ -145,7 +205,6 @@ function distance(a, b) {
     dy = a.y - b.y
     return Math.sqrt(dx * dx + dy * dy)
 }
-
 
 function add_car(car) {
     Object.keys(DEFAULT_CAR_PROPERTIES).forEach(prop => {
@@ -484,7 +543,9 @@ var server = http.createServer((req, res) => {
     if (method === "GET") {
         filePath = "Web" + url.pathname
         if (fs.existsSync(filePath)) {
-            console.log(method + " " + url.href)
+            if (DEBUG)
+                console.log(method + " " + url.href)
+
             if (!fs.lstatSync(filePath).isFile()) {
                 filePath = "Web/traffic.html"
             }
@@ -492,7 +553,8 @@ var server = http.createServer((req, res) => {
             res.setHeader("Content-Type", "text/html")
             res.end(content)
         } else {
-            console.log(method + " " + url.href + " (NOEXIST!)")
+            if (DEBUG)
+                console.log(method + " " + url.href + " (NOEXIST!)")
             res.end("NOEXIST!")
         }
     }
@@ -512,8 +574,11 @@ var broadcast = timers.setInterval(() => {
     wss.clients.forEach(client => {
         if (client.readyState === ws.OPEN) {
             ip = client.upgradeReq.connection.remoteAddress
-            if (IP_INFO[ip].perms.contains("view")) {
-                traffic["ip"] = ip
+            if (IP_INFO[ip] === undefined) {
+                IP_INFO[ip] = DEFAULT_USER
+            }
+            if (IP_INFO[ip].perms.has("view")) {
+                traffic["you"] = {ip: ip, info: {perms: [ ...IP_INFO[ip].perms ]}}
                 client.send(JSON.stringify(traffic))
             }
         }
@@ -529,12 +594,14 @@ wss.on('connection', (socket => {
         if (IP_INFO[ip] === undefined) {
             IP_INFO[ip] = DEFAULT_USER
         }
+
         permissions = IP_INFO[ip].perms || []
 
 
         parts = data.split("/")
 
-        console.log("Recieved " + data + " from " + ip)
+        if (DEBUG)
+            console.log("Recieved " + data + " from " + ip)
         if (parts.length > 0) {
             cmd = parts[0]
             if (cmd === "claim" && parts.length > 1) {
@@ -542,14 +609,24 @@ wss.on('connection', (socket => {
                 cars = traffic.cars.filter(car => car.name == carName)
                 cars.forEach(car => car.controlled_by = ip)
             }
-            if (cmd === "create" && parts.length == 2 && permissions.contains("place")) {
+            if (cmd === "create" && parts.length == 2 && permissions.has("place")) {
                 proto_car = JSON.parse(decodeURIComponent(parts[1]))
-                console.log(proto_car)
-                
+
                 car = JSON.parse(JSON.stringify(DEFAULT_CAR_PROPERTIES))
                 car.img = proto_car.img
                 car.pos = proto_car.pos
-                car.is_police = proto_car.is_police && permissions.contians("police")
+
+                if (permissions.has("police") && proto_car.is_police) {
+
+                    car.is_police = proto_car.is_police
+                    car.maxSpeed = 10
+                    car.break_strength = 0.1
+                    car.img = "CarPolis"
+                }
+
+                else if (car.img === "CarPolis") {
+                    car.img = "Car1"
+                }
                 car.controlled_by = ip
 
                 add_car(car)
@@ -567,20 +644,16 @@ wss.on('connection', (socket => {
                 if (cmd === "steer" && parts.length > 1) {
                     rot = parseFloat(parts[1])
                     cars.forEach(car => car.steering = rot)
-                    console.log("Steering: " + cars.map(car => car.steering))
                 }
                 if (cmd === "accel" && parts.length > 1) {
                     accel = parseFloat(parts[1])
                     cars.forEach(car => car.accel = accel)
-                    console.log("Steering: " + cars.map(car => car.accel))
                 }
                 if (cmd === "breaks") {
                     cars.forEach(car => car.hand_breaks = true)
-                    console.log("Steering: " + cars.map(car => car.hand_breaks))
                 }
                 if (cmd === "no_breaks") {
                     cars.forEach(car => car.hand_breaks = false)
-                    console.log("Steering: " + cars.map(car => car.hand_breaks))
                 }
             }
         }

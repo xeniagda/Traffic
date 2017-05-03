@@ -18,6 +18,7 @@ import WebSocket
 import Base exposing (..)
 import TrafficRenderer exposing (..)
 import MenuRenderer exposing (renderMenu)
+import JsonParser exposing (..)
 
 import Debug
 
@@ -31,9 +32,10 @@ main =
     Html.programWithFlags { init = init, view = view, update = update, subscriptions = subscriptions }
 
 
+
 init : Flags -> ( Model, Cmd Msg )
 init flags =
-    ( Model [] [] Nothing Nothing Nothing {x=0, y=0} Nothing 40 (Debug.log "Websocket url: " flags.webSocketUrl) "" Nothing 3 200 Nothing Nothing flags.controls (Debug.log "is rubs" flags.isRubs) Nothing baseMenu
+    ( Model [] [] Nothing Nothing Nothing {x=0, y=0} Nothing 40 (Debug.log "Websocket url: " flags.webSocketUrl) "" Nothing 6 200 Nothing Nothing flags.controls (Debug.log "is rubs" flags.isRubs) Nothing defaultMenu
     , Task.perform identity <| Task.succeed CheckSize
     )
 
@@ -45,9 +47,22 @@ update msg model =
             let result = decodeString decodeTraffic json
             in case result of
                 Ok traffic ->
-                    ( { model | cars = traffic.cars, roads = traffic.roads, ip = Just traffic.ip, err = Nothing }, Task.perform identity <| Task.succeed FixScroll )
+                    ( { model 
+                        | cars = traffic.cars
+                        , roads = traffic.roads
+                        , ip = Just traffic.ip
+                        , err = Nothing 
+                        , menu = let menu = model.menu
+                                 in { menu
+                                    | buttons = generateMenuButtons traffic.perms
+                                    }
+                    }
+                    , Task.perform identity <| Task.succeed FixScroll )
                 Err error ->
-                    ( { model | err = Just error }, Cmd.none )
+                    ( { model 
+                        | err = Just error 
+                    }
+                    , Cmd.none )
 
         Resize size ->
             ( { model | size = Just { x = toFloat size.width, y = toFloat size.height } }, Cmd.none )
@@ -82,9 +97,11 @@ update msg model =
                                     )
                                     model.cars
                             , menu = let menu = model.menu
-                                     in { menu | rotation = case menu.state of
+                                     in { menu 
+                                        | rotation = case menu.state of
                                             In -> if menu.rotation > 0 then menu.rotation - delta * 5 else 0
-                                            Out -> if menu.rotation < 1 then menu.rotation + delta * 5 else 1}
+                                            Out -> if menu.rotation < 1 then menu.rotation + delta * 5 else 1
+                                        }
                           }
                         , Task.perform identity <| Task.succeed FixScroll
                         )
@@ -290,7 +307,14 @@ update msg model =
 
         AddCarClicked ->
             ( { model 
-            | currentDragCar = Just {pos = {x = 0, y = 0}, img = "Car1", isPolice = model.isPolice}
+            | currentDragCar = Just {pos = {x = 0, y = 0}, img = "Car1", isPolice = False}
+            , menu = let menu = model.menu
+                     in { menu | state = In }
+            }, Cmd.none )
+
+        AddPoliceClicked ->
+            ( { model 
+            | currentDragCar = Just {pos = {x = 0, y = 0}, img = "CarPolis", isPolice = True}
             , menu = let menu = model.menu
                      in { menu | state = In }
             }, Cmd.none )

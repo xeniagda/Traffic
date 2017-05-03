@@ -3,9 +3,6 @@ module Base exposing (..)
 import Time exposing (Time)
 import Mouse
 import Keyboard
-import Json.Decode as Decode exposing (Decoder)
-import Json.Decode.Pipeline as P
-import Json.Encode as Enc
 import Window
 import Svg as S
 
@@ -45,17 +42,18 @@ type alias MenuButton =
     , message : Msg
     }
 
-baseMenu : Menu
-baseMenu =
+defaultMenu =
     { radius = 30
     , height = 55
     , rotation = 0
     , state = In
-    , buttons = 
-        [ MenuButton "AddCar" AddCarClicked
-        -- , MenuButton "Command" ExecuteCommand
-        ]
+    , buttons = []
     }
+
+generateMenuButtons : List String -> List MenuButton
+generateMenuButtons perms =
+       (if List.member "place" perms then [ MenuButton "AddCar" AddCarClicked] else [])
+    ++ (if List.member "police" perms then [ MenuButton "AddPolice" AddPoliceClicked] else [])
 
 
 type alias Controls = 
@@ -131,6 +129,7 @@ type alias Traffic =
     { cars : List Car
     , roads : List Road
     , ip : String
+    , perms : List String
     }
 
 getImg : Car -> String
@@ -145,68 +144,6 @@ getTrafficLightPath light =
         "Textures/TrafficLights/Light_yellow.png"
     else
         "Textures/TrafficLights/Light_green.png"
-
-decodeTraffic : Decoder Traffic
-decodeTraffic =
-    P.decode Traffic
-        |> P.required "cars" decodeCars
-        |> P.required "roads" decodeRoads
-        |> P.required "ip" Decode.string
-
-
-decodeCars : Decoder (List Car)
-decodeCars =
-    Decode.list
-        (P.decode Car
-            |> P.required "name" Decode.string
-            |> P.required "img" Decode.string
-            |> P.required "pos" decodePosition
-            |> P.required "rot" Decode.float
-            |> P.required "speed" Decode.float
-            |> P.required "accel" Decode.float
-            |> P.required "steering" Decode.float
-            |> P.required "crashed" Decode.bool
-            |> P.required "hand_breaks" Decode.bool
-            |> P.required "break_strength" Decode.float
-            |> P.optional "fade" Decode.float 1
-            |> P.custom (Decode.maybe (Decode.field "controlled_by" Decode.string))
-        )
-
-encodeProtoCar : ProtoCar -> Enc.Value
-encodeProtoCar car =
-    Enc.object
-        [ ("img", Enc.string car.img)
-        , ("pos", encodePos car.pos)
-        , ("is_police", Enc.bool car.isPolice)
-        ]
-
-encodePos pos =
-    Enc.object
-        [ ("x", Enc.float pos.x)
-        , ("y", Enc.float pos.y)
-        ]
-
-decodeRoads : Decoder (List Road)
-decodeRoads =
-    Decode.list
-        (P.decode Road
-            |> P.required "start" decodePosition
-            |> P.required "end" decodePosition
-            |> P.required "connected_to" (Decode.list Decode.int)
-            |> P.custom (Decode.maybe (Decode.field "traffic_light" decodeTrafficLight))
-            |> P.optional "width" Decode.float 1
-        )
-
-decodeTrafficLight : Decoder TrafficLight
-decodeTrafficLight =
-    P.decode TrafficLight
-        |> P.required "green_left" Decode.float
-        |> P.required "offset" decodePosition
-
-
-decodePosition : Decoder Position
-decodePosition =
-    Decode.map2 (\x y -> { x = x, y = y }) (Decode.field "x" Decode.float) (Decode.field "y" Decode.float)
 
 
 type alias Model =
@@ -248,4 +185,5 @@ type Msg
     | SendWebSocketMsg
     | MenuBallClicked
     | AddCarClicked
+    | AddPoliceClicked
 
