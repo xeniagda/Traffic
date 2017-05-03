@@ -4,9 +4,7 @@ let url = require("url")
 let timers = require("timers")
 let ws = require("ws")
 let readline = require("readline")
-
-halfCarHeight = 50
-halfCarWidth = halfCarHeight / 2
+let ip_lib = require("ip")
 
 FORWARD = 0
 BACKWARD = 1
@@ -16,6 +14,7 @@ CARS = ["Car1", "Car2", "Car3", "Car4"]
 
 /*
  * Permissions and stuff:
+ *  connect - Be able to connect to the sever
  *  view - Be able to view the traffic simulator
  *  place - Be able to place cars and interact
  *  police - Be able to place police cars
@@ -30,59 +29,89 @@ CARS = ["Car1", "Car2", "Car3", "Car4"]
 IP_INFO = {
     //'::1': {placed_cars_names: [], perms: new Set(["view", "place", "police", "command"])}
 }
+DEFAULT_USER = {
+    amount_of_placed_cars: 0,
+    perms: new Set(["connect", "view", "place"])
+}
+
 var rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout,
     terminal: false
 })
 
-function matches(ip, ip_pattern) {
-    if (ip === ip_pattern === "" || ip_pattern === "**") {
-        return true
-    }
-    if (ip[0] === ip_pattern[0]) {
-        return true
-    }
-    if (ip_pattern[0] === "*") {
-        return matches(ip.substr(ip.indexOf(".")+1), ip_pattern.substr(ip_pattern.indexOf("*")+1))
+// Pattern syntax is ,-separated cidr notation
+function matches(ip, pattern) {
+    pattern_parts = pattern.split(",")
+
+    for (i = 0; i < pattern_parts.length; i++) {
+        try {
+            subnet = ip_lib.cidrSubnet(pattern_parts[i])
+            if (subnet.contains(ip)) {
+                return true
+            }
+        } catch (err) { }
+        
+        try {
+            if (ip_lib.isEqual(ip, pattern_parts[i])) {
+                return true
+            }
+        } catch (err) {  }
+
+        if (pattern_parts[i] == "*") {
+            return true
+        }
     }
     return false
 }
 
 rl.on('line', function(line) {
-    parts = line.split("/")
+    parts = line.split(" ")
+    if (parts.length > 1) {
+        selected = Object.keys(IP_INFO).filter(ip => matches(ip, parts[1]))
+    }
+    else 
+        console.log("Invalid. Syntax is [command] [ip] ...")
+
     if (parts[0] === "GRANT") {
         if (parts.length != 3) {
-            console.log("GRANT syntax: GRANT/[ip]/[permission]")
+            console.log("GRANT syntax: GRANT [ips] [permission]")
         }
         else {
-            ip_pattern = parts[1]
-            selected = Object.keys(IP_INFO).filter(ip => matches(ip, ip_pattern))
             perm = parts[2]
             selected.forEach(ip => IP_INFO[ip].perms.add(perm))
-            console.log("Gave %s to %s", perm, selected.join(", "))
+            if (selected.length === 0) {
+                console.log("Couldn't find any IPs that matches " + parts[1])
+            }
+            else {
+                console.log("Gave %s to %s", perm, selected.join(", "))
+            }
         }
     }
     else if (parts[0] === "DENY") {
         if (parts.length != 3) {
-            console.log("DENY syntax: DENY/[ip]/[permission]")
+            console.log("DENY syntax: DENY [ips] [permission]")
         }
         else {
-            ip_pattern = parts[1]
-            selected = Object.keys(IP_INFO).filter(ip => matches(ip, ip_pattern))
             perm = parts[2]
             selected.forEach(ip => IP_INFO[ip].perms.delete(perm))
-            console.log("Denied %s from %s", perm, selected.join(", "))
+            if (selected.length === 0) {
+                console.log("Couldn't find any IPs that matches " + parts[1])
+            }
+            else {
+                console.log("Denied %s from %s", perm, selected.join(", "))
+            }
         }
     }
     else if (parts[0] === "QUERY") {
         if (parts.length != 2) {
-            console.log("QUERY syntax: QUERY/[ip]")
+            console.log("QUERY syntax: QUERY [ips]")
         }
         else {
-            ip_pattern = parts[1]
-            selected = Object.keys(IP_INFO).filter(ip => matches(ip, ip_pattern))
 
+            if (selected.length === 0) {
+                console.log("Couldn't find any IPs that matches " + parts[1])
+            }
             selected.forEach(ip => {
                 console.log(ip)
                 Object.keys(IP_INFO[ip]).forEach(prop => {
@@ -96,10 +125,6 @@ rl.on('line', function(line) {
     }
 })
 
-DEFAULT_USER = {
-    amount_of_placed_cars: 0,
-    perms: new Set(["view", "place"])
-}
 
 /*
  * Car properties:
@@ -540,6 +565,11 @@ var server = http.createServer((req, res) => {
     method = req.method
     url = url.parse(req.url)
     ip  = req.connection.remoteAddress
+    if (IP_INFO[ip] !== undefined && !IP_INFO[ip].perms.has("connect")) {
+        res.end("You are not allowed to connect to this server.")
+        return
+    }
+
     if (method === "GET") {
         filePath = "Web" + url.pathname
         if (fs.existsSync(filePath)) {
@@ -581,8 +611,11 @@ var broadcast = timers.setInterval(() => {
                 traffic["you"] = {ip: ip, info: {perms: [ ...IP_INFO[ip].perms ]}}
                 client.send(JSON.stringify(traffic))
             }
+            else {
+                client.send(JSON.stringify({cars: [], roads: [], you: {ip: ip, info: {perms: []}}}))
+            }
         }
-        delete traffic["ip"]
+        delete traffic["you"]
     })
 }, 100)
 
@@ -597,6 +630,9 @@ wss.on('connection', (socket => {
 
         permissions = IP_INFO[ip].perms || []
 
+        if (!permissions.has("connect")) {
+            socket.close()
+        }
 
         parts = data.split("/")
 

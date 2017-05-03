@@ -26,18 +26,18 @@ if not command_exists("node"):
         print("nodejs not found, trying node.js instead...")
         inst = subprocess.Popen((PACKAGE + " node.js").split())
 
+for module in "ws", "ip":
+    a = subprocess.Popen(["npm", "ls", module], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    errorCode = a.wait()
+    if errorCode != 0:
+        print("%s isn't installed. Install it?" % module)
+        res = input("[Y/n]")
+        if res == "n":
+            print("Cancelling installation")
+            sys.exit(1)
+        subprocess.run(["npm", "install", module])
 
-a = subprocess.Popen(["npm", "ls", "ws"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-errorCode = a.wait()
-if errorCode != 0:
-    print("Ws isn't installed. Install it?")
-    res = input("[Y/n]")
-    if res == "n":
-        print("Cancelling installation")
-        sys.exit(1)
-    subprocess.run(["npm", "install", "ws"])
-
-if not os.path.isdir("uglfiy"):
+if not os.path.isdir("UglifyJS"):
     res = input("Install uglifyjs? (Not requiered) [y/N] ").lower()
     if res == "y":
         os.system("git clone git://github.com/mishoo/UglifyJS.git")
