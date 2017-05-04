@@ -21,18 +21,19 @@ CARS = ["Car1", "Car2", "Car3", "Car4"]
  *  command - Be able to run moderator commands
  *
  * Moderator commands:
- *  GRANT/[ip]/[permission] - Grant a specific permission to an IP
- *  DENY/[ip]/[permission] - Remove a specific permission from an IP
- *  QUERY/[ip]/[level] - Give a detailed info about an IP
+ *  GRANT [ip] [permission] - Grant a specific permission to an IP
+ *  DENY [ip] [permission] - Remove a specific permission from an IP
+ *  QUERY [ip] [level] - Give a detailed info about an IP
  */
 
 IP_INFO = {
-    //'::1': {placed_cars_names: [], perms: new Set(["view", "place", "police", "command"])}
 }
 DEFAULT_USER = {
     amount_of_placed_cars: 0,
     perms: new Set(["connect", "view", "place"])
 }
+
+PERMISSION = ["connect", "view", "place", "police", "command"]
 
 var rl = readline.createInterface({
     input: process.stdin,
@@ -65,64 +66,69 @@ function matches(ip, pattern) {
     return false
 }
 
-rl.on('line', function(line) {
+function doCommand(line) {
     parts = line.split(" ")
     if (parts.length > 1) {
         selected = Object.keys(IP_INFO).filter(ip => matches(ip, parts[1]))
     }
     else 
-        console.log("Invalid. Syntax is [command] [ip] ...")
+        return "Invalid. Syntax is [command] [ip] ..."
 
     if (parts[0] === "GRANT") {
         if (parts.length != 3) {
-            console.log("GRANT syntax: GRANT [ips] [permission]")
+            return "GRANT syntax: GRANT [ips] [permission]"
         }
         else {
             perm = parts[2]
             selected.forEach(ip => IP_INFO[ip].perms.add(perm))
             if (selected.length === 0) {
-                console.log("Couldn't find any IPs that matches " + parts[1])
+                return "Couldn't find any IPs that matches " + parts[1]
             }
             else {
-                console.log("Gave %s to %s", perm, selected.join(", "))
+                return "Gave " + perm + " to " + selected.join(", ")
             }
         }
     }
     else if (parts[0] === "DENY") {
         if (parts.length != 3) {
-            console.log("DENY syntax: DENY [ips] [permission]")
+            return "DENY syntax: DENY [ips] [permission]"
         }
         else {
             perm = parts[2]
             selected.forEach(ip => IP_INFO[ip].perms.delete(perm))
             if (selected.length === 0) {
-                console.log("Couldn't find any IPs that matches " + parts[1])
+                return "Couldn't find any IPs that matches " + parts[1]
             }
             else {
-                console.log("Denied %s from %s", perm, selected.join(", "))
+                return "Denied " + perm + " from " + selected.join(", ")
             }
         }
     }
     else if (parts[0] === "QUERY") {
         if (parts.length != 2) {
-            console.log("QUERY syntax: QUERY [ips]")
+            return "QUERY syntax: QUERY [ips]"
         }
         else {
-
             if (selected.length === 0) {
-                console.log("Couldn't find any IPs that matches " + parts[1])
+                return "Couldn't find any IPs that matches " + parts[1]
             }
-            selected.forEach(ip => {
-                console.log(ip)
-                Object.keys(IP_INFO[ip]).forEach(prop => {
+            return selected.map(ip => {
+                res = ip + "\n"
+                res += Object.keys(IP_INFO[ip]).map(prop => {
                     val = IP_INFO[ip][prop]
                     if (val instanceof Set)
                         val = [...val]
-                    console.log("\t%s: %s", prop, JSON.stringify(val))
-                })
-            })
+                    return "\t" + prop + ": " + JSON.stringify(val)
+                }).join("\n")
+                return res
+            }).join("\n")
         }
     }
+
+}
+
+rl.on('line', function(line) {
+    console.log(doCommand(line))
 })
 
 
@@ -600,19 +606,24 @@ console.log("Started Server on port " + port)
 
 var wss = new ws.Server({server: server})
 
+CAR_SOCKETS = new Set([])
+
 var broadcast = timers.setInterval(() => {
+
     wss.clients.forEach(client => {
         if (client.readyState === ws.OPEN) {
-            ip = client.upgradeReq.connection.remoteAddress
-            if (IP_INFO[ip] === undefined) {
-                IP_INFO[ip] = DEFAULT_USER
-            }
-            if (IP_INFO[ip].perms.has("view")) {
-                traffic["you"] = {ip: ip, info: {perms: [ ...IP_INFO[ip].perms ]}}
-                client.send(JSON.stringify(traffic))
-            }
-            else {
-                client.send(JSON.stringify({cars: [], roads: [], you: {ip: ip, info: {perms: []}}}))
+            if (CAR_SOCKETS.has(client)) {
+                ip = client.upgradeReq.connection.remoteAddress
+                if (IP_INFO[ip] === undefined) {
+                    IP_INFO[ip] = DEFAULT_USER
+                }
+                if (IP_INFO[ip].perms.has("view")) {
+                    traffic["you"] = {ip: ip, info: {perms: [ ...IP_INFO[ip].perms ]}}
+                    client.send(JSON.stringify(traffic))
+                }
+                else {
+                    client.send(JSON.stringify({cars: [], roads: [], you: {ip: ip, info: {perms: []}}}))
+                }
             }
         }
         delete traffic["you"]
@@ -622,6 +633,10 @@ var broadcast = timers.setInterval(() => {
 wss.on('connection', (socket => {
 
     socket.on('message', (data, flags) => {
+        if (data === "car") {
+            CAR_SOCKETS.add(socket)
+            return
+        }
         ip = socket.upgradeReq.connection.remoteAddress
 
         if (IP_INFO[ip] === undefined) {
@@ -673,6 +688,10 @@ wss.on('connection', (socket => {
                 traffic.cars = traffic.cars.filter(car => {
                     return !(car.controlled_by === ip && car.name == carName)
                 })
+            }
+            if (cmd === "cmd" && parts.length == 2 && permissions.has("command")) {
+                res = doCommand(parts[1])
+                socket.send(res)
             }
             else {
                 cars = traffic.cars.filter(car => car.controlled_by === ip)
