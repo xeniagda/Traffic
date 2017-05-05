@@ -17,13 +17,13 @@ main =
 
 init : Flags -> ( Model, Cmd Msg )
 init flags =
-    ( Model "" flags.webSocketUrl "", Cmd.none )
+    ( Model "" flags.webSocketUrl [], Cmd.none )
 
 
 type alias Model =
     { currentCommand : String
     , webSocketUrl : String
-    , resp : String
+    , resp : List String
     }
 
 type Msg
@@ -36,7 +36,7 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         ServerMsg json ->
-            ( { model | resp = Debug.log "Resp" json }, Cmd.none )
+            ( { model | resp = List.append model.resp [Debug.log "Resp" json] }, Cmd.none )
         SendCommand ->
             ( model
             , WebSocket.send model.webSocketUrl <| "cmd/" ++ model.currentCommand
@@ -51,13 +51,17 @@ update msg model =
 view : Model -> Html Msg
 view model =
     div [] 
-    [ pre [] [ text model.resp ]
-    , Html.form [ onSubmit SendCommand ]
-        [ input [ onInput UpdateText ] [ text model.currentCommand ]
-        , button [] [ text "Send!" ]
+    (
+        List.map (\resp -> div [] [pre [] [text resp], hr [] []]) model.resp ++
+        [ Html.form [ onSubmit SendCommand ]
+            [ input [ onInput UpdateText, style [("width", "100%")] ] [ text model.currentCommand ]
+            , button [] [ text "Send!" ]
+            ]
         ]
-    ]
+    )
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
     WebSocket.listen model.webSocketUrl ServerMsg
+
+

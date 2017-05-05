@@ -25,7 +25,6 @@ import Debug
 type alias Flags =
     { webSocketUrl : String
     , controls : Controls
-    , isRubs : Bool
     }
 
 main =
@@ -35,7 +34,7 @@ main =
 
 init : Flags -> ( Model, Cmd Msg )
 init flags =
-    ( Model [] [] Nothing Nothing Nothing {x=0, y=0} Nothing 40 (Debug.log "Websocket url: " flags.webSocketUrl) "" Nothing 6 200 Nothing Nothing flags.controls (Debug.log "is rubs" flags.isRubs) Nothing defaultMenu
+    ( Model [] [] Nothing Nothing Nothing {x=0, y=0} Nothing 40 (Debug.log "Websocket url: " flags.webSocketUrl) "" Nothing 6 200 Nothing Nothing flags.controls Nothing defaultMenu
     , Cmd.batch
     [ Task.perform identity <| Task.succeed CheckSize
     , WebSocket.send flags.webSocketUrl "car"

@@ -37,16 +37,7 @@ Object.keys(defaultControls).forEach(control => {
     }
 })
 
-if (result["rub"] === "en") {
-    correct = prompt("Prove that you are actually the real Rub:") === "okej jag är rub"
-    if (!correct)
-        alert("wronk.")
-}
-else {
-    correct = false
-}
-
-var app = Elm.Main.embed(node, {webSocketUrl: "ws://" + document.location.hostname + ":" + document.location.port, controls: defaultControls, isRubs: correct})
+var app = Elm.Main.embed(node, {webSocketUrl: "ws://" + document.location.hostname + ":" + document.location.port + "/cars", controls: defaultControls})
 
 
 

@@ -163,7 +163,6 @@ type alias Model =
     , lastClickTime : Maybe Float
     , trackingCar : Maybe String
     , controls : Controls
-    , isPolice : Bool
     , currentDragCar : Maybe ProtoCar
 
     , menu : Menu

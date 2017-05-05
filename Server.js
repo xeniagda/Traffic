@@ -28,12 +28,14 @@ CARS = ["Car1", "Car2", "Car3", "Car4"]
 
 IP_INFO = {
 }
-DEFAULT_USER = {
-    amount_of_placed_cars: 0,
-    perms: new Set(["connect", "view", "place"])
+function makeDefaultUser() {
+    return {
+        amount_of_placed_cars: 0,
+        perms: new Set(["connect", "view", "place"])
+    }
 }
 
-PERMISSION = ["connect", "view", "place", "police", "command"]
+PERMISSION = new Set(["connect", "view", "place", "police", "command", "commandcommand"])
 
 var rl = readline.createInterface({
     input: process.stdin,
@@ -62,73 +64,121 @@ function matches(ip, pattern) {
         if (pattern_parts[i] == "*") {
             return true
         }
+        if (pattern_parts[i] == ip) {
+            return true
+        }
     }
     return false
 }
 
-function doCommand(line) {
+function doCommand(ip, line) {
     parts = line.split(" ")
-    if (parts.length > 1) {
-        selected = Object.keys(IP_INFO).filter(ip => matches(ip, parts[1]))
-    }
-    else 
-        return "Invalid. Syntax is [command] [ip] ..."
+    if (new Set(["GRANT", "DENY", "QUERY", "RM"]).has(parts[0])) {
+        if (parts.length > 1) {
+            selected = Object.keys(IP_INFO).filter(ip => matches(ip, parts[1]))
+        }
+        else 
+            return "Invalid. Syntax is [command] [ip] ..."
 
-    if (parts[0] === "GRANT") {
-        if (parts.length != 3) {
-            return "GRANT syntax: GRANT [ips] [permission]"
-        }
-        else {
-            perm = parts[2]
-            selected.forEach(ip => IP_INFO[ip].perms.add(perm))
-            if (selected.length === 0) {
-                return "Couldn't find any IPs that matches " + parts[1]
+        if (parts[0] === "GRANT") {
+            if (parts.length != 3) {
+                return "GRANT syntax: GRANT [ips] [permission]"
             }
             else {
-                return "Gave " + perm + " to " + selected.join(", ")
+                perm = parts[2]
+                if (!PERMISSION.has(perm)) {
+                    return "Can't find permission " + perm
+                }
+                if (perm == "command" || perm == "commandcommand") {
+                    if (ip && !IP_INFO[ip].perms.has("commandcommand")) {
+                        return "You do not have access to GRANT _ command"
+                    }
+                }
+                selected.forEach(ip => IP_INFO[ip].perms.add(perm))
+
+                if (selected.length === 0) {
+                    return "Couldn't find any IPs that matches " + parts[1]
+                }
+                else {
+                    return "Gave " + perm + " to " + selected.join(", ")
+                }
             }
         }
-    }
-    else if (parts[0] === "DENY") {
-        if (parts.length != 3) {
-            return "DENY syntax: DENY [ips] [permission]"
-        }
-        else {
-            perm = parts[2]
-            selected.forEach(ip => IP_INFO[ip].perms.delete(perm))
-            if (selected.length === 0) {
-                return "Couldn't find any IPs that matches " + parts[1]
+        else if (parts[0] === "DENY") {
+            if (parts.length != 3) {
+                return "DENY syntax: DENY [ips] [permission]"
             }
             else {
-                return "Denied " + perm + " from " + selected.join(", ")
+                perm = parts[2]
+                if (!PERMISSION.has(perm)) {
+                    return "Can't find permission " + perm
+                }
+                if (perm == "command" || perm == "commandcommand") {
+                    if (ip && !IP_INFO[ip].perms.has("commandcommand")) {
+                        return "You do not have access to DENY _ command"
+                    }
+                }
+                selected.forEach(ip => IP_INFO[ip].perms.delete(perm))
+                if (selected.length === 0) {
+                    return "Couldn't find any IPs that matches " + parts[1]
+                }
+                else {
+                    return "Denied " + perm + " from " + selected.join(", ")
+                }
             }
         }
-    }
-    else if (parts[0] === "QUERY") {
-        if (parts.length != 2) {
-            return "QUERY syntax: QUERY [ips]"
-        }
-        else {
-            if (selected.length === 0) {
-                return "Couldn't find any IPs that matches " + parts[1]
+        else if (parts[0] === "QUERY") {
+            if (parts.length != 2) {
+                return "QUERY syntax: QUERY [ips]"
             }
-            return selected.map(ip => {
-                res = ip + "\n"
-                res += Object.keys(IP_INFO[ip]).map(prop => {
-                    val = IP_INFO[ip][prop]
-                    if (val instanceof Set)
-                        val = [...val]
-                    return "\t" + prop + ": " + JSON.stringify(val)
+            else {
+                if (selected.length === 0) {
+                    return "Couldn't find any IPs that matches " + parts[1]
+                }
+                return selected.map(ip => {
+                    res = ip + "\n"
+                    res += Object.keys(IP_INFO[ip]).map(prop => {
+                        val = IP_INFO[ip][prop]
+                        if (val instanceof Set)
+                            val = [...val]
+                        return "\t" + prop + ": " + JSON.stringify(val)
+                    }).join("\n")
+                    return res
                 }).join("\n")
+            }
+        }
+        else if (parts[0] === "RM") {
+            if (parts.length != 2) {
+                return "RM syntax: RM [ips]"
+            }
+            else {
+                if (selected.length == 0) {
+                    return "Found no ips matching " + parts[0]
+                }
+                res = "Deleted "
+                selected.forEach(ip => {
+                    delete IP_INFO[ip]
+                    res += ip + " "
+                })
                 return res
-            }).join("\n")
+            }
+        }
+    }
+    else if (parts[0] === "MAKE") {
+        if (parts.length != 2) {
+            return "MAKE syntax: MAKE [ips]"
+        }
+        else {
+            user = makeDefaultUser()
+            IP_INFO[parts[1]] = user
+            return "Made user " + parts[1]
         }
     }
 
 }
 
 rl.on('line', function(line) {
-    console.log(doCommand(line))
+    console.log(doCommand("", line))
 })
 
 
@@ -571,12 +621,14 @@ var server = http.createServer((req, res) => {
     method = req.method
     url = url.parse(req.url)
     ip  = req.connection.remoteAddress
-    if (IP_INFO[ip] !== undefined && !IP_INFO[ip].perms.has("connect")) {
-        res.end("You are not allowed to connect to this server.")
-        return
-    }
 
     if (method === "GET") {
+        if (IP_INFO[ip] !== undefined) {
+            if (!IP_INFO[ip].perms.has("connect")) {
+                res.end("You are not allowed to connect to this server.")
+                return
+            }
+        }
         filePath = "Web" + url.pathname
         if (fs.existsSync(filePath)) {
             if (DEBUG)
@@ -614,8 +666,9 @@ var broadcast = timers.setInterval(() => {
         if (client.readyState === ws.OPEN) {
             if (CAR_SOCKETS.has(client)) {
                 ip = client.upgradeReq.connection.remoteAddress
+
                 if (IP_INFO[ip] === undefined) {
-                    IP_INFO[ip] = DEFAULT_USER
+                    IP_INFO[ip] = makeDefaultUser()
                 }
                 if (IP_INFO[ip].perms.has("view")) {
                     traffic["you"] = {ip: ip, info: {perms: [ ...IP_INFO[ip].perms ]}}
@@ -640,7 +693,7 @@ wss.on('connection', (socket => {
         ip = socket.upgradeReq.connection.remoteAddress
 
         if (IP_INFO[ip] === undefined) {
-            IP_INFO[ip] = DEFAULT_USER
+            IP_INFO[ip] = makeDefaultUser()
         }
 
         permissions = IP_INFO[ip].perms || []
@@ -689,8 +742,13 @@ wss.on('connection', (socket => {
                     return !(car.controlled_by === ip && car.name == carName)
                 })
             }
-            if (cmd === "cmd" && parts.length == 2 && permissions.has("command")) {
-                res = doCommand(parts[1])
+            if (cmd === "cmd" && parts.length == 2) {
+                if (permissions.has("command")) {
+                    res = doCommand(ip, parts[1])
+                }
+                else {
+                    res = "You do not have access to use moderator commands"
+                }
                 socket.send(res)
             }
             else {
@@ -715,4 +773,5 @@ wss.on('connection', (socket => {
 
     })
 }))
+
 
