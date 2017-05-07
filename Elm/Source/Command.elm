@@ -29,6 +29,7 @@ type alias Model =
 type Msg
     = ServerMsg String
     | SendCommand
+    | SendWSCommand
     | KeyPressed Int
     | UpdateText String
 
@@ -38,8 +39,12 @@ update msg model =
         ServerMsg json ->
             ( { model | resp = List.append model.resp [Debug.log "Resp" json] }, Cmd.none )
         SendCommand ->
-            ( model
+            ( { model | currentCommand = "" }
             , WebSocket.send model.webSocketUrl <| "cmd/" ++ model.currentCommand
+            )
+        SendWSCommand ->
+            ( { model | currentCommand = "" }
+            , WebSocket.send model.webSocketUrl <| model.currentCommand
             )
         UpdateText text ->
             ( { model
@@ -57,6 +62,7 @@ view model =
             [ input [ onInput UpdateText, style [("width", "100%")] ] [ text model.currentCommand ]
             , button [] [ text "Send!" ]
             ]
+        , button [ onClick SendWSCommand ] [ text "Send as WebSocket command" ]
         ]
     )
 

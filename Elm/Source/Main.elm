@@ -31,10 +31,9 @@ main =
     Html.programWithFlags { init = init, view = view, update = update, subscriptions = subscriptions }
 
 
-
 init : Flags -> ( Model, Cmd Msg )
 init flags =
-    ( Model [] [] Nothing Nothing Nothing {x=0, y=0} Nothing 40 (Debug.log "Websocket url: " flags.webSocketUrl) "" Nothing 6 200 Nothing Nothing flags.controls Nothing defaultMenu
+    ( Model [] [] Nothing Nothing Nothing {x=0, y=0} Nothing 40 (Debug.log "Websocket url: " flags.webSocketUrl) "" Nothing 6 200 Nothing Nothing flags.controls Nothing False Nothing defaultMenu
     , Cmd.batch
     [ Task.perform identity <| Task.succeed CheckSize
     , WebSocket.send flags.webSocketUrl "car"
@@ -49,11 +48,11 @@ update msg model =
             let result = decodeString decodeTraffic json
             in case result of
                 Ok traffic ->
-                    ( { model 
+                    ( { model
                         | cars = traffic.cars
                         , roads = traffic.roads
                         , ip = Just traffic.ip
-                        , err = Nothing 
+                        , err = Nothing
                         , menu = let menu = model.menu
                                  in { menu
                                     | buttons = generateMenuButtons traffic.perms
@@ -61,8 +60,8 @@ update msg model =
                     }
                     , Task.perform identity <| Task.succeed FixScroll )
                 Err error ->
-                    ( { model 
-                        | err = Just error 
+                    ( { model
+                        | err = Just error
                     }
                     , Cmd.none )
 
@@ -99,7 +98,7 @@ update msg model =
                                     )
                                     model.cars
                             , menu = let menu = model.menu
-                                     in { menu 
+                                     in { menu
                                         | rotation = case menu.state of
                                             In -> if menu.rotation > 0 then menu.rotation - delta * 5 else 0
                                             Out -> if menu.rotation < 1 then menu.rotation + delta * 5 else 1
@@ -123,7 +122,13 @@ update msg model =
             ( {model | lastMouse = Nothing, lastClickTime = model.lasttime}, Cmd.none )
 
         MousePress pos ->
-            ( {model 
+            if model.buildingRoad then
+                ( { model
+                | buildingRoadStart = Just { x = (pos.x + model.scroll.x) / model.renderScale
+                                           , y = (pos.y + model.scroll.y) / model.renderScale }
+                }, Cmd.none )
+            else
+            ( {model
                 | lastMouse = Just {x = toFloat pos.x, y = toFloat pos.y}
                 , currentDragCar = Nothing}
             , case model.currentDragCar of
@@ -307,19 +312,19 @@ update msg model =
             }
             }, Cmd.none )
 
-        AddCarClicked ->
-            ( { model 
-            | currentDragCar = Just {pos = {x = 0, y = 0}, img = "Car1", isPolice = False}
+        AddCarClicked police ->
+            ( { model
+            | currentDragCar = Just {pos = {x = 0, y = 0}, img = if police then "CarPolis" else "Car1", isPolice = police}
             , menu = let menu = model.menu
                      in { menu | state = In }
             }, Cmd.none )
 
-        AddPoliceClicked ->
-            ( { model 
-            | currentDragCar = Just {pos = {x = 0, y = 0}, img = "CarPolis", isPolice = True}
-            , menu = let menu = model.menu
-                     in { menu | state = In }
-            }, Cmd.none )
+        AddRoadClicked ->
+            ( { model
+            | buildingRoad = True
+            }
+            , Cmd.none
+            )
 
 view : Model -> Html Msg
 view model =
@@ -342,7 +347,17 @@ view model =
                 case model.currentDragCar of
                     Just car -> renderCars model [toCar car]
                     Nothing -> []
-            ))
+            )
+            ++ (
+                case (model.buildingRoadStart, model.lastMouse) of
+                    (Just start, Just mouse)->
+                        let end = { x = (mouse.x + model.scroll.x) / model.renderScale
+                                  , y = (mouse.y + model.scroll.y) / model.renderScale }
+                            road = Road start end [] Nothing 1.5
+                        in renderRoads model [road]
+                    _ -> []
+            )
+            )
         ] ++
         [ pre [] [text "Keys:"]
         , div [style [("margin-left", "2em")]] (

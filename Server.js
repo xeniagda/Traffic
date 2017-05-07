@@ -35,7 +35,7 @@ function makeDefaultUser() {
     }
 }
 
-PERMISSION = new Set(["connect", "view", "place", "police", "command", "commandcommand"])
+PERMISSION = new Set(["connect", "view", "place", "police", "build", "command", "commandcommand"])
 
 var rl = readline.createInterface({
     input: process.stdin,
@@ -174,6 +174,20 @@ function doCommand(ip, line) {
             return "Made user " + parts[1]
         }
     }
+    else if (parts[0] === "DEBUG") {
+        res = ""
+        parts.splice(1).forEach(param => {
+            if (DEBUG.has(param)) {
+                DEBUG.delete(param)
+                res += "Removed " + param
+            }
+            else {
+                DEBUG.add(param)
+                res += "Added " + param
+            }
+        })
+        return res
+    }
 
 }
 
@@ -243,25 +257,7 @@ ROADS_PRESET = [
 function init() {
     traffic = {
         cars: [ ],
-        roads: [
-            {width: 1.5, start: {x: 0, y: 23}, end: {x: 1, y: 8}, connected_to: [1], speed_rec: 5},
-            {width: 1.5, start: {x: 1, y: 8}, end: {x: 1, y: 1}, connected_to: [6, 7, 10], speed_rec: 5, traffic_light: {green_left: 0, last_green: 0, offset: {x: 1, y: 1}}},
-            {width: 1.5, start: {x: -1, y: 1}, end: {x: -1, y: 8}, connected_to: [3], speed_rec: 5},
-            {width: 1.5, start: {x: -1, y: 8}, end: {x: -2, y: 23}, connected_to: [], speed_rec: 5},
-            {width: 1.5, start: {x: -47, y: 1}, end: {x: -10, y: 1}, connected_to: [5], speed_rec: 5},
-            {width: 1.5, start: {x: -10, y: 1}, end: {x: -1, y: 1}, connected_to: [2, 7, 10], speed_rec: 5, traffic_light: {green_left: 0, last_green: 0, offset: {x: -1, y: 1}}},
-            {width: 1.5, start: {x: -1, y: -2}, end: {x: -47, y: -3}, connected_to: [], speed_rec: 5},
-            {width: 1.5, start: {x: 1, y: 1}, end: {x: 10, y: 1}, connected_to: [8], speed_rec: 5},
-            {width: 1.5, start: {x: 10, y: 1}, end: {x: 38, y: 1}, connected_to: [], speed_rec: 5},
-            {width: 1.5, start: {x: 38, y: -1}, end: {x: 1, y: -2}, connected_to: [2, 6, 10], speed_rec: 5, traffic_light: {green_left: 0, last_green: 0, offset: {x: 1, y: -1}}},
-            {width: 1.5, start: {x: 1, y: -2}, end: {x: 1, y: -9}, connected_to: [11], speed_rec: 5},
-            {width: 1.5, start: {x: 1, y: -9}, end: {x: 0, y: -16}, connected_to: [12], speed_rec: 5},
-            {width: 1.5, start: {x: 0, y: -16}, end: {x: -7, y: -23}, connected_to: [13], speed_rec: 5},
-            {width: 1.5, start: {x: -7, y: -23}, end: {x: -12, y: -25}, connected_to: [14], speed_rec: 5},
-            {width: 1.5, start: {x: -12, y: -25}, end: {x: -16, y: -30}, connected_to: [15], speed_rec: 5},
-            {width: 1.5, start: {x: -16, y: -30}, end: {x: -24, y: -42}, connected_to: [], speed_rec: 5},
-            // {width: 1.5, start: {x: -47, y: -3}, end: {x: -47, y: 1}, connected_to: [4], speed_rec: 5},
-        ],
+        roads: JSON.parse(fs.readFileSync("Traffic.js")),
         intersections: [
             {roads: [1, 5, 9]}
         ],
@@ -269,8 +265,16 @@ function init() {
     }
 }
 
+function save_roads() {
+    fs.writeFileSync("Traffic.js", JSON.stringify(traffic.roads))
+}
 
-DEBUG = false
+
+DEBUG = new Set([
+    // "AI",
+    // "ws",
+    // "http",
+])
 
 init()
 
@@ -461,7 +465,7 @@ var physics = timers.setInterval(() => {
             }
 
             else if (cars_in_front.length > 0) {
-                if (DEBUG)
+                if (DEBUG.has("AI"))
                     console.log(car.name + " is behind " + cars_in_front.map(car => car.name))
                 // Match the speed
                 avg_speed = cars_in_front.map(check_car => check_car.speed * Math.cos(toRadians(check_car.rot - car.rot))).reduce((a, b) => a + b) / cars_in_front.length
@@ -483,7 +487,7 @@ var physics = timers.setInterval(() => {
             }
             else {
                 car.accel = (road.speed_rec - car.speed) * 5
-                if (DEBUG)
+                if (DEBUG.has("AI"))
                     console.log(car.name + " is accelling from " + car.speed + " to " + road.speed_rec + " with " + car.accel)
             }
             if (road.traffic_light && car.ai.waiting) {
@@ -631,7 +635,7 @@ var server = http.createServer((req, res) => {
         }
         filePath = "Web" + url.pathname
         if (fs.existsSync(filePath)) {
-            if (DEBUG)
+            if (DEBUG.has("http"))
                 console.log(method + " " + url.href)
 
             if (!fs.lstatSync(filePath).isFile()) {
@@ -641,7 +645,7 @@ var server = http.createServer((req, res) => {
             res.setHeader("Content-Type", "text/html")
             res.end(content)
         } else {
-            if (DEBUG)
+            if (DEBUG.has("http"))
                 console.log(method + " " + url.href + " (NOEXIST!)")
             res.end("NOEXIST!")
         }
@@ -704,8 +708,9 @@ wss.on('connection', (socket => {
 
         parts = data.split("/")
 
-        if (DEBUG)
+        if (DEBUG.has("ws"))
             console.log("Recieved " + data + " from " + ip)
+
         if (parts.length > 0) {
             cmd = parts[0]
             if (cmd === "claim" && parts.length > 1) {
@@ -713,7 +718,7 @@ wss.on('connection', (socket => {
                 cars = traffic.cars.filter(car => car.name == carName)
                 cars.forEach(car => car.controlled_by = ip)
             }
-            if (cmd === "create" && parts.length == 2 && permissions.has("place")) {
+            else if (cmd === "create" && parts.length == 2 && permissions.has("place")) {
                 proto_car = JSON.parse(decodeURIComponent(parts[1]))
 
                 car = JSON.parse(JSON.stringify(DEFAULT_CAR_PROPERTIES))
@@ -736,13 +741,13 @@ wss.on('connection', (socket => {
                 add_car(car)
 
             }
-            if (cmd === "remove" && parts.length > 1) {
+            else if (cmd === "remove" && parts.length > 1) {
                 carName = parts[1]
                 traffic.cars = traffic.cars.filter(car => {
                     return !(car.controlled_by === ip && car.name == carName)
                 })
             }
-            if (cmd === "cmd" && parts.length == 2) {
+            else if (cmd === "cmd" && parts.length == 2) {
                 if (permissions.has("command")) {
                     res = doCommand(ip, parts[1])
                 }
@@ -750,6 +755,17 @@ wss.on('connection', (socket => {
                     res = "You do not have access to use moderator commands"
                 }
                 socket.send(res)
+            }
+            else if (cmd === "build" && parts.length == 5 && perms.has("build")) { // build/x1/y1/x2/y2
+                poses = parts.splice(1).map(x => x | 0)
+                road = {
+                    width: 1.5,
+                    start: {x:poses[0],y:poses[1]},
+                    end: {x:poses[2],y:poses[3]},
+                    connected_to: [],
+                    speed_rec: 5
+                }
+                traffic.roads.push(road)
             }
             else {
                 cars = traffic.cars.filter(car => car.controlled_by === ip)
@@ -773,5 +789,4 @@ wss.on('connection', (socket => {
 
     })
 }))
-
 

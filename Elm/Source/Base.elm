@@ -52,8 +52,9 @@ defaultMenu =
 
 generateMenuButtons : List String -> List MenuButton
 generateMenuButtons perms =
-       (if List.member "place" perms then [ MenuButton "AddCar" AddCarClicked] else [])
-    ++ (if List.member "police" perms then [ MenuButton "AddPolice" AddPoliceClicked] else [])
+       (if List.member "place" perms then [ MenuButton "AddCar" <| AddCarClicked False] else [])
+    ++ (if List.member "police" perms then [ MenuButton "AddPolice" <| AddCarClicked True] else [])
+    ++ (if List.member "build" perms then [ MenuButton "AddRoad" AddRoadClicked] else [])
 
 
 type alias Controls = 
@@ -163,7 +164,11 @@ type alias Model =
     , lastClickTime : Maybe Float
     , trackingCar : Maybe String
     , controls : Controls
+
     , currentDragCar : Maybe ProtoCar
+
+    , buildingRoad : Bool
+    , buildingRoadStart : Maybe Position
 
     , menu : Menu
     }
@@ -183,6 +188,6 @@ type Msg
     | SetMsg String
     | SendWebSocketMsg
     | MenuBallClicked
-    | AddCarClicked
-    | AddPoliceClicked
+    | AddCarClicked Bool
+    | AddRoadClicked
 
