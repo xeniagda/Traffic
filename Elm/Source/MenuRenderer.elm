@@ -74,7 +74,7 @@ renderMenu model =
                         , Sa.height <| toString <| model.menu.height
                         , Sa.clipPath "url(#rectPath)"
                         , Sa.opacity "0"
-                        , Sev.onClick button.message
+                        , Sev.onClick <| MenuButtonClicked button.message
                         ] []
                     ]
                     ) model.menu.buttons)

@@ -33,7 +33,7 @@ main =
 
 init : Flags -> ( Model, Cmd Msg )
 init flags =
-    ( Model [] [] Nothing Nothing Nothing {x=0, y=0} Nothing 40 (Debug.log "Websocket url: " flags.webSocketUrl) "" Nothing 6 200 Nothing Nothing flags.controls Nothing False Nothing defaultMenu
+    ( Model [] [] Nothing Nothing Nothing {x=0, y=0} Nothing Nothing 40 (Debug.log "Websocket url: " flags.webSocketUrl) "" Nothing 6 200 Nothing Nothing flags.controls Nothing False False Nothing defaultMenu
     , Cmd.batch
     [ Task.perform identity <| Task.succeed CheckSize
     , WebSocket.send flags.webSocketUrl "car"
@@ -119,17 +119,40 @@ update msg model =
 
               }, Cmd.none )
         MouseRelease _ ->
-            ( {model | lastMouse = Nothing, lastClickTime = model.lasttime}, Cmd.none )
+            ( {model | dragMouse = Nothing, lastClickTime = model.lasttime}, Cmd.none )
 
         MousePress pos ->
             if model.buildingRoad then
-                ( { model
-                | buildingRoadStart = Just { x = (pos.x + model.scroll.x) / model.renderScale
-                                           , y = (pos.y + model.scroll.y) / model.renderScale }
-                }, Cmd.none )
+                case model.buildingRoadStart of
+                    Nothing ->
+                        let start = { x = (toFloat pos.x - model.scroll.x) / model.renderScale
+                                    , y = (toFloat pos.y - model.scroll.y) / model.renderScale }
+                            start_ = if model.snap then pRound start else start
+                        in  ( { model
+                            | buildingRoadStart = Just start_
+                            }, Cmd.none )
+                    Just start ->
+                        ( { model
+                        | buildingRoadStart = Nothing
+                        , buildingRoad = False
+                        },
+                        case model.mouse of
+                            Just mouse ->
+                                let mouse_ = if model.snap then pRound mouse else mouse
+                                in WebSocket.send model.webSocketUrl
+                                    <| String.join "/"
+                                    [ "build"
+                                    , toString <| start.x
+                                    , toString <| start.y
+                                    , toString <| mouse_.x
+                                    , toString <| mouse_.y
+                                    ]
+                            Nothing -> Cmd.none
+                        )
+
             else
             ( {model
-                | lastMouse = Just {x = toFloat pos.x, y = toFloat pos.y}
+                | dragMouse = Just {x = toFloat pos.x, y = toFloat pos.y}
                 , currentDragCar = Nothing}
             , case model.currentDragCar of
                 Just car -> WebSocket.send model.webSocketUrl <| "create/" ++ (Http.encodeUri <| encode 0 <| encodeProtoCar car)
@@ -141,19 +164,25 @@ update msg model =
                 case model.trackingCar of
                     Nothing -> False
                     Just name -> List.length (List.filter (\car -> car.name == name) model.cars) > 0
+
+                mouse = { x = (toFloat pos.x - model.scroll.x) / model.renderScale
+                        , y = (toFloat pos.y - model.scroll.y) / model.renderScale }
+
+                model_ = { model | mouse = Just mouse }
+
             in if not track then
-                case model.lastMouse of
+                case model_.dragMouse of
                     Just mousePos ->
                         let delta = {x = toFloat pos.x - mousePos.x, y = toFloat pos.y - mousePos.y}
-                        in ( {model | scroll = {x = model.scroll.x + delta.x, y = model.scroll.y + delta.y}, lastMouse = Just {x = toFloat pos.x, y = toFloat pos.y}}, Cmd.none )
+                        in ( {model_ | scroll = {x = model_.scroll.x + delta.x, y = model_.scroll.y + delta.y}, dragMouse = Just {x = toFloat pos.x, y = toFloat pos.y}}, Cmd.none )
                     Nothing ->
-                        case model.currentDragCar of
+                        case model_.currentDragCar of
                             Just car ->
-                                ( { model
-                                | currentDragCar = Just {car | pos = {x = (toFloat pos.x - model.scroll.x) / model.renderScale, y = (toFloat pos.y - model.scroll.y) / model.renderScale}}
+                                ( { model_
+                                | currentDragCar = Just {car | pos = {x = (toFloat pos.x - model_.scroll.x) / model_.renderScale, y = (toFloat pos.y - model_.scroll.y) / model_.renderScale}}
                                 }, Cmd.none )
-                            Nothing -> ( model, Cmd.none )
-            else ( model, Cmd.none )
+                            Nothing -> ( model_, Cmd.none )
+            else ( model_, Cmd.none )
 
         KeyDown key ->
             if key == model.controls.zoomIn then -- Plus key
@@ -263,6 +292,8 @@ update msg model =
                                             Nothing -> Maybe.map .name <| List.head controlledByMe
                           }
                           , Cmd.none )
+                    else if key == model.controls.snap then
+                        ( { model | snap = True }, Cmd.none )
                     else (always (model, Cmd.none)) <| Debug.log "Key Down" key
                 Nothing -> ( model, Cmd.none )
 
@@ -293,6 +324,8 @@ update msg model =
                                     Nothing -> car
                             ) model.cars},
                         WebSocket.send model.webSocketUrl "steer/0" )
+                    else if key == model.controls.snap then
+                        ( { model | snap = False }, Cmd.none )
                     else (always (model, Cmd.none)) <| Debug.log "Key Up" key
                 Nothing -> ( model, Cmd.none )
 
@@ -312,11 +345,16 @@ update msg model =
             }
             }, Cmd.none )
 
+        MenuButtonClicked msg ->
+            ( { model
+            | menu = let menu = model.menu
+                     in { menu | state = In }
+            }, Task.perform identity <| Task.succeed msg )
+
+
         AddCarClicked police ->
             ( { model
             | currentDragCar = Just {pos = {x = 0, y = 0}, img = if police then "CarPolis" else "Car1", isPolice = police}
-            , menu = let menu = model.menu
-                     in { menu | state = In }
             }, Cmd.none )
 
         AddRoadClicked ->
@@ -349,11 +387,10 @@ view model =
                     Nothing -> []
             )
             ++ (
-                case (model.buildingRoadStart, model.lastMouse) of
-                    (Just start, Just mouse)->
-                        let end = { x = (mouse.x + model.scroll.x) / model.renderScale
-                                  , y = (mouse.y + model.scroll.y) / model.renderScale }
-                            road = Road start end [] Nothing 1.5
+                case (model.buildingRoadStart, model.mouse) of
+                    (Just start, Just mouse) ->
+                        let f = if model.snap then pRound else identity
+                            road = Road (f start) (f mouse) [] Nothing 1.5
                         in renderRoads model [road]
                     _ -> []
             )

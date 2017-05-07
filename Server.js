@@ -175,18 +175,38 @@ function doCommand(ip, line) {
         }
     }
     else if (parts[0] === "DEBUG") {
-        res = ""
+        if (parts.length === 1) {
+            return "Current debugs: " + Array.from(DEBUG).join(", ")
+        }
+        added = []
+        removed = []
         parts.splice(1).forEach(param => {
-            if (DEBUG.has(param)) {
+            if (!DEBUGS.has(param)) {
+                res += "Invalid debug parameter " + param
+            }
+            else if (DEBUG.has(param)) {
                 DEBUG.delete(param)
-                res += "Removed " + param
+                removed.push(param)
             }
             else {
                 DEBUG.add(param)
-                res += "Added " + param
+                added.push(param)
             }
         })
-        return res
+        res = ""
+
+        if (added.length > 0)
+            res += "Added " + added.join(", ")
+        else
+            res += "Added nothing"
+        res += "\n"
+
+        if (removed.length > 0)
+            res += "Removed " + removed.join(", ")
+        else
+            res += "Removed nothing"
+
+        return res.trim()
     }
 
 }
@@ -269,12 +289,12 @@ function save_roads() {
     fs.writeFileSync("Traffic.js", JSON.stringify(traffic.roads))
 }
 
-
 DEBUG = new Set([
     // "AI",
     // "ws",
     // "http",
 ])
+DEBUGS = new Set(["AI", "ws", "http"])
 
 init()
 
@@ -756,8 +776,8 @@ wss.on('connection', (socket => {
                 }
                 socket.send(res)
             }
-            else if (cmd === "build" && parts.length == 5 && perms.has("build")) { // build/x1/y1/x2/y2
-                poses = parts.splice(1).map(x => x | 0)
+            else if (cmd === "build" && parts.length == 5 && permissions.has("build")) { // build/x1/y1/x2/y2
+                poses = parts.splice(1).map(x => parseFloat(x))
                 road = {
                     width: 1.5,
                     start: {x:poses[0],y:poses[1]},
@@ -789,4 +809,3 @@ wss.on('connection', (socket => {
 
     })
 }))
-

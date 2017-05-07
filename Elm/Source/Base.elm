@@ -22,6 +22,10 @@ pAdd : Position -> Position -> Position
 pAdd p1 p2 =
     { x = p1.x + p2.x, y = p1.y + p2.y }
 
+pRound : Position -> Position
+pRound pos =
+    { x = toFloat <| round pos.x, y = toFloat <| round pos.y }
+
 (!!) : List a -> Int -> Maybe a
 (!!) lst n =
     List.head <| List.drop n lst
@@ -70,6 +74,7 @@ type alias Controls =
     , zoomOut : Int
     , remove : Int
     , place : Int
+    , snap : Int
     }
 
 type alias Position =
@@ -154,7 +159,8 @@ type alias Model =
     , size : Maybe Position
     , lasttime : Maybe Time
     , scroll : Position -- Upper left corner
-    , lastMouse : Maybe Position
+    , dragMouse : Maybe Position
+    , mouse : Maybe Position
     , renderScale : Float
     , webSocketUrl : String
     , msg : String -- Remove!
@@ -168,6 +174,7 @@ type alias Model =
     , currentDragCar : Maybe ProtoCar
 
     , buildingRoad : Bool
+    , snap : Bool
     , buildingRoadStart : Maybe Position
 
     , menu : Menu
@@ -188,6 +195,7 @@ type Msg
     | SetMsg String
     | SendWebSocketMsg
     | MenuBallClicked
+    | MenuButtonClicked Msg
     | AddCarClicked Bool
     | AddRoadClicked
 
