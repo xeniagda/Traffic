@@ -35,7 +35,7 @@ function makeDefaultUser() {
     }
 }
 
-PERMISSION = new Set(["connect", "view", "place", "police", "build", "command", "commandcommand"])
+PERMISSION = new Set(["connect", "view", "place", "police", "build", "command", "moderator"])
 
 var rl = readline.createInterface({
     input: process.stdin,
@@ -72,6 +72,11 @@ function matches(ip, pattern) {
 }
 
 function doCommand(ip, line) {
+
+    if (DEBUG.has("cmd") && ip !== "") {
+        console.log(ip + " is executing command " + line)
+    }
+
     parts = line.split(" ")
     if (new Set(["GRANT", "DENY", "QUERY", "RM"]).has(parts[0])) {
         if (parts.length > 1) {
@@ -89,8 +94,8 @@ function doCommand(ip, line) {
                 if (!PERMISSION.has(perm)) {
                     return "Can't find permission " + perm
                 }
-                if (perm == "command" || perm == "commandcommand") {
-                    if (ip && !IP_INFO[ip].perms.has("commandcommand")) {
+                if (perm == "command" || perm == "moderator") {
+                    if (ip && !IP_INFO[ip].perms.has("moderator")) {
                         return "You do not have access to GRANT _ command"
                     }
                 }
@@ -113,8 +118,8 @@ function doCommand(ip, line) {
                 if (!PERMISSION.has(perm)) {
                     return "Can't find permission " + perm
                 }
-                if (perm == "command" || perm == "commandcommand") {
-                    if (ip && !IP_INFO[ip].perms.has("commandcommand")) {
+                if (perm == "command" || perm == "moderator") {
+                    if (ip && !IP_INFO[ip].perms.has("moderator")) {
                         return "You do not have access to DENY _ command"
                     }
                 }
@@ -212,7 +217,8 @@ function doCommand(ip, line) {
 }
 
 rl.on('line', function(line) {
-    console.log(doCommand("", line))
+    result = doCommand("", line)
+    result.split("\n").forEach(line => console.log("  " + line))
 })
 
 
@@ -290,11 +296,13 @@ function save_roads() {
 }
 
 DEBUG = new Set([
+    "cmd",
     // "AI",
     // "ws",
     // "http",
 ])
-DEBUGS = new Set(["AI", "ws", "http"])
+
+DEBUGS = new Set(["AI", "ws", "http", "cmd"])
 
 init()
 
@@ -682,25 +690,22 @@ console.log("Started Server on port " + port)
 
 var wss = new ws.Server({server: server})
 
-CAR_SOCKETS = new Set([])
 
 var broadcast = timers.setInterval(() => {
 
     wss.clients.forEach(client => {
         if (client.readyState === ws.OPEN) {
-            if (CAR_SOCKETS.has(client)) {
-                ip = client.upgradeReq.connection.remoteAddress
+            ip = client.upgradeReq.connection.remoteAddress
 
-                if (IP_INFO[ip] === undefined) {
-                    IP_INFO[ip] = makeDefaultUser()
-                }
-                if (IP_INFO[ip].perms.has("view")) {
-                    traffic["you"] = {ip: ip, info: {perms: [ ...IP_INFO[ip].perms ]}}
-                    client.send(JSON.stringify(traffic))
-                }
-                else {
-                    client.send(JSON.stringify({cars: [], roads: [], you: {ip: ip, info: {perms: []}}}))
-                }
+            if (IP_INFO[ip] === undefined) {
+                IP_INFO[ip] = makeDefaultUser()
+            }
+            if (IP_INFO[ip].perms.has("view")) {
+                traffic["you"] = {ip: ip, info: {perms: [ ...IP_INFO[ip].perms ]}}
+                client.send(JSON.stringify(traffic))
+            }
+            else {
+                client.send(JSON.stringify({cars: [], roads: [], you: {ip: ip, info: {perms: []}}}))
             }
         }
         delete traffic["you"]
@@ -710,10 +715,6 @@ var broadcast = timers.setInterval(() => {
 wss.on('connection', (socket => {
 
     socket.on('message', (data, flags) => {
-        if (data === "car") {
-            CAR_SOCKETS.add(socket)
-            return
-        }
         ip = socket.upgradeReq.connection.remoteAddress
 
         if (IP_INFO[ip] === undefined) {
@@ -774,7 +775,7 @@ wss.on('connection', (socket => {
                 else {
                     res = "You do not have access to use moderator commands"
                 }
-                socket.send(res)
+                socket.send(JSON.stringify({res: res}))
             }
             else if (cmd === "build" && parts.length == 5 && permissions.has("build")) { // build/x1/y1/x2/y2
                 poses = parts.splice(1).map(x => parseFloat(x))
