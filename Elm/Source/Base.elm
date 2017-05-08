@@ -32,6 +32,19 @@ pRound pos =
 
 infixr 0 !!
 
+indexOf : List a -> a -> Maybe Int
+indexOf lst a =
+    if lst == [] then Nothing
+    else 
+        let tail = Maybe.withDefault [] <| List.tail lst
+        in case List.head lst of
+            Nothing -> Nothing
+            Just head -> if a == head then Just 0
+                         else case indexOf tail a of
+                             Just num -> Just <| num + 1
+                             Nothing -> Nothing
+
+
 type MenuState = In | Out
 type alias Menu =
     { radius : Float
@@ -56,21 +69,28 @@ defaultMenu =
 
 generateMenuButtons : List String -> List MenuButton
 generateMenuButtons perms =
-       (if List.member "place" perms then [ MenuButton "AddCar" <| AddCarClicked False] else [])
-    ++ (if List.member "police" perms then [ MenuButton "AddPolice" <| AddCarClicked True] else [])
-    ++ (if List.member "build" perms then [ MenuButton "AddRoad" AddRoadClicked] else [])
+       (if List.member "place" perms then [ MenuButton "AddCar" <| AddCarClicked False ] else [])
+    ++ (if List.member "police" perms then [ MenuButton "AddPolice" <| AddCarClicked True ] else [])
+    ++ (if List.member "build" perms then [ MenuButton "AddRoad" AddRoadClicked, MenuButton "CombineRoad" CombineRoadClicked ] else [])
 
+getClosestRoad : Position -> List Road -> Maybe Road
+getClosestRoad pos roads =
+    let dist road = 
+        let positions = [road.end]
+            lengths = List.map (\roadPos -> Tuple.first <| toPolar (roadPos.x - pos.x, roadPos.y - pos.y)) positions
+        in List.sum lengths / 1000 + (Maybe.withDefault 10000 <| List.minimum <| lengths)
+    in List.head <| List.sortBy dist roads
 
 type alias Controls = 
-    { up      : Int
-    , left    : Int
-    , right   : Int
-    , break   : Int
-    , back    : Int
-    , carUp    : Int
-    , carDown  : Int
-    , carFree  : Int
-    , zoomIn  : Int
+    { up : Int
+    , left : Int
+    , right : Int
+    , break : Int
+    , back : Int
+    , carUp : Int
+    , carDown : Int
+    , free : Int
+    , zoomIn : Int
     , zoomOut : Int
     , remove : Int
     , place : Int
@@ -163,7 +183,6 @@ type alias Model =
     , mouse : Maybe Position
     , renderScale : Float
     , webSocketUrl : String
-    , msg : String -- Remove!
     , ip : Maybe String
     , accelRate : Float
     , steerRate : Float
@@ -177,9 +196,12 @@ type alias Model =
     , snap : Bool
     , buildingRoadStart : Maybe Position
 
+    , isSelectingRoad : Bool
+    , currentSelectedRoad : Maybe Road
+    , otherRoad : Maybe Road
+
     , menu : Menu
     }
-
 
 type Msg
     = ServerSync String
@@ -192,10 +214,9 @@ type Msg
     | MouseMove Mouse.Position
     | KeyDown Keyboard.KeyCode
     | KeyUp Keyboard.KeyCode
-    | SetMsg String
-    | SendWebSocketMsg
     | MenuBallClicked
     | MenuButtonClicked Msg
     | AddCarClicked Bool
     | AddRoadClicked
+    | CombineRoadClicked
 

@@ -123,7 +123,9 @@ function doCommand(ip, line) {
                         return "You do not have access to DENY _ command"
                     }
                 }
-                selected.forEach(ip => IP_INFO[ip].perms.delete(perm))
+                selected.forEach(ip => {
+                    IP_INFO[ip].perms.delete(perm)
+                })
                 if (selected.length === 0) {
                     return "Couldn't find any IPs that matches " + parts[1]
                 }
@@ -538,7 +540,15 @@ var physics = timers.setInterval(() => {
 
 
         return car
-    }).filter(car => car.fade > 0)
+    }).filter(car => {
+        if (car.fade <= 0) return false
+        if (car.controlled_by !== undefined) {
+            if (IP_INFO[car.controlled_by] !== undefined) {
+                return IP_INFO[car.controlled_by].perms.has("place")
+            }
+        }
+        return true
+    })
 
     traffic.intersections.forEach(intersection => {
         any_green = false
@@ -657,7 +667,6 @@ var server = http.createServer((req, res) => {
     if (method === "GET") {
         if (IP_INFO[ip] !== undefined) {
             if (!IP_INFO[ip].perms.has("connect")) {
-                res.end("You are not allowed to connect to this server.")
                 return
             }
         }
@@ -788,6 +797,11 @@ wss.on('connection', (socket => {
                 }
                 traffic.roads.push(road)
             }
+            else if (cmd === "rconn" && parts.length == 3 && permissions.has("build")) { // build/r1/r2
+                roads = parts.splice(1).map(x => x | 0)
+                traffic.roads[roads[0]].connected_to.push(roads[1])
+            }
+
             else {
                 cars = traffic.cars.filter(car => car.controlled_by === ip)
 

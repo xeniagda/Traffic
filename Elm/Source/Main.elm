@@ -33,7 +33,33 @@ main =
 
 init : Flags -> ( Model, Cmd Msg )
 init flags =
-    ( Model [] [] Nothing Nothing Nothing {x=0, y=0} Nothing Nothing 40 (Debug.log "Websocket url: " flags.webSocketUrl) "" Nothing 6 200 Nothing Nothing flags.controls Nothing False False Nothing defaultMenu
+    (
+        { cars = []
+        , roads = []
+        , err = Nothing
+        , size = Nothing
+        , lasttime = Nothing
+        , scroll = {x=0, y=0}
+        , dragMouse = Nothing
+        , mouse = Nothing
+        , renderScale = 40.0
+        , webSocketUrl = flags.webSocketUrl
+        , ip = Nothing
+        , accelRate = 6.0
+        , steerRate = 200.0
+        , lastClickTime = Nothing
+        , trackingCar = Nothing
+        , controls = flags.controls
+        , currentDragCar = Nothing
+        , buildingRoad = False
+        , snap = False
+        , buildingRoadStart = Nothing
+        , isSelectingRoad = False
+        , currentSelectedRoad = Nothing
+        , otherRoad = Nothing
+        , menu = defaultMenu
+        }
+    -- ( Model [] [] Nothing Nothing Nothing {x=0, y=0} Nothing Nothing 40 (Debug.log "Websocket url: " flags.webSocketUrl) "" Nothing 6 200 Nothing Nothing flags.controls Nothing False False Nothing defaultMenu
     , Cmd.batch
     [ Task.perform identity <| Task.succeed CheckSize
     , WebSocket.send flags.webSocketUrl "car"
@@ -149,7 +175,31 @@ update msg model =
                                     ]
                             Nothing -> Cmd.none
                         )
-
+            else if model.isSelectingRoad then
+                case (model.currentSelectedRoad, model.otherRoad) of
+                    (Just road, Nothing) ->
+                        ( { model
+                        | otherRoad = Just road
+                        }
+                        , Cmd.none )
+                    (Just road, Just other) ->
+                        ( { model
+                        | isSelectingRoad = False
+                        , currentSelectedRoad = Nothing
+                        , otherRoad = Nothing
+                        }
+                        , case (indexOf model.roads other
+                             , indexOf model.roads road) of
+                            (Just r1, Just r2) ->
+                            WebSocket.send model.webSocketUrl
+                                <| String.join "/"
+                                [ "rconn"
+                                , toString r1
+                                , toString r2
+                                ]
+                            _ -> Cmd.none
+                        )
+                    _ -> ( model, Cmd.none )
             else
             ( {model
                 | dragMouse = Just {x = toFloat pos.x, y = toFloat pos.y}
@@ -160,15 +210,20 @@ update msg model =
             )
 
         MouseMove pos ->
-            let track =
-                case model.trackingCar of
+            let track = case model.trackingCar of
                     Nothing -> False
                     Just name -> List.length (List.filter (\car -> car.name == name) model.cars) > 0
 
                 mouse = { x = (toFloat pos.x - model.scroll.x) / model.renderScale
                         , y = (toFloat pos.y - model.scroll.y) / model.renderScale }
 
-                model_ = { model | mouse = Just mouse }
+                model_ = {model
+                         | mouse = Just mouse
+                         , currentSelectedRoad =
+                             if model.isSelectingRoad then
+                                 getClosestRoad mouse model.roads
+                             else model.currentSelectedRoad
+                         }
 
             in if not track then
                 case model_.dragMouse of
@@ -258,8 +313,19 @@ update msg model =
                                     Nothing -> car
                             ) model.cars},
                         WebSocket.send model.webSocketUrl ( "steer/" ++ (toString model.steerRate)))
-                    else if key == model.controls.carFree then
-                        ( {model | trackingCar = Nothing }, Cmd.none )
+                    else if key == model.controls.free then
+                        ( {model
+                        | trackingCar = Nothing
+                        , currentDragCar = Nothing
+                        , buildingRoad = False
+                        , buildingRoadStart = Nothing
+                        , isSelectingRoad = False
+                        , currentSelectedRoad = Nothing
+                        , otherRoad = Nothing
+                        , menu =
+                            let menu = model.menu
+                            in { menu | state = In }
+                        }, Cmd.none )
                     else if key == model.controls.carUp || key == model.controls.carDown then
                         ( { model |
                             trackingCar =
@@ -329,11 +395,6 @@ update msg model =
                     else (always (model, Cmd.none)) <| Debug.log "Key Up" key
                 Nothing -> ( model, Cmd.none )
 
-        SetMsg msg ->
-            ( {model | msg = msg}, Cmd.none )
-
-        SendWebSocketMsg ->
-            ( model, WebSocket.send model.webSocketUrl model.msg )
 
         MenuBallClicked ->
             ( { model
@@ -364,6 +425,10 @@ update msg model =
             , Cmd.none
             )
 
+        CombineRoadClicked ->
+            ( { model | isSelectingRoad = True }
+            , Cmd.none )
+
 view : Model -> Html Msg
 view model =
     div [style [("margin", "0px")]] <|
@@ -381,6 +446,38 @@ view model =
                 menu = renderMenu model
              in
                 lines ++ roads ++ cars ++ trafficLights ++ menu
+            ++ (
+                List.concatMap (\road ->
+                    [
+                        S.line
+                        [ Sa.x1 <| toString <| (road.start.x * model.renderScale) + model.scroll.x
+                        , Sa.y1 <| toString <| (road.start.y * model.renderScale) + model.scroll.y
+                        , Sa.x2 <| toString <| (road.end.x * model.renderScale) + model.scroll.x
+                        , Sa.y2 <| toString <| (road.end.y * model.renderScale) + model.scroll.y
+                        , Sa.strokeWidth <| toString <| model.renderScale * 0.3
+                        , Sa.stroke "green"
+                        ] []
+                    ,
+                        S.circle
+                        [ Sa.cx <| toString <| (road.end.x * model.renderScale) + model.scroll.x
+                        , Sa.cy <| toString <| (road.end.y * model.renderScale) + model.scroll.y
+                        , Sa.fill "yellow"
+                        , Sa.r <| toString <| model.renderScale / 2
+                        , Sa.stroke "black"
+                        , Sa.strokeWidth <| toString <| model.renderScale / 20
+                        ] []
+                    ]
+                )
+                ((
+                case model.currentSelectedRoad of
+                    Just road -> [road]
+                    Nothing -> []
+                ) ++ (
+                case model.otherRoad of
+                    Just road -> [road]
+                    Nothing -> []
+                ))
+            )
             ++ (
                 case model.currentDragCar of
                     Just car -> renderCars model [toCar car]
