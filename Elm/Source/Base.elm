@@ -71,7 +71,12 @@ generateMenuButtons : List String -> List MenuButton
 generateMenuButtons perms =
        (if List.member "place" perms then [ MenuButton "AddCar" <| AddCarClicked False ] else [])
     ++ (if List.member "police" perms then [ MenuButton "AddPolice" <| AddCarClicked True ] else [])
-    ++ (if List.member "build" perms then [ MenuButton "AddRoad" AddRoadClicked, MenuButton "CombineRoad" CombineRoadClicked ] else [])
+    ++ (if List.member "build" perms then 
+        [ MenuButton "AddRoad" AddRoadClicked
+        , MenuButton "RemoveRoad" RemoveRoadClicked
+        , MenuButton "FlipRoad" FlipRoadClicked 
+        , MenuButton "CombineRoad" CombineRoadClicked 
+        ] else [])
 
 getClosestRoad : Position -> List Road -> Maybe Road
 getClosestRoad pos roads =
@@ -196,12 +201,18 @@ type alias Model =
     , snap : Bool
     , buildingRoadStart : Maybe Position
 
-    , isSelectingRoad : Bool
+    , selectState : SelectState
     , currentSelectedRoad : Maybe Road
     , otherRoad : Maybe Road
 
     , menu : Menu
     }
+
+type SelectState 
+    = NotSelecting
+    | CombineSelecting
+    | RemoveSelecting
+    | FlipSelecting
 
 type Msg
     = ServerSync String
@@ -219,4 +230,6 @@ type Msg
     | AddCarClicked Bool
     | AddRoadClicked
     | CombineRoadClicked
+    | RemoveRoadClicked
+    | FlipRoadClicked
 

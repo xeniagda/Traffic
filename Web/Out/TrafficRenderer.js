@@ -9401,7 +9401,7 @@ var _loovjo$traffic$Base$Model = function (a) {
 																					return function (v) {
 																						return function (w) {
 																							return function (x) {
-																								return {cars: a, roads: b, err: c, size: d, lasttime: e, scroll: f, dragMouse: g, mouse: h, renderScale: i, webSocketUrl: j, ip: k, accelRate: l, steerRate: m, lastClickTime: n, trackingCar: o, controls: p, currentDragCar: q, buildingRoad: r, snap: s, buildingRoadStart: t, isSelectingRoad: u, currentSelectedRoad: v, otherRoad: w, menu: x};
+																								return {cars: a, roads: b, err: c, size: d, lasttime: e, scroll: f, dragMouse: g, mouse: h, renderScale: i, webSocketUrl: j, ip: k, accelRate: l, steerRate: m, lastClickTime: n, trackingCar: o, controls: p, currentDragCar: q, buildingRoad: r, snap: s, buildingRoadStart: t, selectState: u, currentSelectedRoad: v, otherRoad: w, menu: x};
 																							};
 																						};
 																					};
@@ -9435,6 +9435,12 @@ var _loovjo$traffic$Base$defaultMenu = {
 	state: _loovjo$traffic$Base$In,
 	buttons: {ctor: '[]'}
 };
+var _loovjo$traffic$Base$FlipSelecting = {ctor: 'FlipSelecting'};
+var _loovjo$traffic$Base$RemoveSelecting = {ctor: 'RemoveSelecting'};
+var _loovjo$traffic$Base$CombineSelecting = {ctor: 'CombineSelecting'};
+var _loovjo$traffic$Base$NotSelecting = {ctor: 'NotSelecting'};
+var _loovjo$traffic$Base$FlipRoadClicked = {ctor: 'FlipRoadClicked'};
+var _loovjo$traffic$Base$RemoveRoadClicked = {ctor: 'RemoveRoadClicked'};
 var _loovjo$traffic$Base$CombineRoadClicked = {ctor: 'CombineRoadClicked'};
 var _loovjo$traffic$Base$AddRoadClicked = {ctor: 'AddRoadClicked'};
 var _loovjo$traffic$Base$AddCarClicked = function (a) {
@@ -9466,8 +9472,16 @@ var _loovjo$traffic$Base$generateMenuButtons = function (perms) {
 				_0: A2(_loovjo$traffic$Base$MenuButton, 'AddRoad', _loovjo$traffic$Base$AddRoadClicked),
 				_1: {
 					ctor: '::',
-					_0: A2(_loovjo$traffic$Base$MenuButton, 'CombineRoad', _loovjo$traffic$Base$CombineRoadClicked),
-					_1: {ctor: '[]'}
+					_0: A2(_loovjo$traffic$Base$MenuButton, 'RemoveRoad', _loovjo$traffic$Base$RemoveRoadClicked),
+					_1: {
+						ctor: '::',
+						_0: A2(_loovjo$traffic$Base$MenuButton, 'FlipRoad', _loovjo$traffic$Base$FlipRoadClicked),
+						_1: {
+							ctor: '::',
+							_0: A2(_loovjo$traffic$Base$MenuButton, 'CombineRoad', _loovjo$traffic$Base$CombineRoadClicked),
+							_1: {ctor: '[]'}
+						}
+					}
 				}
 			} : {ctor: '[]'}));
 };

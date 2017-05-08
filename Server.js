@@ -11,6 +11,29 @@ BACKWARD = 1
 
 CARS = ["Car1", "Car2", "Car3", "Car4"]
 
+READ = "Traffic.js"
+
+port = -1
+if (process.argv.length > 2) {
+    if (process.argv[2].match(/^[0-9]+$/)) {
+        port = process.argv[2] | 0
+        if (process.argv.length > 3) {
+            READ = process.argv[3]
+        }
+    }
+    else
+        READ = process.argv[2]
+}
+if (port == -1) {
+    port = 8000
+}
+
+try {
+    fs.accessSync(READ)
+} catch (err) {
+    fs.writeFileSync(READ, "[]")
+}
+
 
 /*
  * Permissions and stuff:
@@ -181,12 +204,22 @@ function doCommand(ip, line) {
             return "Made user " + parts[1]
         }
     }
+    else if (parts[0] === "SAVE") {
+        path = READ
+        if (parts.length > 1) {
+            path = parts[1]
+        }
+        fs.writeFileSync(path, JSON.stringify(traffic.roads))
+        return "Wrote to " + path
+    }
     else if (parts[0] === "DEBUG") {
         if (parts.length === 1) {
             return "Current debugs: " + Array.from(DEBUG).join(", ")
         }
         added = []
         removed = []
+        res = ""
+
         parts.splice(1).forEach(param => {
             if (!DEBUGS.has(param)) {
                 res += "Invalid debug parameter " + param
@@ -200,7 +233,6 @@ function doCommand(ip, line) {
                 added.push(param)
             }
         })
-        res = ""
 
         if (added.length > 0)
             res += "Added " + added.join(", ")
@@ -285,7 +317,7 @@ ROADS_PRESET = [
 function init() {
     traffic = {
         cars: [ ],
-        roads: JSON.parse(fs.readFileSync("Traffic.js")),
+        roads: JSON.parse(fs.readFileSync(READ)),
         intersections: [
             {roads: [1, 5, 9]}
         ],
@@ -404,12 +436,21 @@ var physics = timers.setInterval(() => {
             }
 
         }
+        if (!car.ai && !car.controlled_by && !car.non_fade || car.crashed) {
+            car.hand_breaks = true
+            car.fade -= delta / 3
+        }
+
+
 
         // Calculate AI
         if (!car.crashed && car.ai && car.ai.road_queue.length > 0) {
             current_path = car.ai.road_queue[0]
 
             road = traffic.roads[current_path.road]
+            if (road === undefined)
+                return car
+
             road_delta = {x: road.end.x - road.start.x, y: road.end.y - road.start.y}
             road_rot = toDegrees(Math.atan2(road_delta.y, road_delta.x))
 
@@ -533,12 +574,6 @@ var physics = timers.setInterval(() => {
 
             car.fade = 1
         }
-        if (!car.ai && !car.controlled_by && !car.non_fade || car.crashed) {
-            car.hand_breaks = true
-            car.fade -= delta / 3
-        }
-
-
         return car
     }).filter(car => {
         if (car.fade <= 0) return false
@@ -559,7 +594,10 @@ var physics = timers.setInterval(() => {
 
         for (i = 0; i < roads.length; i++) {
             r = roads[i]
+
             road = traffic.roads[r]
+            if (road === undefined)
+                continue
 
             if (!road.traffic_light)
                 continue
@@ -588,15 +626,17 @@ var physics = timers.setInterval(() => {
 
         if (!any_green) {
 
-            light = traffic.roads[max_cars_idx].traffic_light
-            light.green_left = light.waiting_cars.length + 2
-            light.last_green = totalTime
+            if (traffic.roads[max_cars_idx] !== undefined) {
+                light = traffic.roads[max_cars_idx].traffic_light
+                light.green_left = light.waiting_cars.length + 2
+                light.last_green = totalTime
+            }
         }
 
     })
 
     traffic.timeUntilNextCar -= delta
-    if (traffic.timeUntilNextCar <= 0) {
+    if (traffic.roads.length > 0 && traffic.timeUntilNextCar <= 0) {
         traffic.timeUntilNextCar = 2
 
         // Add new car
@@ -689,13 +729,8 @@ var server = http.createServer((req, res) => {
     }
 })
 
-if (process.argv.length > 2) {
-    port = process.argv[2] | 0
-} else {
-    port = 8000
-}
 server.listen(port)
-console.log("Started Server on port " + port)
+console.log("Started Server on port " + port + " using reading from save " + READ)
 
 var wss = new ws.Server({server: server})
 
@@ -786,7 +821,7 @@ wss.on('connection', (socket => {
                 }
                 socket.send(JSON.stringify({res: res}))
             }
-            else if (cmd === "build" && parts.length == 5 && permissions.has("build")) { // build/x1/y1/x2/y2
+            else if (cmd === "rbuild" && parts.length == 5 && permissions.has("build")) { // build/x1/y1/x2/y2
                 poses = parts.splice(1).map(x => parseFloat(x))
                 road = {
                     width: 1.5,
@@ -797,9 +832,34 @@ wss.on('connection', (socket => {
                 }
                 traffic.roads.push(road)
             }
+            else if (cmd === "rflip" && parts.length == 2 && permissions.has("build")) { // rflip/idx
+                idx = parts[1] | 0
+                if (idx < traffic.roads.length) {
+                    start = traffic.roads[idx].start
+                    traffic.roads[idx].start = traffic.roads[idx].end
+                    traffic.roads[idx].end = start
+                }
+            }
+            else if (cmd === "rrm" && parts.length == 2 && permissions.has("build")) { // rrm/idx
+                traffic.roads.splice(parts[1] | 0, 1)
+
+                traffic.roads = traffic.roads.map(road => {
+                    road.connected_to = road.connected_to.filter(con => con !== (parts[1] | 0)).map(con => con - (con > parts[1] | 0))
+                    return road
+                })
+                traffic.intersections = traffic.intersections.map(intersection => {
+                    intersection.roads = intersection.roads.filter(con => con !== (parts[1] | 0)).map(con => con - (con > parts[1] | 0))
+                    return intersection
+                })
+            }
             else if (cmd === "rconn" && parts.length == 3 && permissions.has("build")) { // build/r1/r2
                 roads = parts.splice(1).map(x => x | 0)
-                traffic.roads[roads[0]].connected_to.push(roads[1])
+                if (traffic.roads[roads[0]].connected_to.indexOf(roads[1]) !== -1) {
+                    traffic.roads[roads[0]].connected_to = traffic.roads[roads[0]].connected_to.filter(a => a !== roads[1])
+                }
+                else {
+                    traffic.roads[roads[0]].connected_to.push(roads[1])
+                }
             }
 
             else {

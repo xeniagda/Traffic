@@ -54,7 +54,7 @@ init flags =
         , buildingRoad = False
         , snap = False
         , buildingRoadStart = Nothing
-        , isSelectingRoad = False
+        , selectState = NotSelecting
         , currentSelectedRoad = Nothing
         , otherRoad = Nothing
         , menu = defaultMenu
@@ -167,7 +167,7 @@ update msg model =
                                 let mouse_ = if model.snap then pRound mouse else mouse
                                 in WebSocket.send model.webSocketUrl
                                     <| String.join "/"
-                                    [ "build"
+                                    [ "rbuild"
                                     , toString <| start.x
                                     , toString <| start.y
                                     , toString <| mouse_.x
@@ -175,39 +175,64 @@ update msg model =
                                     ]
                             Nothing -> Cmd.none
                         )
-            else if model.isSelectingRoad then
-                case (model.currentSelectedRoad, model.otherRoad) of
-                    (Just road, Nothing) ->
-                        ( { model
-                        | otherRoad = Just road
-                        }
-                        , Cmd.none )
-                    (Just road, Just other) ->
-                        ( { model
-                        | isSelectingRoad = False
-                        , currentSelectedRoad = Nothing
-                        , otherRoad = Nothing
-                        }
-                        , case (indexOf model.roads other
-                             , indexOf model.roads road) of
-                            (Just r1, Just r2) ->
-                            WebSocket.send model.webSocketUrl
-                                <| String.join "/"
-                                [ "rconn"
-                                , toString r1
-                                , toString r2
-                                ]
-                            _ -> Cmd.none
-                        )
-                    _ -> ( model, Cmd.none )
-            else
-            ( {model
-                | dragMouse = Just {x = toFloat pos.x, y = toFloat pos.y}
-                , currentDragCar = Nothing}
-            , case model.currentDragCar of
-                Just car -> WebSocket.send model.webSocketUrl <| "create/" ++ (Http.encodeUri <| encode 0 <| encodeProtoCar car)
-                Nothing -> Cmd.none
-            )
+            else case model.selectState of
+                CombineSelecting -> 
+                    case (model.currentSelectedRoad, model.otherRoad) of
+                        (Just road, Nothing) ->
+                            ( { model
+                            | otherRoad = Just road
+                            }
+                            , Cmd.none )
+                        (Just road, Just other) ->
+                            ( { model
+                            | selectState = NotSelecting
+                            , currentSelectedRoad = Nothing
+                            , otherRoad = Nothing
+                            }
+                            , case (indexOf model.roads other
+                                 , indexOf model.roads road) of
+                                (Just r1, Just r2) ->
+                                WebSocket.send model.webSocketUrl
+                                    <| String.join "/"
+                                    [ "rconn"
+                                    , toString r1
+                                    , toString r2
+                                    ]
+                                _ -> Cmd.none
+                            )
+                        _ -> ( model, Cmd.none )
+                RemoveSelecting ->
+                    case model.currentSelectedRoad of
+                        Nothing -> ( model, Cmd.none )
+                        Just road ->
+                            ( { model 
+                            | selectState = NotSelecting
+                            , currentSelectedRoad = Nothing 
+                            } 
+                            , case indexOf model.roads road of
+                                Just idx -> WebSocket.send model.webSocketUrl <| "rrm/" ++ toString idx
+                                Nothing -> Cmd.none
+                            )
+                FlipSelecting ->
+                    case model.currentSelectedRoad of
+                        Nothing -> ( model, Cmd.none )
+                        Just road ->
+                            ( { model 
+                            | selectState = NotSelecting
+                            , currentSelectedRoad = Nothing 
+                            } 
+                            , case indexOf model.roads road of
+                                Just idx -> WebSocket.send model.webSocketUrl <| "rflip/" ++ toString idx
+                                Nothing -> Cmd.none
+                            )
+                NotSelecting ->
+                    ( {model
+                        | dragMouse = Just {x = toFloat pos.x, y = toFloat pos.y}
+                        , currentDragCar = Nothing}
+                    , case model.currentDragCar of
+                        Just car -> WebSocket.send model.webSocketUrl <| "create/" ++ (Http.encodeUri <| encode 0 <| encodeProtoCar car)
+                        Nothing -> Cmd.none
+                    )
 
         MouseMove pos ->
             let track = case model.trackingCar of
@@ -220,7 +245,7 @@ update msg model =
                 model_ = {model
                          | mouse = Just mouse
                          , currentSelectedRoad =
-                             if model.isSelectingRoad then
+                             if model.selectState /= NotSelecting then
                                  getClosestRoad mouse model.roads
                              else model.currentSelectedRoad
                          }
@@ -319,7 +344,7 @@ update msg model =
                         , currentDragCar = Nothing
                         , buildingRoad = False
                         , buildingRoadStart = Nothing
-                        , isSelectingRoad = False
+                        , selectState = NotSelecting
                         , currentSelectedRoad = Nothing
                         , otherRoad = Nothing
                         , menu =
@@ -426,7 +451,15 @@ update msg model =
             )
 
         CombineRoadClicked ->
-            ( { model | isSelectingRoad = True }
+            ( { model | selectState = CombineSelecting }
+            , Cmd.none )
+
+        RemoveRoadClicked ->
+            ( { model | selectState = RemoveSelecting }
+            , Cmd.none )
+
+        FlipRoadClicked ->
+            ( { model | selectState = FlipSelecting }
             , Cmd.none )
 
 view : Model -> Html Msg

@@ -10870,7 +10870,7 @@ var _loovjo$traffic$Base$Model = function (a) {
 																					return function (v) {
 																						return function (w) {
 																							return function (x) {
-																								return {cars: a, roads: b, err: c, size: d, lasttime: e, scroll: f, dragMouse: g, mouse: h, renderScale: i, webSocketUrl: j, ip: k, accelRate: l, steerRate: m, lastClickTime: n, trackingCar: o, controls: p, currentDragCar: q, buildingRoad: r, snap: s, buildingRoadStart: t, isSelectingRoad: u, currentSelectedRoad: v, otherRoad: w, menu: x};
+																								return {cars: a, roads: b, err: c, size: d, lasttime: e, scroll: f, dragMouse: g, mouse: h, renderScale: i, webSocketUrl: j, ip: k, accelRate: l, steerRate: m, lastClickTime: n, trackingCar: o, controls: p, currentDragCar: q, buildingRoad: r, snap: s, buildingRoadStart: t, selectState: u, currentSelectedRoad: v, otherRoad: w, menu: x};
 																							};
 																						};
 																					};
@@ -10904,6 +10904,12 @@ var _loovjo$traffic$Base$defaultMenu = {
 	state: _loovjo$traffic$Base$In,
 	buttons: {ctor: '[]'}
 };
+var _loovjo$traffic$Base$FlipSelecting = {ctor: 'FlipSelecting'};
+var _loovjo$traffic$Base$RemoveSelecting = {ctor: 'RemoveSelecting'};
+var _loovjo$traffic$Base$CombineSelecting = {ctor: 'CombineSelecting'};
+var _loovjo$traffic$Base$NotSelecting = {ctor: 'NotSelecting'};
+var _loovjo$traffic$Base$FlipRoadClicked = {ctor: 'FlipRoadClicked'};
+var _loovjo$traffic$Base$RemoveRoadClicked = {ctor: 'RemoveRoadClicked'};
 var _loovjo$traffic$Base$CombineRoadClicked = {ctor: 'CombineRoadClicked'};
 var _loovjo$traffic$Base$AddRoadClicked = {ctor: 'AddRoadClicked'};
 var _loovjo$traffic$Base$AddCarClicked = function (a) {
@@ -10935,8 +10941,16 @@ var _loovjo$traffic$Base$generateMenuButtons = function (perms) {
 				_0: A2(_loovjo$traffic$Base$MenuButton, 'AddRoad', _loovjo$traffic$Base$AddRoadClicked),
 				_1: {
 					ctor: '::',
-					_0: A2(_loovjo$traffic$Base$MenuButton, 'CombineRoad', _loovjo$traffic$Base$CombineRoadClicked),
-					_1: {ctor: '[]'}
+					_0: A2(_loovjo$traffic$Base$MenuButton, 'RemoveRoad', _loovjo$traffic$Base$RemoveRoadClicked),
+					_1: {
+						ctor: '::',
+						_0: A2(_loovjo$traffic$Base$MenuButton, 'FlipRoad', _loovjo$traffic$Base$FlipRoadClicked),
+						_1: {
+							ctor: '::',
+							_0: A2(_loovjo$traffic$Base$MenuButton, 'CombineRoad', _loovjo$traffic$Base$CombineRoadClicked),
+							_1: {ctor: '[]'}
+						}
+					}
 				}
 			} : {ctor: '[]'}));
 };
@@ -12527,13 +12541,13 @@ var _loovjo$traffic$Main$update = F2(
 					_1: _elm_lang$core$Platform_Cmd$none
 				};
 			case 'MousePress':
-				var _p29 = _p8._0;
+				var _p34 = _p8._0;
 				if (model.buildingRoad) {
 					var _p22 = model.buildingRoadStart;
 					if (_p22.ctor === 'Nothing') {
 						var start = {
-							x: (_elm_lang$core$Basics$toFloat(_p29.x) - model.scroll.x) / model.renderScale,
-							y: (_elm_lang$core$Basics$toFloat(_p29.y) - model.scroll.y) / model.renderScale
+							x: (_elm_lang$core$Basics$toFloat(_p34.x) - model.scroll.x) / model.renderScale,
+							y: (_elm_lang$core$Basics$toFloat(_p34.y) - model.scroll.y) / model.renderScale
 						};
 						var start_ = model.snap ? _loovjo$traffic$Base$pRound(start) : start;
 						return {
@@ -12565,7 +12579,7 @@ var _loovjo$traffic$Main$update = F2(
 											'/',
 											{
 												ctor: '::',
-												_0: 'build',
+												_0: 'rbuild',
 												_1: {
 													ctor: '::',
 													_0: _elm_lang$core$Basics$toString(_p25.x),
@@ -12591,109 +12605,163 @@ var _loovjo$traffic$Main$update = F2(
 						};
 					}
 				} else {
-					if (model.isSelectingRoad) {
-						var _p26 = {ctor: '_Tuple2', _0: model.currentSelectedRoad, _1: model.otherRoad};
-						if ((_p26.ctor === '_Tuple2') && (_p26._0.ctor === 'Just')) {
-							if (_p26._1.ctor === 'Nothing') {
-								return {
-									ctor: '_Tuple2',
-									_0: _elm_lang$core$Native_Utils.update(
-										model,
-										{
-											otherRoad: _elm_lang$core$Maybe$Just(_p26._0._0)
-										}),
-									_1: _elm_lang$core$Platform_Cmd$none
-								};
+					var _p26 = model.selectState;
+					switch (_p26.ctor) {
+						case 'CombineSelecting':
+							var _p27 = {ctor: '_Tuple2', _0: model.currentSelectedRoad, _1: model.otherRoad};
+							if ((_p27.ctor === '_Tuple2') && (_p27._0.ctor === 'Just')) {
+								if (_p27._1.ctor === 'Nothing') {
+									return {
+										ctor: '_Tuple2',
+										_0: _elm_lang$core$Native_Utils.update(
+											model,
+											{
+												otherRoad: _elm_lang$core$Maybe$Just(_p27._0._0)
+											}),
+										_1: _elm_lang$core$Platform_Cmd$none
+									};
+								} else {
+									return {
+										ctor: '_Tuple2',
+										_0: _elm_lang$core$Native_Utils.update(
+											model,
+											{selectState: _loovjo$traffic$Base$NotSelecting, currentSelectedRoad: _elm_lang$core$Maybe$Nothing, otherRoad: _elm_lang$core$Maybe$Nothing}),
+										_1: function () {
+											var _p28 = {
+												ctor: '_Tuple2',
+												_0: A2(_loovjo$traffic$Base$indexOf, model.roads, _p27._1._0),
+												_1: A2(_loovjo$traffic$Base$indexOf, model.roads, _p27._0._0)
+											};
+											if (((_p28.ctor === '_Tuple2') && (_p28._0.ctor === 'Just')) && (_p28._1.ctor === 'Just')) {
+												return A2(
+													_elm_lang$websocket$WebSocket$send,
+													model.webSocketUrl,
+													A2(
+														_elm_lang$core$String$join,
+														'/',
+														{
+															ctor: '::',
+															_0: 'rconn',
+															_1: {
+																ctor: '::',
+																_0: _elm_lang$core$Basics$toString(_p28._0._0),
+																_1: {
+																	ctor: '::',
+																	_0: _elm_lang$core$Basics$toString(_p28._1._0),
+																	_1: {ctor: '[]'}
+																}
+															}
+														}));
+											} else {
+												return _elm_lang$core$Platform_Cmd$none;
+											}
+										}()
+									};
+								}
+							} else {
+								return {ctor: '_Tuple2', _0: model, _1: _elm_lang$core$Platform_Cmd$none};
+							}
+						case 'RemoveSelecting':
+							var _p29 = model.currentSelectedRoad;
+							if (_p29.ctor === 'Nothing') {
+								return {ctor: '_Tuple2', _0: model, _1: _elm_lang$core$Platform_Cmd$none};
 							} else {
 								return {
 									ctor: '_Tuple2',
 									_0: _elm_lang$core$Native_Utils.update(
 										model,
-										{isSelectingRoad: false, currentSelectedRoad: _elm_lang$core$Maybe$Nothing, otherRoad: _elm_lang$core$Maybe$Nothing}),
+										{selectState: _loovjo$traffic$Base$NotSelecting, currentSelectedRoad: _elm_lang$core$Maybe$Nothing}),
 									_1: function () {
-										var _p27 = {
-											ctor: '_Tuple2',
-											_0: A2(_loovjo$traffic$Base$indexOf, model.roads, _p26._1._0),
-											_1: A2(_loovjo$traffic$Base$indexOf, model.roads, _p26._0._0)
-										};
-										if (((_p27.ctor === '_Tuple2') && (_p27._0.ctor === 'Just')) && (_p27._1.ctor === 'Just')) {
+										var _p30 = A2(_loovjo$traffic$Base$indexOf, model.roads, _p29._0);
+										if (_p30.ctor === 'Just') {
 											return A2(
 												_elm_lang$websocket$WebSocket$send,
 												model.webSocketUrl,
 												A2(
-													_elm_lang$core$String$join,
-													'/',
-													{
-														ctor: '::',
-														_0: 'rconn',
-														_1: {
-															ctor: '::',
-															_0: _elm_lang$core$Basics$toString(_p27._0._0),
-															_1: {
-																ctor: '::',
-																_0: _elm_lang$core$Basics$toString(_p27._1._0),
-																_1: {ctor: '[]'}
-															}
-														}
-													}));
+													_elm_lang$core$Basics_ops['++'],
+													'rrm/',
+													_elm_lang$core$Basics$toString(_p30._0)));
 										} else {
 											return _elm_lang$core$Platform_Cmd$none;
 										}
 									}()
 								};
 							}
-						} else {
-							return {ctor: '_Tuple2', _0: model, _1: _elm_lang$core$Platform_Cmd$none};
-						}
-					} else {
-						return {
-							ctor: '_Tuple2',
-							_0: _elm_lang$core$Native_Utils.update(
-								model,
-								{
-									dragMouse: _elm_lang$core$Maybe$Just(
-										{
-											x: _elm_lang$core$Basics$toFloat(_p29.x),
-											y: _elm_lang$core$Basics$toFloat(_p29.y)
-										}),
-									currentDragCar: _elm_lang$core$Maybe$Nothing
-								}),
-							_1: function () {
-								var _p28 = model.currentDragCar;
-								if (_p28.ctor === 'Just') {
-									return A2(
-										_elm_lang$websocket$WebSocket$send,
-										model.webSocketUrl,
-										A2(
-											_elm_lang$core$Basics_ops['++'],
-											'create/',
-											_elm_lang$http$Http$encodeUri(
+						case 'FlipSelecting':
+							var _p31 = model.currentSelectedRoad;
+							if (_p31.ctor === 'Nothing') {
+								return {ctor: '_Tuple2', _0: model, _1: _elm_lang$core$Platform_Cmd$none};
+							} else {
+								return {
+									ctor: '_Tuple2',
+									_0: _elm_lang$core$Native_Utils.update(
+										model,
+										{selectState: _loovjo$traffic$Base$NotSelecting, currentSelectedRoad: _elm_lang$core$Maybe$Nothing}),
+									_1: function () {
+										var _p32 = A2(_loovjo$traffic$Base$indexOf, model.roads, _p31._0);
+										if (_p32.ctor === 'Just') {
+											return A2(
+												_elm_lang$websocket$WebSocket$send,
+												model.webSocketUrl,
 												A2(
-													_elm_lang$core$Json_Encode$encode,
-													0,
-													_loovjo$traffic$JsonParser$encodeProtoCar(_p28._0)))));
-								} else {
-									return _elm_lang$core$Platform_Cmd$none;
-								}
-							}()
-						};
+													_elm_lang$core$Basics_ops['++'],
+													'rflip/',
+													_elm_lang$core$Basics$toString(_p32._0)));
+										} else {
+											return _elm_lang$core$Platform_Cmd$none;
+										}
+									}()
+								};
+							}
+						default:
+							return {
+								ctor: '_Tuple2',
+								_0: _elm_lang$core$Native_Utils.update(
+									model,
+									{
+										dragMouse: _elm_lang$core$Maybe$Just(
+											{
+												x: _elm_lang$core$Basics$toFloat(_p34.x),
+												y: _elm_lang$core$Basics$toFloat(_p34.y)
+											}),
+										currentDragCar: _elm_lang$core$Maybe$Nothing
+									}),
+								_1: function () {
+									var _p33 = model.currentDragCar;
+									if (_p33.ctor === 'Just') {
+										return A2(
+											_elm_lang$websocket$WebSocket$send,
+											model.webSocketUrl,
+											A2(
+												_elm_lang$core$Basics_ops['++'],
+												'create/',
+												_elm_lang$http$Http$encodeUri(
+													A2(
+														_elm_lang$core$Json_Encode$encode,
+														0,
+														_loovjo$traffic$JsonParser$encodeProtoCar(_p33._0)))));
+									} else {
+										return _elm_lang$core$Platform_Cmd$none;
+									}
+								}()
+							};
 					}
 				}
 			case 'MouseMove':
-				var _p34 = _p8._0;
+				var _p39 = _p8._0;
 				var mouse = {
-					x: (_elm_lang$core$Basics$toFloat(_p34.x) - model.scroll.x) / model.renderScale,
-					y: (_elm_lang$core$Basics$toFloat(_p34.y) - model.scroll.y) / model.renderScale
+					x: (_elm_lang$core$Basics$toFloat(_p39.x) - model.scroll.x) / model.renderScale,
+					y: (_elm_lang$core$Basics$toFloat(_p39.y) - model.scroll.y) / model.renderScale
 				};
 				var model_ = _elm_lang$core$Native_Utils.update(
 					model,
 					{
 						mouse: _elm_lang$core$Maybe$Just(mouse),
-						currentSelectedRoad: model.isSelectingRoad ? A2(_loovjo$traffic$Base$getClosestRoad, mouse, model.roads) : model.currentSelectedRoad
+						currentSelectedRoad: (!_elm_lang$core$Native_Utils.eq(model.selectState, _loovjo$traffic$Base$NotSelecting)) ? A2(_loovjo$traffic$Base$getClosestRoad, mouse, model.roads) : model.currentSelectedRoad
 					});
 				var track = function () {
-					var _p30 = model.trackingCar;
-					if (_p30.ctor === 'Nothing') {
+					var _p35 = model.trackingCar;
+					if (_p35.ctor === 'Nothing') {
 						return false;
 					} else {
 						return _elm_lang$core$Native_Utils.cmp(
@@ -12701,19 +12769,19 @@ var _loovjo$traffic$Main$update = F2(
 								A2(
 									_elm_lang$core$List$filter,
 									function (car) {
-										return _elm_lang$core$Native_Utils.eq(car.name, _p30._0);
+										return _elm_lang$core$Native_Utils.eq(car.name, _p35._0);
 									},
 									model.cars)),
 							0) > 0;
 					}
 				}();
 				if (!track) {
-					var _p31 = model_.dragMouse;
-					if (_p31.ctor === 'Just') {
-						var _p32 = _p31._0;
+					var _p36 = model_.dragMouse;
+					if (_p36.ctor === 'Just') {
+						var _p37 = _p36._0;
 						var delta = {
-							x: _elm_lang$core$Basics$toFloat(_p34.x) - _p32.x,
-							y: _elm_lang$core$Basics$toFloat(_p34.y) - _p32.y
+							x: _elm_lang$core$Basics$toFloat(_p39.x) - _p37.x,
+							y: _elm_lang$core$Basics$toFloat(_p39.y) - _p37.y
 						};
 						return {
 							ctor: '_Tuple2',
@@ -12723,15 +12791,15 @@ var _loovjo$traffic$Main$update = F2(
 									scroll: {x: model_.scroll.x + delta.x, y: model_.scroll.y + delta.y},
 									dragMouse: _elm_lang$core$Maybe$Just(
 										{
-											x: _elm_lang$core$Basics$toFloat(_p34.x),
-											y: _elm_lang$core$Basics$toFloat(_p34.y)
+											x: _elm_lang$core$Basics$toFloat(_p39.x),
+											y: _elm_lang$core$Basics$toFloat(_p39.y)
 										})
 								}),
 							_1: _elm_lang$core$Platform_Cmd$none
 						};
 					} else {
-						var _p33 = model_.currentDragCar;
-						if (_p33.ctor === 'Just') {
+						var _p38 = model_.currentDragCar;
+						if (_p38.ctor === 'Just') {
 							return {
 								ctor: '_Tuple2',
 								_0: _elm_lang$core$Native_Utils.update(
@@ -12739,11 +12807,11 @@ var _loovjo$traffic$Main$update = F2(
 									{
 										currentDragCar: _elm_lang$core$Maybe$Just(
 											_elm_lang$core$Native_Utils.update(
-												_p33._0,
+												_p38._0,
 												{
 													pos: {
-														x: (_elm_lang$core$Basics$toFloat(_p34.x) - model_.scroll.x) / model_.renderScale,
-														y: (_elm_lang$core$Basics$toFloat(_p34.y) - model_.scroll.y) / model_.renderScale
+														x: (_elm_lang$core$Basics$toFloat(_p39.x) - model_.scroll.x) / model_.renderScale,
+														y: (_elm_lang$core$Basics$toFloat(_p39.y) - model_.scroll.y) / model_.renderScale
 													}
 												}))
 									}),
@@ -12757,8 +12825,8 @@ var _loovjo$traffic$Main$update = F2(
 					return {ctor: '_Tuple2', _0: model_, _1: _elm_lang$core$Platform_Cmd$none};
 				}
 			case 'KeyDown':
-				var _p55 = _p8._0;
-				if (_elm_lang$core$Native_Utils.eq(_p55, model.controls.zoomIn)) {
+				var _p60 = _p8._0;
+				if (_elm_lang$core$Native_Utils.eq(_p60, model.controls.zoomIn)) {
 					return {
 						ctor: '_Tuple2',
 						_0: _elm_lang$core$Native_Utils.update(
@@ -12766,10 +12834,10 @@ var _loovjo$traffic$Main$update = F2(
 							{
 								renderScale: model.renderScale * _loovjo$traffic$Base$zoomFactor,
 								scroll: function () {
-									var _p35 = model.size;
-									if (_p35.ctor === 'Just') {
-										var _p36 = _p35._0;
-										return {x: ((model.scroll.x - (_p36.x / 2)) * _loovjo$traffic$Base$zoomFactor) + (_p36.x / 2), y: ((model.scroll.y - (_p36.y / 2)) * _loovjo$traffic$Base$zoomFactor) + (_p36.y / 2)};
+									var _p40 = model.size;
+									if (_p40.ctor === 'Just') {
+										var _p41 = _p40._0;
+										return {x: ((model.scroll.x - (_p41.x / 2)) * _loovjo$traffic$Base$zoomFactor) + (_p41.x / 2), y: ((model.scroll.y - (_p41.y / 2)) * _loovjo$traffic$Base$zoomFactor) + (_p41.y / 2)};
 									} else {
 										return model.scroll;
 									}
@@ -12778,7 +12846,7 @@ var _loovjo$traffic$Main$update = F2(
 						_1: _elm_lang$core$Platform_Cmd$none
 					};
 				} else {
-					if (_elm_lang$core$Native_Utils.eq(_p55, model.controls.zoomOut)) {
+					if (_elm_lang$core$Native_Utils.eq(_p60, model.controls.zoomOut)) {
 						return {
 							ctor: '_Tuple2',
 							_0: _elm_lang$core$Native_Utils.update(
@@ -12786,10 +12854,10 @@ var _loovjo$traffic$Main$update = F2(
 								{
 									renderScale: model.renderScale / _loovjo$traffic$Base$zoomFactor,
 									scroll: function () {
-										var _p37 = model.size;
-										if (_p37.ctor === 'Just') {
-											var _p38 = _p37._0;
-											return {x: ((model.scroll.x - (_p38.x / 2)) / _loovjo$traffic$Base$zoomFactor) + (_p38.x / 2), y: ((model.scroll.y - (_p38.y / 2)) / _loovjo$traffic$Base$zoomFactor) + (_p38.y / 2)};
+										var _p42 = model.size;
+										if (_p42.ctor === 'Just') {
+											var _p43 = _p42._0;
+											return {x: ((model.scroll.x - (_p43.x / 2)) / _loovjo$traffic$Base$zoomFactor) + (_p43.x / 2), y: ((model.scroll.y - (_p43.y / 2)) / _loovjo$traffic$Base$zoomFactor) + (_p43.y / 2)};
 										} else {
 											return model.scroll;
 										}
@@ -12798,10 +12866,10 @@ var _loovjo$traffic$Main$update = F2(
 							_1: _elm_lang$core$Platform_Cmd$none
 						};
 					} else {
-						var _p39 = model.ip;
-						if (_p39.ctor === 'Just') {
-							var _p54 = _p39._0;
-							return _elm_lang$core$Native_Utils.eq(_p55, model.controls.remove) ? {
+						var _p44 = model.ip;
+						if (_p44.ctor === 'Just') {
+							var _p59 = _p44._0;
+							return _elm_lang$core$Native_Utils.eq(_p60, model.controls.remove) ? {
 								ctor: '_Tuple2',
 								_0: model,
 								_1: function () {
@@ -12826,17 +12894,17 @@ var _loovjo$traffic$Main$update = F2(
 													return _elm_lang$core$Native_Utils.eq(c.controlledBy, model.ip);
 												},
 												model.cars)));
-									var _p40 = closestCar;
-									if (_p40.ctor === 'Just') {
+									var _p45 = closestCar;
+									if (_p45.ctor === 'Just') {
 										return A2(
 											_elm_lang$websocket$WebSocket$send,
 											model.webSocketUrl,
-											A2(_elm_lang$core$Basics_ops['++'], 'remove/', _p40._0.name));
+											A2(_elm_lang$core$Basics_ops['++'], 'remove/', _p45._0.name));
 									} else {
 										return _elm_lang$core$Platform_Cmd$none;
 									}
 								}()
-							} : (_elm_lang$core$Native_Utils.eq(_p55, model.controls.$break) ? {
+							} : (_elm_lang$core$Native_Utils.eq(_p60, model.controls.$break) ? {
 								ctor: '_Tuple2',
 								_0: _elm_lang$core$Native_Utils.update(
 									model,
@@ -12844,9 +12912,9 @@ var _loovjo$traffic$Main$update = F2(
 										cars: A2(
 											_elm_lang$core$List$map,
 											function (car) {
-												var _p41 = car.controlledBy;
-												if (_p41.ctor === 'Just') {
-													return (!_elm_lang$core$Native_Utils.eq(_p41._0, _p54)) ? car : _elm_lang$core$Native_Utils.update(
+												var _p46 = car.controlledBy;
+												if (_p46.ctor === 'Just') {
+													return (!_elm_lang$core$Native_Utils.eq(_p46._0, _p59)) ? car : _elm_lang$core$Native_Utils.update(
 														car,
 														{handBreaks: true, accel: 0});
 												} else {
@@ -12856,7 +12924,7 @@ var _loovjo$traffic$Main$update = F2(
 											model.cars)
 									}),
 								_1: A2(_elm_lang$websocket$WebSocket$send, model.webSocketUrl, 'breaks')
-							} : (_elm_lang$core$Native_Utils.eq(_p55, model.controls.up) ? {
+							} : (_elm_lang$core$Native_Utils.eq(_p60, model.controls.up) ? {
 								ctor: '_Tuple2',
 								_0: _elm_lang$core$Native_Utils.update(
 									model,
@@ -12864,9 +12932,9 @@ var _loovjo$traffic$Main$update = F2(
 										cars: A2(
 											_elm_lang$core$List$map,
 											function (car) {
-												var _p42 = car.controlledBy;
-												if (_p42.ctor === 'Just') {
-													return (!_elm_lang$core$Native_Utils.eq(_p42._0, _p54)) ? car : _elm_lang$core$Native_Utils.update(
+												var _p47 = car.controlledBy;
+												if (_p47.ctor === 'Just') {
+													return (!_elm_lang$core$Native_Utils.eq(_p47._0, _p59)) ? car : _elm_lang$core$Native_Utils.update(
 														car,
 														{handBreaks: false, accel: model.accelRate});
 												} else {
@@ -12882,7 +12950,7 @@ var _loovjo$traffic$Main$update = F2(
 										_elm_lang$core$Basics_ops['++'],
 										'accel/',
 										_elm_lang$core$Basics$toString(model.accelRate)))
-							} : (_elm_lang$core$Native_Utils.eq(_p55, model.controls.back) ? {
+							} : (_elm_lang$core$Native_Utils.eq(_p60, model.controls.back) ? {
 								ctor: '_Tuple2',
 								_0: _elm_lang$core$Native_Utils.update(
 									model,
@@ -12890,9 +12958,9 @@ var _loovjo$traffic$Main$update = F2(
 										cars: A2(
 											_elm_lang$core$List$map,
 											function (car) {
-												var _p43 = car.controlledBy;
-												if (_p43.ctor === 'Just') {
-													return (!_elm_lang$core$Native_Utils.eq(_p43._0, _p54)) ? car : _elm_lang$core$Native_Utils.update(
+												var _p48 = car.controlledBy;
+												if (_p48.ctor === 'Just') {
+													return (!_elm_lang$core$Native_Utils.eq(_p48._0, _p59)) ? car : _elm_lang$core$Native_Utils.update(
 														car,
 														{
 															handBreaks: false,
@@ -12912,7 +12980,7 @@ var _loovjo$traffic$Main$update = F2(
 										'accel/',
 										_elm_lang$core$Basics$toString(
 											_elm_lang$core$Basics$negate(model.accelRate))))
-							} : (_elm_lang$core$Native_Utils.eq(_p55, model.controls.left) ? {
+							} : (_elm_lang$core$Native_Utils.eq(_p60, model.controls.left) ? {
 								ctor: '_Tuple2',
 								_0: _elm_lang$core$Native_Utils.update(
 									model,
@@ -12920,9 +12988,9 @@ var _loovjo$traffic$Main$update = F2(
 										cars: A2(
 											_elm_lang$core$List$map,
 											function (car) {
-												var _p44 = car.controlledBy;
-												if (_p44.ctor === 'Just') {
-													return (!_elm_lang$core$Native_Utils.eq(_p44._0, _p54)) ? car : _elm_lang$core$Native_Utils.update(
+												var _p49 = car.controlledBy;
+												if (_p49.ctor === 'Just') {
+													return (!_elm_lang$core$Native_Utils.eq(_p49._0, _p59)) ? car : _elm_lang$core$Native_Utils.update(
 														car,
 														{
 															steering: _elm_lang$core$Basics$negate(model.steerRate)
@@ -12941,7 +13009,7 @@ var _loovjo$traffic$Main$update = F2(
 										'steer/',
 										_elm_lang$core$Basics$toString(
 											_elm_lang$core$Basics$negate(model.steerRate))))
-							} : (_elm_lang$core$Native_Utils.eq(_p55, model.controls.right) ? {
+							} : (_elm_lang$core$Native_Utils.eq(_p60, model.controls.right) ? {
 								ctor: '_Tuple2',
 								_0: _elm_lang$core$Native_Utils.update(
 									model,
@@ -12949,9 +13017,9 @@ var _loovjo$traffic$Main$update = F2(
 										cars: A2(
 											_elm_lang$core$List$map,
 											function (car) {
-												var _p45 = car.controlledBy;
-												if (_p45.ctor === 'Just') {
-													return (!_elm_lang$core$Native_Utils.eq(_p45._0, _p54)) ? car : _elm_lang$core$Native_Utils.update(
+												var _p50 = car.controlledBy;
+												if (_p50.ctor === 'Just') {
+													return (!_elm_lang$core$Native_Utils.eq(_p50._0, _p59)) ? car : _elm_lang$core$Native_Utils.update(
 														car,
 														{steering: model.steerRate});
 												} else {
@@ -12967,7 +13035,7 @@ var _loovjo$traffic$Main$update = F2(
 										_elm_lang$core$Basics_ops['++'],
 										'steer/',
 										_elm_lang$core$Basics$toString(model.steerRate)))
-							} : (_elm_lang$core$Native_Utils.eq(_p55, model.controls.free) ? {
+							} : (_elm_lang$core$Native_Utils.eq(_p60, model.controls.free) ? {
 								ctor: '_Tuple2',
 								_0: _elm_lang$core$Native_Utils.update(
 									model,
@@ -12976,7 +13044,7 @@ var _loovjo$traffic$Main$update = F2(
 										currentDragCar: _elm_lang$core$Maybe$Nothing,
 										buildingRoad: false,
 										buildingRoadStart: _elm_lang$core$Maybe$Nothing,
-										isSelectingRoad: false,
+										selectState: _loovjo$traffic$Base$NotSelecting,
 										currentSelectedRoad: _elm_lang$core$Maybe$Nothing,
 										otherRoad: _elm_lang$core$Maybe$Nothing,
 										menu: function () {
@@ -12987,7 +13055,7 @@ var _loovjo$traffic$Main$update = F2(
 										}()
 									}),
 								_1: _elm_lang$core$Platform_Cmd$none
-							} : ((_elm_lang$core$Native_Utils.eq(_p55, model.controls.carUp) || _elm_lang$core$Native_Utils.eq(_p55, model.controls.carDown)) ? {
+							} : ((_elm_lang$core$Native_Utils.eq(_p60, model.controls.carUp) || _elm_lang$core$Native_Utils.eq(_p60, model.controls.carDown)) ? {
 								ctor: '_Tuple2',
 								_0: _elm_lang$core$Native_Utils.update(
 									model,
@@ -13000,14 +13068,14 @@ var _loovjo$traffic$Main$update = F2(
 														return A2(_elm_lang$core$Basics$compare, car1.pos.x, car2.pos.x);
 													}),
 												function () {
-													var _p46 = model.ip;
-													if (_p46.ctor === 'Just') {
+													var _p51 = model.ip;
+													if (_p51.ctor === 'Just') {
 														return A2(
 															_elm_lang$core$List$filter,
 															function (car) {
-																var _p47 = car.controlledBy;
-																if (_p47.ctor === 'Just') {
-																	return _elm_lang$core$Native_Utils.eq(_p47._0, _p46._0);
+																var _p52 = car.controlledBy;
+																if (_p52.ctor === 'Just') {
+																	return _elm_lang$core$Native_Utils.eq(_p52._0, _p51._0);
 																} else {
 																	return false;
 																}
@@ -13017,8 +13085,8 @@ var _loovjo$traffic$Main$update = F2(
 														return {ctor: '[]'};
 													}
 												}());
-											var _p48 = model.trackingCar;
-											if (_p48.ctor === 'Nothing') {
+											var _p53 = model.trackingCar;
+											if (_p53.ctor === 'Nothing') {
 												return A2(
 													_elm_lang$core$Maybe$map,
 													function (_) {
@@ -13029,9 +13097,9 @@ var _loovjo$traffic$Main$update = F2(
 												var track = _elm_lang$core$List$head(
 													A2(
 														_elm_lang$core$List$filter,
-														function (_p49) {
-															var _p50 = _p49;
-															return _elm_lang$core$Native_Utils.eq(_p50._1.name, _p48._0);
+														function (_p54) {
+															var _p55 = _p54;
+															return _elm_lang$core$Native_Utils.eq(_p55._1.name, _p53._0);
 														},
 														A2(
 															_elm_lang$core$List$indexedMap,
@@ -13040,27 +13108,27 @@ var _loovjo$traffic$Main$update = F2(
 																	return {ctor: '_Tuple2', _0: v0, _1: v1};
 																}),
 															controlledByMe)));
-												var _p51 = track;
-												if (_p51.ctor === 'Just') {
-													var _p53 = _p51._0._0;
-													var res = _elm_lang$core$Native_Utils.eq(_p55, model.controls.carUp) ? A2(
+												var _p56 = track;
+												if (_p56.ctor === 'Just') {
+													var _p58 = _p56._0._0;
+													var res = _elm_lang$core$Native_Utils.eq(_p60, model.controls.carUp) ? A2(
 														_elm_lang$core$Maybe$map,
 														function (_) {
 															return _.name;
 														},
 														_elm_lang$core$List$head(
-															A2(_elm_lang$core$List$drop, _p53 + 1, controlledByMe))) : (_elm_lang$core$Native_Utils.eq(_p53, 0) ? _elm_lang$core$Maybe$Nothing : A2(
+															A2(_elm_lang$core$List$drop, _p58 + 1, controlledByMe))) : (_elm_lang$core$Native_Utils.eq(_p58, 0) ? _elm_lang$core$Maybe$Nothing : A2(
 														_elm_lang$core$Maybe$map,
 														function (_) {
 															return _.name;
 														},
 														_elm_lang$core$List$head(
-															A2(_elm_lang$core$List$drop, _p53 - 1, controlledByMe))));
-													var _p52 = res;
-													if (_p52.ctor === 'Just') {
-														return _elm_lang$core$Maybe$Just(_p52._0);
+															A2(_elm_lang$core$List$drop, _p58 - 1, controlledByMe))));
+													var _p57 = res;
+													if (_p57.ctor === 'Just') {
+														return _elm_lang$core$Maybe$Just(_p57._0);
 													} else {
-														return _elm_lang$core$Native_Utils.eq(_p55, model.controls.carUp) ? A2(
+														return _elm_lang$core$Native_Utils.eq(_p60, model.controls.carUp) ? A2(
 															_elm_lang$core$Maybe$map,
 															function (_) {
 																return _.name;
@@ -13085,7 +13153,7 @@ var _loovjo$traffic$Main$update = F2(
 										}()
 									}),
 								_1: _elm_lang$core$Platform_Cmd$none
-							} : (_elm_lang$core$Native_Utils.eq(_p55, model.controls.snap) ? {
+							} : (_elm_lang$core$Native_Utils.eq(_p60, model.controls.snap) ? {
 								ctor: '_Tuple2',
 								_0: _elm_lang$core$Native_Utils.update(
 									model,
@@ -13094,18 +13162,18 @@ var _loovjo$traffic$Main$update = F2(
 							} : A2(
 								_elm_lang$core$Basics$always,
 								{ctor: '_Tuple2', _0: model, _1: _elm_lang$core$Platform_Cmd$none},
-								A2(_elm_lang$core$Debug$log, 'Key Down', _p55))))))))));
+								A2(_elm_lang$core$Debug$log, 'Key Down', _p60))))))))));
 						} else {
 							return {ctor: '_Tuple2', _0: model, _1: _elm_lang$core$Platform_Cmd$none};
 						}
 					}
 				}
 			case 'KeyUp':
-				var _p61 = _p8._0;
-				var _p56 = model.ip;
-				if (_p56.ctor === 'Just') {
-					var _p60 = _p56._0;
-					return _elm_lang$core$Native_Utils.eq(_p61, model.controls.$break) ? {
+				var _p66 = _p8._0;
+				var _p61 = model.ip;
+				if (_p61.ctor === 'Just') {
+					var _p65 = _p61._0;
+					return _elm_lang$core$Native_Utils.eq(_p66, model.controls.$break) ? {
 						ctor: '_Tuple2',
 						_0: _elm_lang$core$Native_Utils.update(
 							model,
@@ -13113,9 +13181,9 @@ var _loovjo$traffic$Main$update = F2(
 								cars: A2(
 									_elm_lang$core$List$map,
 									function (car) {
-										var _p57 = car.controlledBy;
-										if (_p57.ctor === 'Just') {
-											return (!_elm_lang$core$Native_Utils.eq(_p57._0, _p60)) ? car : _elm_lang$core$Native_Utils.update(
+										var _p62 = car.controlledBy;
+										if (_p62.ctor === 'Just') {
+											return (!_elm_lang$core$Native_Utils.eq(_p62._0, _p65)) ? car : _elm_lang$core$Native_Utils.update(
 												car,
 												{handBreaks: false});
 										} else {
@@ -13125,7 +13193,7 @@ var _loovjo$traffic$Main$update = F2(
 									model.cars)
 							}),
 						_1: A2(_elm_lang$websocket$WebSocket$send, model.webSocketUrl, 'no_breaks')
-					} : ((_elm_lang$core$Native_Utils.eq(_p61, model.controls.up) || _elm_lang$core$Native_Utils.eq(_p61, model.controls.back)) ? {
+					} : ((_elm_lang$core$Native_Utils.eq(_p66, model.controls.up) || _elm_lang$core$Native_Utils.eq(_p66, model.controls.back)) ? {
 						ctor: '_Tuple2',
 						_0: _elm_lang$core$Native_Utils.update(
 							model,
@@ -13133,9 +13201,9 @@ var _loovjo$traffic$Main$update = F2(
 								cars: A2(
 									_elm_lang$core$List$map,
 									function (car) {
-										var _p58 = car.controlledBy;
-										if (_p58.ctor === 'Just') {
-											return (!_elm_lang$core$Native_Utils.eq(_p58._0, _p60)) ? car : _elm_lang$core$Native_Utils.update(
+										var _p63 = car.controlledBy;
+										if (_p63.ctor === 'Just') {
+											return (!_elm_lang$core$Native_Utils.eq(_p63._0, _p65)) ? car : _elm_lang$core$Native_Utils.update(
 												car,
 												{accel: 0});
 										} else {
@@ -13145,7 +13213,7 @@ var _loovjo$traffic$Main$update = F2(
 									model.cars)
 							}),
 						_1: A2(_elm_lang$websocket$WebSocket$send, model.webSocketUrl, 'accel/0')
-					} : ((_elm_lang$core$Native_Utils.eq(_p61, model.controls.left) || _elm_lang$core$Native_Utils.eq(_p61, model.controls.right)) ? {
+					} : ((_elm_lang$core$Native_Utils.eq(_p66, model.controls.left) || _elm_lang$core$Native_Utils.eq(_p66, model.controls.right)) ? {
 						ctor: '_Tuple2',
 						_0: _elm_lang$core$Native_Utils.update(
 							model,
@@ -13153,9 +13221,9 @@ var _loovjo$traffic$Main$update = F2(
 								cars: A2(
 									_elm_lang$core$List$map,
 									function (car) {
-										var _p59 = car.controlledBy;
-										if (_p59.ctor === 'Just') {
-											return (!_elm_lang$core$Native_Utils.eq(_p59._0, _p60)) ? car : _elm_lang$core$Native_Utils.update(
+										var _p64 = car.controlledBy;
+										if (_p64.ctor === 'Just') {
+											return (!_elm_lang$core$Native_Utils.eq(_p64._0, _p65)) ? car : _elm_lang$core$Native_Utils.update(
 												car,
 												{steering: 0});
 										} else {
@@ -13165,7 +13233,7 @@ var _loovjo$traffic$Main$update = F2(
 									model.cars)
 							}),
 						_1: A2(_elm_lang$websocket$WebSocket$send, model.webSocketUrl, 'steer/0')
-					} : (_elm_lang$core$Native_Utils.eq(_p61, model.controls.snap) ? {
+					} : (_elm_lang$core$Native_Utils.eq(_p66, model.controls.snap) ? {
 						ctor: '_Tuple2',
 						_0: _elm_lang$core$Native_Utils.update(
 							model,
@@ -13174,7 +13242,7 @@ var _loovjo$traffic$Main$update = F2(
 					} : A2(
 						_elm_lang$core$Basics$always,
 						{ctor: '_Tuple2', _0: model, _1: _elm_lang$core$Platform_Cmd$none},
-						A2(_elm_lang$core$Debug$log, 'Key Up', _p61)))));
+						A2(_elm_lang$core$Debug$log, 'Key Up', _p66)))));
 				} else {
 					return {ctor: '_Tuple2', _0: model, _1: _elm_lang$core$Platform_Cmd$none};
 				}
@@ -13190,8 +13258,8 @@ var _loovjo$traffic$Main$update = F2(
 									menu,
 									{
 										state: function () {
-											var _p62 = model.menu.state;
-											if (_p62.ctor === 'In') {
+											var _p67 = model.menu.state;
+											if (_p67.ctor === 'In') {
 												return _loovjo$traffic$Base$Out;
 											} else {
 												return _loovjo$traffic$Base$In;
@@ -13221,7 +13289,7 @@ var _loovjo$traffic$Main$update = F2(
 						_elm_lang$core$Task$succeed(_p8._0))
 				};
 			case 'AddCarClicked':
-				var _p63 = _p8._0;
+				var _p68 = _p8._0;
 				return {
 					ctor: '_Tuple2',
 					_0: _elm_lang$core$Native_Utils.update(
@@ -13230,8 +13298,8 @@ var _loovjo$traffic$Main$update = F2(
 							currentDragCar: _elm_lang$core$Maybe$Just(
 								{
 									pos: {x: 0, y: 0},
-									img: _p63 ? 'CarPolis' : 'Car1',
-									isPolice: _p63
+									img: _p68 ? 'CarPolis' : 'Car1',
+									isPolice: _p68
 								})
 						}),
 					_1: _elm_lang$core$Platform_Cmd$none
@@ -13244,12 +13312,28 @@ var _loovjo$traffic$Main$update = F2(
 						{buildingRoad: true}),
 					_1: _elm_lang$core$Platform_Cmd$none
 				};
+			case 'CombineRoadClicked':
+				return {
+					ctor: '_Tuple2',
+					_0: _elm_lang$core$Native_Utils.update(
+						model,
+						{selectState: _loovjo$traffic$Base$CombineSelecting}),
+					_1: _elm_lang$core$Platform_Cmd$none
+				};
+			case 'RemoveRoadClicked':
+				return {
+					ctor: '_Tuple2',
+					_0: _elm_lang$core$Native_Utils.update(
+						model,
+						{selectState: _loovjo$traffic$Base$RemoveSelecting}),
+					_1: _elm_lang$core$Platform_Cmd$none
+				};
 			default:
 				return {
 					ctor: '_Tuple2',
 					_0: _elm_lang$core$Native_Utils.update(
 						model,
-						{isSelectingRoad: true}),
+						{selectState: _loovjo$traffic$Base$FlipSelecting}),
 					_1: _elm_lang$core$Platform_Cmd$none
 				};
 		}
@@ -13278,7 +13362,7 @@ var _loovjo$traffic$Main$init = function (flags) {
 			buildingRoad: false,
 			snap: false,
 			buildingRoadStart: _elm_lang$core$Maybe$Nothing,
-			isSelectingRoad: false,
+			selectState: _loovjo$traffic$Base$NotSelecting,
 			currentSelectedRoad: _elm_lang$core$Maybe$Nothing,
 			otherRoad: _elm_lang$core$Maybe$Nothing,
 			menu: _loovjo$traffic$Base$defaultMenu
