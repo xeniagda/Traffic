@@ -51,12 +51,17 @@ try {
 
 IP_INFO = {
 }
-function makeDefaultUser() {
+
+DEFAULT_PERMS = new Set(["connect", "view", "place"])
+function makeDefaultUser(name) {
     return {
         amount_of_placed_cars: 0,
-        perms: new Set(["connect", "view", "place"])
+        name: name,
+        perms: DEFAULT_PERMS
     }
 }
+
+SPAWN_RATE = 0.2
 
 PERMISSION = new Set(["connect", "view", "place", "police", "build", "command", "moderator"])
 
@@ -195,13 +200,13 @@ function doCommand(ip, line) {
         }
     }
     else if (parts[0] === "MAKE") {
-        if (parts.length != 2) {
-            return "MAKE syntax: MAKE [ips]"
+        if (parts.length != 3) {
+            return "MAKE syntax: MAKE [ips] [name]"
         }
         else {
-            user = makeDefaultUser()
+            user = makeDefaultUser(parts[2])
             IP_INFO[parts[1]] = user
-            return "Made user " + parts[1]
+            return "Made user " + parts[1] + "(" + parts[2] + ")"
         }
     }
     else if (parts[0] === "SAVE") {
@@ -637,12 +642,12 @@ var physics = timers.setInterval(() => {
 
     traffic.timeUntilNextCar -= delta
     if (traffic.roads.length > 0 && traffic.timeUntilNextCar <= 0) {
-        traffic.timeUntilNextCar = 2
+        traffic.timeUntilNextCar = SPAWN_RATE
 
         // Add new car
 
         texture = CARS[Math.random() * CARS.length | 0]
-        attempt = 50
+        attempt = 200
 
         do {
             road_idx = Math.random() * traffic.roads.length | 0
@@ -740,12 +745,30 @@ var broadcast = timers.setInterval(() => {
     wss.clients.forEach(client => {
         if (client.readyState === ws.OPEN) {
             ip = client.upgradeReq.connection.remoteAddress
-
-            if (IP_INFO[ip] === undefined) {
-                IP_INFO[ip] = makeDefaultUser()
+            
+            if (IP_INFO[ip]) {
+                permissions = IP_INFO[ip].perms || []
             }
-            if (IP_INFO[ip].perms.has("view")) {
-                traffic["you"] = {ip: ip, info: {perms: [ ...IP_INFO[ip].perms ]}}
+            else {
+                permissions = DEFAULT_PERMS
+            }
+
+            if (permissions.has("view")) {
+                traffic["you"] = {ip: ip, info: {loggedIn: IP_INFO[ip] !== undefined, perms: [...permissions]}}
+                traffic["others"] = Object.keys(IP_INFO).map(ip => {return {ip: ip, name: IP_INFO[ip].name}})
+                traffic.cars.forEach(car => {
+                    if (car.steering == null)
+                        car.steering = 0
+                    if (car.pos.x == null)
+                        car.pos.x = 0
+                    if (car.pos.y == null)
+                        car.pos.y = 0
+                    if (car.accel == null)
+                        car.accel = 0
+                    if (car.vel == null)
+                        car.vel = 0
+                })
+
                 client.send(JSON.stringify(traffic))
             }
             else {
@@ -761,11 +784,12 @@ wss.on('connection', (socket => {
     socket.on('message', (data, flags) => {
         ip = socket.upgradeReq.connection.remoteAddress
 
-        if (IP_INFO[ip] === undefined) {
-            IP_INFO[ip] = makeDefaultUser()
+        if (IP_INFO[ip]) {
+            permissions = IP_INFO[ip].perms || []
         }
-
-        permissions = IP_INFO[ip].perms || []
+        else {
+            permissions = DEFAULT_PERMS
+        }
 
         if (!permissions.has("connect")) {
             socket.close()
@@ -860,6 +884,10 @@ wss.on('connection', (socket => {
                 else {
                     traffic.roads[roads[0]].connected_to.push(roads[1])
                 }
+            }
+            else if (cmd === "login" && parts.length == 2) { // login/name
+                user = makeDefaultUser(parts[1])
+                IP_INFO[ip] = user
             }
 
             else {
