@@ -61,7 +61,7 @@ function makeDefaultUser(name) {
     }
 }
 
-SPAWN_RATE = 0.2
+SPAWN_RATE = 2
 
 PERMISSION = new Set(["connect", "view", "place", "police", "build", "command", "moderator"])
 
@@ -251,7 +251,11 @@ function doCommand(ip, line) {
             res += "Removed nothing"
 
         return res.trim()
+    } else if (parts[0] === "SPAWNRATE" && parts.length == 2) {
+        SPAWN_RATE = parts[1] | 0
+        return "Set spawn rate to " + SPAWN_RATE
     }
+    return "Couldn't find command " + parts[0] // Fallback
 
 }
 

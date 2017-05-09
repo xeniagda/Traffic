@@ -9904,7 +9904,7 @@ var _loovjo$traffic$Main$view = function (model) {
 								_0: _elm_lang$html$Html_Events$onInput(_loovjo$traffic$Main$ChangeName),
 								_1: {
 									ctor: '::',
-									_0: _elm_lang$html$Html_Attributes$placeholder('Dabson XD 420'),
+									_0: _elm_lang$html$Html_Attributes$placeholder('User'),
 									_1: {
 										ctor: '::',
 										_0: _elm_lang$html$Html_Attributes$style(

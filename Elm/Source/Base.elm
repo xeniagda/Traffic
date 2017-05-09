@@ -69,18 +69,20 @@ defaultMenu =
 
 generateMenuButtons : Traffic -> List MenuButton
 generateMenuButtons traffic =
-    if traffic.loggedIn then
-        let perms = traffic.perms
-        in (if List.member "place" perms then [ MenuButton "AddCar" <| AddCarClicked False ] else [])
-        ++ (if List.member "police" perms then [ MenuButton "AddPolice" <| AddCarClicked True ] else [])
-        ++ (if List.member "build" perms then 
-            [ MenuButton "AddRoad" AddRoadClicked
-            , MenuButton "RemoveRoad" RemoveRoadClicked
-            , MenuButton "FlipRoad" FlipRoadClicked 
-            , MenuButton "CombineRoad" CombineRoadClicked 
-            ] else [])
-    else
-        [ MenuButton "login" LoginScreen ]
+    (
+        if traffic.loggedIn then
+            let perms = traffic.perms
+            in (if List.member "place" perms then [ MenuButton "AddCar" <| AddCarClicked False ] else [])
+            ++ (if List.member "police" perms then [ MenuButton "AddPolice" <| AddCarClicked True ] else [])
+            ++ (if List.member "build" perms then 
+                [ MenuButton "AddRoad" AddRoadClicked
+                , MenuButton "RemoveRoad" RemoveRoadClicked
+                , MenuButton "FlipRoad" FlipRoadClicked 
+                , MenuButton "CombineRoad" CombineRoadClicked 
+                ] else [])
+        else
+            [ MenuButton "login" LoginScreen ]
+    ) ++ [ MenuButton "Info" InfoScreen ]
 
 getClosestRoad : Position -> List Road -> Maybe Road
 getClosestRoad pos roads =
@@ -214,8 +216,19 @@ type alias Model =
     , selectState : SelectState
     , currentSelectedRoad : Maybe Road
     , otherRoad : Maybe Road
+    
+    , popup : Popup
 
     , menu : Menu
+    }
+
+type Popup
+    = NoPopup
+    | LogingInPopup LoginPopup
+    | InfoPopup
+
+type alias LoginPopup = 
+    { name : String
     }
 
 type SelectState 
@@ -242,5 +255,9 @@ type Msg
     | CombineRoadClicked
     | RemoveRoadClicked
     | FlipRoadClicked
+    | ClosePopup
     | LoginScreen
+    | InfoScreen
+    | UpdateUsername String
+    | Login
 

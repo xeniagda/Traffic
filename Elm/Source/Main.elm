@@ -15,8 +15,6 @@ import Mouse
 import Keyboard
 import WebSocket
 
-import Navigation exposing (load)
-
 import Base exposing (..)
 import TrafficRenderer exposing (..)
 import MenuRenderer exposing (renderMenu)
@@ -60,6 +58,7 @@ init flags =
         , selectState = NotSelecting
         , currentSelectedRoad = Nothing
         , otherRoad = Nothing
+        , popup = NoPopup
         , menu = defaultMenu
         }
     -- ( Model [] [] Nothing Nothing Nothing {x=0, y=0} Nothing Nothing 40 (Debug.log "Websocket url: " flags.webSocketUrl) "" Nothing 6 200 Nothing Nothing flags.controls Nothing False False Nothing defaultMenu
@@ -269,7 +268,21 @@ update msg model =
             else ( model_, Cmd.none )
 
         KeyDown key ->
-            if key == model.controls.zoomIn then -- Plus key
+            if key == model.controls.free then
+                    ( {model
+                    | trackingCar = Nothing
+                    , currentDragCar = Nothing
+                    , buildingRoad = False
+                    , buildingRoadStart = Nothing
+                    , selectState = NotSelecting
+                    , currentSelectedRoad = Nothing
+                    , otherRoad = Nothing
+                    , popup = NoPopup
+                    , menu =
+                        let menu = model.menu
+                        in { menu | state = In }
+                    }, Cmd.none )
+            else if key == model.controls.zoomIn then -- Plus key
                 ( {model
                     | renderScale = model.renderScale * zoomFactor
                     , scroll =
@@ -342,19 +355,6 @@ update msg model =
                                     Nothing -> car
                             ) model.cars},
                         WebSocket.send model.webSocketUrl ( "steer/" ++ (toString model.steerRate)))
-                    else if key == model.controls.free then
-                        ( {model
-                        | trackingCar = Nothing
-                        , currentDragCar = Nothing
-                        , buildingRoad = False
-                        , buildingRoadStart = Nothing
-                        , selectState = NotSelecting
-                        , currentSelectedRoad = Nothing
-                        , otherRoad = Nothing
-                        , menu =
-                            let menu = model.menu
-                            in { menu | state = In }
-                        }, Cmd.none )
                     else if key == model.controls.carUp || key == model.controls.carDown then
                         ( { model |
                             trackingCar =
@@ -466,96 +466,179 @@ update msg model =
             ( { model | selectState = FlipSelecting }
             , Cmd.none )
 
+        ClosePopup ->
+            ( { model 
+              | popup = NoPopup
+            }
+            , Cmd.none )
+
         LoginScreen ->
-            ( model
-            , load "Login.html" )
+            ( { model 
+              | popup =
+                  LogingInPopup { name = "" }
+            }
+            , Cmd.none )
+
+        InfoScreen ->
+            ( { model 
+              | popup = InfoPopup
+            }
+            , Cmd.none )
+
+        UpdateUsername name ->
+            case model.popup of
+                LogingInPopup pop ->
+                    ( { model 
+                    | popup = LogingInPopup {name = name}
+                    }
+                    , Cmd.none )
+                _ -> ( model, Cmd.none )
+
+        Login ->
+            case model.popup of
+                LogingInPopup pop ->
+                    ( { model 
+                    | popup = NoPopup
+                    }
+                    , WebSocket.send model.webSocketUrl <| "login/" ++ pop.name)
+                _ -> ( model, Cmd.none )
 
 view : Model -> Html Msg
 view model =
-    div [style [("margin", "0px")]] <|
-        [ -- Generate svg!
-          S.svg
-            [ Sa.width <| Maybe.withDefault "10" <| Maybe.map (toString << .x) model.size
-            , Sa.height <| Maybe.withDefault "10" <| Maybe.map (toString << .y) model.size
-            , Sa.style "background: #227722"
-            ]
-            (let
-                lines = renderBackgroundLines model
-                roads = renderRoads model model.roads
-                cars = renderCars model model.cars
-                trafficLights = renderTrafficLights model model.roads
-                menu = renderMenu model
-             in
-                lines ++ roads ++ cars ++ trafficLights ++ menu
-            ++ (
-                List.concatMap (\road ->
-                    [
-                        S.line
-                        [ Sa.x1 <| toString <| (road.start.x * model.renderScale) + model.scroll.x
-                        , Sa.y1 <| toString <| (road.start.y * model.renderScale) + model.scroll.y
-                        , Sa.x2 <| toString <| (road.end.x * model.renderScale) + model.scroll.x
-                        , Sa.y2 <| toString <| (road.end.y * model.renderScale) + model.scroll.y
-                        , Sa.strokeWidth <| toString <| model.renderScale * 0.3
-                        , Sa.stroke "green"
-                        ] []
-                    ,
-                        S.circle
-                        [ Sa.cx <| toString <| (road.end.x * model.renderScale) + model.scroll.x
-                        , Sa.cy <| toString <| (road.end.y * model.renderScale) + model.scroll.y
-                        , Sa.fill "yellow"
-                        , Sa.r <| toString <| model.renderScale / 2
-                        , Sa.stroke "black"
-                        , Sa.strokeWidth <| toString <| model.renderScale / 20
-                        ] []
-                    ]
+    div [ style [ ("margin-top", "0px")
+                , ("padding-top", "0px") ] ] 
+        ([ div ( [ style [ ("margin", "0px")
+                        , ("top", "0px")
+                        , ("position", "fixed")]
+            ] ++
+            case model.popup of
+                NoPopup -> []
+                _ -> [ class "blur" ]
+            )
+            [ -- Generate svg!
+              S.svg
+                [ Sa.width <| Maybe.withDefault "10" <| Maybe.map (toString << .x) model.size
+                , Sa.height <| Maybe.withDefault "10" <| Maybe.map (toString << .y) model.size
+                , Sa.style "background: #227722"
+                ]
+                (let
+                    lines = renderBackgroundLines model
+                    roads = renderRoads model model.roads
+                    cars = renderCars model model.cars
+                    trafficLights = renderTrafficLights model model.roads
+                    menu = renderMenu model
+                 in
+                    lines ++ roads ++ cars ++ trafficLights ++ menu
+                ++ (
+                    List.concatMap (\road ->
+                        [
+                            S.line
+                            [ Sa.x1 <| toString <| (road.start.x * model.renderScale) + model.scroll.x
+                            , Sa.y1 <| toString <| (road.start.y * model.renderScale) + model.scroll.y
+                            , Sa.x2 <| toString <| (road.end.x * model.renderScale) + model.scroll.x
+                            , Sa.y2 <| toString <| (road.end.y * model.renderScale) + model.scroll.y
+                            , Sa.strokeWidth <| toString <| model.renderScale * 0.3
+                            , Sa.stroke "green"
+                            ] []
+                        ,
+                            S.circle
+                            [ Sa.cx <| toString <| (road.end.x * model.renderScale) + model.scroll.x
+                            , Sa.cy <| toString <| (road.end.y * model.renderScale) + model.scroll.y
+                            , Sa.fill "yellow"
+                            , Sa.r <| toString <| model.renderScale / 2
+                            , Sa.stroke "black"
+                            , Sa.strokeWidth <| toString <| model.renderScale / 20
+                            ] []
+                        ]
+                    )
+                    ((
+                    case model.currentSelectedRoad of
+                        Just road -> [road]
+                        Nothing -> []
+                    ) ++ (
+                    case model.otherRoad of
+                        Just road -> [road]
+                        Nothing -> []
+                    ))
                 )
-                ((
-                case model.currentSelectedRoad of
-                    Just road -> [road]
-                    Nothing -> []
-                ) ++ (
-                case model.otherRoad of
-                    Just road -> [road]
-                    Nothing -> []
-                ))
-            )
-            ++ (
-                case model.currentDragCar of
-                    Just car -> renderCars model [toCar car]
-                    Nothing -> []
-            )
-            ++ (
-                case (model.buildingRoadStart, model.mouse) of
-                    (Just start, Just mouse) ->
-                        let f = if model.snap then pRound else identity
-                            road = Road (f start) (f mouse) [] Nothing 1.5
-                        in renderRoads model [road]
-                    _ -> []
-            )
-            )
+                ++ (
+                    case model.currentDragCar of
+                        Just car -> renderCars model [toCar car]
+                        Nothing -> []
+                )
+                ++ (
+                    case (model.buildingRoadStart, model.mouse) of
+                        (Just start, Just mouse) ->
+                            let f = if model.snap then pRound else identity
+                                road = Road (f start) (f mouse) [] Nothing 1.5
+                            in renderRoads model [road]
+                        _ -> []
+                )
+                )
+            ]
         ] ++
-        [ pre [] [text "Keys:"]
-        , div [style [("margin-left", "2em")]] (
-            [ pre [] [text "+ Zoom in"]
-            , pre [] [text "- Zoom out"]
-            , pre [] [text "Double-click to make a car"]
-            , pre [] [text "w Accelerate"]
-            , pre [] [text "s Active breaks"]
-            , pre [] [text "a/d Steer left/right"]
-            , pre [] [text "x Drive backwards"]
-            ] ++ (
-                case model.ip of
-                    Just ip -> [p [] [text <| "Your IP: " ++ ip]]
-                    Nothing -> [p [] [text "No IP assigned."]]
-            ) ++ (
-            case model.err of
-                Just err ->
-                    [ p [style [("color", "red")]] [text <| "An error occured. Error was: " ++ toString err]
-                    ]
-                Nothing ->
-                    []
+        (
+            if model.popup == NoPopup then []
+            else 
+               [ div [ style <| centerFill model ]
+                   [div [ style (centerFill model ++
+                                [ ("background-color", "#A64")
+                                , ("opacity", "0.6")] )] []
+                   , div [style <| centerFill model]
+                       (generatePopup model.popup model)
+                   ]
+                ]
+            )
         )
-        )]
+
+centerFill model =
+    [ ("position", "absolute")
+    , ("width", "100%")
+    , ("height", (Maybe.withDefault "10" <| Maybe.map (toString << .y) model.size) ++ "px")]
+
+generatePopup : Popup -> Model -> List (Html Msg)
+generatePopup popup model =
+    case popup of
+        NoPopup -> []
+        InfoPopup -> 
+            [ div [style [("text-align", "center")]] (
+                [  pre [] [text "Keys:"]
+                , pre [] [text "+ Zoom in"]
+                , pre [] [text "- Zoom out"]
+                , pre [] [text "Double-click to make a car"]
+                , pre [] [text "w Accelerate"]
+                , pre [] [text "s Active breaks"]
+                , pre [] [text "a/d Steer left/right"]
+                , pre [] [text "x Drive backwards"]
+                ] ++ (
+                    case model.ip of
+                        Just ip -> [p [] [text <| "Your IP: " ++ ip]]
+                        Nothing -> [p [] [text "No IP assigned."]]
+                ) ++ (
+                case model.err of
+                    Just err ->
+                        [ p [style [("color", "red")]] [text <| "An error occured. Error was: " ++ toString err]
+                        ]
+                    Nothing ->
+                        []
+                ) ++
+                [ button [ onClick ClosePopup ] [text "Done!"] ]
+            )]
+
+        LogingInPopup login ->
+            [ div [style [ ("text-align", "center")
+                         , ("margin-top", "200px") ]] 
+                [ h1 [style [("font-family", "Impact")]] [text "Username:"]
+                , Html.form [ onSubmit Login ]
+                [ input [ placeholder "Dabson XD"
+                        , onInput UpdateUsername 
+                        , style [("font-size", "40px")]
+                        ] []
+                , br [] []
+                , button [] [text "Login!"]
+                ]
+                ]
+            ]
 
 
 
