@@ -15,6 +15,8 @@ import Mouse
 import Keyboard
 import WebSocket
 
+import Navigation exposing (load)
+
 import Base exposing (..)
 import TrafficRenderer exposing (..)
 import MenuRenderer exposing (renderMenu)
@@ -50,6 +52,7 @@ init flags =
         , lastClickTime = Nothing
         , trackingCar = Nothing
         , controls = flags.controls
+        , others = []
         , currentDragCar = Nothing
         , buildingRoad = False
         , snap = False
@@ -77,11 +80,12 @@ update msg model =
                     ( { model
                         | cars = traffic.cars
                         , roads = traffic.roads
+                        , others = traffic.others
                         , ip = Just traffic.ip
                         , err = Nothing
                         , menu = let menu = model.menu
                                  in { menu
-                                    | buttons = generateMenuButtons traffic.perms
+                                    | buttons = generateMenuButtons traffic
                                     }
                     }
                     , Task.perform identity <| Task.succeed FixScroll )
@@ -461,6 +465,10 @@ update msg model =
         FlipRoadClicked ->
             ( { model | selectState = FlipSelecting }
             , Cmd.none )
+
+        LoginScreen ->
+            ( model
+            , load "Login.html" )
 
 view : Model -> Html Msg
 view model =

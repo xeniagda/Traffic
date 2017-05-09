@@ -13,6 +13,14 @@ decodeTraffic =
         |> P.required "roads" decodeRoads
         |> P.custom (Decode.at [ "you", "ip" ] Decode.string)
         |> P.custom (Decode.at [ "you", "info", "perms" ] ( Decode.list Decode.string ))
+        |> P.custom (Decode.at [ "you", "info", "loggedIn" ] Decode.bool)
+        |> P.required "others" decodeOthers
+
+decodeOthers =
+    Decode.list
+        (P.decode User
+            |> P.required "ip" Decode.string
+            |> P.required "name" Decode.string)
 
 
 decodeCars : Decoder (List Car)

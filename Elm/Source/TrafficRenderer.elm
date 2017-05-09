@@ -70,8 +70,8 @@ renderRoadLines model roads =
 
 renderCars : Model -> List Car -> List (S.Svg Msg)
 renderCars model cars =
-    List.map (\car ->
-            S.image
+    List.concatMap (\car ->
+            [ S.image
               [ Sa.x <| toString <| model.scroll.x + car.pos.x * model.renderScale - carWidth / 2 * model.renderScale
               , Sa.y <| toString <| model.scroll.y + car.pos.y * model.renderScale - carHeight / 2 * model.renderScale
               , Sa.width <| toString <| carWidth * model.renderScale
@@ -88,6 +88,25 @@ renderCars model cars =
                       ++ ")"
               ]
               []
+            ] ++ (
+            case car.controlledBy of
+                Just ip ->
+                    let users = List.filter (\user -> user.ip == ip) model.others
+                        user = List.head users
+                    in case user of
+                        Just user ->
+                            [ S.text_
+                              [ Sa.x <| toString <| model.scroll.x + car.pos.x * model.renderScale
+                              , Sa.y <| toString <| model.scroll.y + (car.pos.y + 1) * model.renderScale
+                              , Sa.fill "white"
+                              , Sa.textAnchor "middle"
+                              , Sa.fontSize <| toString <| model.renderScale / 2
+                              ]
+                                [ S.text user.name ]
+                            ]
+                        Nothing -> []
+                Nothing -> []
+            )
 
         )
         cars

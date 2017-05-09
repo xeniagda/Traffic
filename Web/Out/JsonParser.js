@@ -9199,9 +9199,13 @@ var _loovjo$traffic$Base$Road = F5(
 	function (a, b, c, d, e) {
 		return {start: a, end: b, connectedTo: c, trafficLight: d, width: e};
 	});
-var _loovjo$traffic$Base$Traffic = F4(
-	function (a, b, c, d) {
-		return {cars: a, roads: b, ip: c, perms: d};
+var _loovjo$traffic$Base$User = F2(
+	function (a, b) {
+		return {ip: a, name: b};
+	});
+var _loovjo$traffic$Base$Traffic = F6(
+	function (a, b, c, d, e, f) {
+		return {cars: a, roads: b, ip: c, perms: d, loggedIn: e, others: f};
 	});
 var _loovjo$traffic$Base$Model = function (a) {
 	return function (b) {
@@ -9227,7 +9231,9 @@ var _loovjo$traffic$Base$Model = function (a) {
 																					return function (v) {
 																						return function (w) {
 																							return function (x) {
-																								return {cars: a, roads: b, err: c, size: d, lasttime: e, scroll: f, dragMouse: g, mouse: h, renderScale: i, webSocketUrl: j, ip: k, accelRate: l, steerRate: m, lastClickTime: n, trackingCar: o, controls: p, currentDragCar: q, buildingRoad: r, snap: s, buildingRoadStart: t, selectState: u, currentSelectedRoad: v, otherRoad: w, menu: x};
+																								return function (y) {
+																									return {cars: a, roads: b, err: c, size: d, lasttime: e, scroll: f, dragMouse: g, mouse: h, renderScale: i, webSocketUrl: j, ip: k, accelRate: l, steerRate: m, lastClickTime: n, trackingCar: o, controls: p, others: q, currentDragCar: r, buildingRoad: s, snap: t, buildingRoadStart: u, selectState: v, currentSelectedRoad: w, otherRoad: x, menu: y};
+																								};
 																							};
 																						};
 																					};
@@ -9265,6 +9271,7 @@ var _loovjo$traffic$Base$FlipSelecting = {ctor: 'FlipSelecting'};
 var _loovjo$traffic$Base$RemoveSelecting = {ctor: 'RemoveSelecting'};
 var _loovjo$traffic$Base$CombineSelecting = {ctor: 'CombineSelecting'};
 var _loovjo$traffic$Base$NotSelecting = {ctor: 'NotSelecting'};
+var _loovjo$traffic$Base$LoginScreen = {ctor: 'LoginScreen'};
 var _loovjo$traffic$Base$FlipRoadClicked = {ctor: 'FlipRoadClicked'};
 var _loovjo$traffic$Base$RemoveRoadClicked = {ctor: 'RemoveRoadClicked'};
 var _loovjo$traffic$Base$CombineRoadClicked = {ctor: 'CombineRoadClicked'};
@@ -9272,44 +9279,53 @@ var _loovjo$traffic$Base$AddRoadClicked = {ctor: 'AddRoadClicked'};
 var _loovjo$traffic$Base$AddCarClicked = function (a) {
 	return {ctor: 'AddCarClicked', _0: a};
 };
-var _loovjo$traffic$Base$generateMenuButtons = function (perms) {
-	return A2(
-		_elm_lang$core$Basics_ops['++'],
-		A2(_elm_lang$core$List$member, 'place', perms) ? {
-			ctor: '::',
-			_0: A2(
-				_loovjo$traffic$Base$MenuButton,
-				'AddCar',
-				_loovjo$traffic$Base$AddCarClicked(false)),
-			_1: {ctor: '[]'}
-		} : {ctor: '[]'},
-		A2(
+var _loovjo$traffic$Base$generateMenuButtons = function (traffic) {
+	if (traffic.loggedIn) {
+		var perms = traffic.perms;
+		return A2(
 			_elm_lang$core$Basics_ops['++'],
-			A2(_elm_lang$core$List$member, 'police', perms) ? {
+			A2(_elm_lang$core$List$member, 'place', perms) ? {
 				ctor: '::',
 				_0: A2(
 					_loovjo$traffic$Base$MenuButton,
-					'AddPolice',
-					_loovjo$traffic$Base$AddCarClicked(true)),
+					'AddCar',
+					_loovjo$traffic$Base$AddCarClicked(false)),
 				_1: {ctor: '[]'}
 			} : {ctor: '[]'},
-			A2(_elm_lang$core$List$member, 'build', perms) ? {
-				ctor: '::',
-				_0: A2(_loovjo$traffic$Base$MenuButton, 'AddRoad', _loovjo$traffic$Base$AddRoadClicked),
-				_1: {
+			A2(
+				_elm_lang$core$Basics_ops['++'],
+				A2(_elm_lang$core$List$member, 'police', perms) ? {
 					ctor: '::',
-					_0: A2(_loovjo$traffic$Base$MenuButton, 'RemoveRoad', _loovjo$traffic$Base$RemoveRoadClicked),
+					_0: A2(
+						_loovjo$traffic$Base$MenuButton,
+						'AddPolice',
+						_loovjo$traffic$Base$AddCarClicked(true)),
+					_1: {ctor: '[]'}
+				} : {ctor: '[]'},
+				A2(_elm_lang$core$List$member, 'build', perms) ? {
+					ctor: '::',
+					_0: A2(_loovjo$traffic$Base$MenuButton, 'AddRoad', _loovjo$traffic$Base$AddRoadClicked),
 					_1: {
 						ctor: '::',
-						_0: A2(_loovjo$traffic$Base$MenuButton, 'FlipRoad', _loovjo$traffic$Base$FlipRoadClicked),
+						_0: A2(_loovjo$traffic$Base$MenuButton, 'RemoveRoad', _loovjo$traffic$Base$RemoveRoadClicked),
 						_1: {
 							ctor: '::',
-							_0: A2(_loovjo$traffic$Base$MenuButton, 'CombineRoad', _loovjo$traffic$Base$CombineRoadClicked),
-							_1: {ctor: '[]'}
+							_0: A2(_loovjo$traffic$Base$MenuButton, 'FlipRoad', _loovjo$traffic$Base$FlipRoadClicked),
+							_1: {
+								ctor: '::',
+								_0: A2(_loovjo$traffic$Base$MenuButton, 'CombineRoad', _loovjo$traffic$Base$CombineRoadClicked),
+								_1: {ctor: '[]'}
+							}
 						}
 					}
-				}
-			} : {ctor: '[]'}));
+				} : {ctor: '[]'}));
+	} else {
+		return {
+			ctor: '::',
+			_0: A2(_loovjo$traffic$Base$MenuButton, 'login', _loovjo$traffic$Base$LoginScreen),
+			_1: {ctor: '[]'}
+		};
+	}
 };
 var _loovjo$traffic$Base$MenuButtonClicked = function (a) {
 	return {ctor: 'MenuButtonClicked', _0: a};
@@ -9481,24 +9497,20 @@ var _loovjo$traffic$JsonParser$decodeCars = _elm_lang$core$Json_Decode$list(
 													'name',
 													_elm_lang$core$Json_Decode$string,
 													_NoRedInk$elm_decode_pipeline$Json_Decode_Pipeline$decode(_loovjo$traffic$Base$Car))))))))))))));
-var _loovjo$traffic$JsonParser$decodeTraffic = A2(
-	_NoRedInk$elm_decode_pipeline$Json_Decode_Pipeline$custom,
-	A2(
-		_elm_lang$core$Json_Decode$at,
-		{
-			ctor: '::',
-			_0: 'you',
-			_1: {
-				ctor: '::',
-				_0: 'info',
-				_1: {
-					ctor: '::',
-					_0: 'perms',
-					_1: {ctor: '[]'}
-				}
-			}
-		},
-		_elm_lang$core$Json_Decode$list(_elm_lang$core$Json_Decode$string)),
+var _loovjo$traffic$JsonParser$decodeOthers = _elm_lang$core$Json_Decode$list(
+	A3(
+		_NoRedInk$elm_decode_pipeline$Json_Decode_Pipeline$required,
+		'name',
+		_elm_lang$core$Json_Decode$string,
+		A3(
+			_NoRedInk$elm_decode_pipeline$Json_Decode_Pipeline$required,
+			'ip',
+			_elm_lang$core$Json_Decode$string,
+			_NoRedInk$elm_decode_pipeline$Json_Decode_Pipeline$decode(_loovjo$traffic$Base$User))));
+var _loovjo$traffic$JsonParser$decodeTraffic = A3(
+	_NoRedInk$elm_decode_pipeline$Json_Decode_Pipeline$required,
+	'others',
+	_loovjo$traffic$JsonParser$decodeOthers,
 	A2(
 		_NoRedInk$elm_decode_pipeline$Json_Decode_Pipeline$custom,
 		A2(
@@ -9508,20 +9520,56 @@ var _loovjo$traffic$JsonParser$decodeTraffic = A2(
 				_0: 'you',
 				_1: {
 					ctor: '::',
-					_0: 'ip',
-					_1: {ctor: '[]'}
+					_0: 'info',
+					_1: {
+						ctor: '::',
+						_0: 'loggedIn',
+						_1: {ctor: '[]'}
+					}
 				}
 			},
-			_elm_lang$core$Json_Decode$string),
-		A3(
-			_NoRedInk$elm_decode_pipeline$Json_Decode_Pipeline$required,
-			'roads',
-			_loovjo$traffic$JsonParser$decodeRoads,
-			A3(
-				_NoRedInk$elm_decode_pipeline$Json_Decode_Pipeline$required,
-				'cars',
-				_loovjo$traffic$JsonParser$decodeCars,
-				_NoRedInk$elm_decode_pipeline$Json_Decode_Pipeline$decode(_loovjo$traffic$Base$Traffic)))));
+			_elm_lang$core$Json_Decode$bool),
+		A2(
+			_NoRedInk$elm_decode_pipeline$Json_Decode_Pipeline$custom,
+			A2(
+				_elm_lang$core$Json_Decode$at,
+				{
+					ctor: '::',
+					_0: 'you',
+					_1: {
+						ctor: '::',
+						_0: 'info',
+						_1: {
+							ctor: '::',
+							_0: 'perms',
+							_1: {ctor: '[]'}
+						}
+					}
+				},
+				_elm_lang$core$Json_Decode$list(_elm_lang$core$Json_Decode$string)),
+			A2(
+				_NoRedInk$elm_decode_pipeline$Json_Decode_Pipeline$custom,
+				A2(
+					_elm_lang$core$Json_Decode$at,
+					{
+						ctor: '::',
+						_0: 'you',
+						_1: {
+							ctor: '::',
+							_0: 'ip',
+							_1: {ctor: '[]'}
+						}
+					},
+					_elm_lang$core$Json_Decode$string),
+				A3(
+					_NoRedInk$elm_decode_pipeline$Json_Decode_Pipeline$required,
+					'roads',
+					_loovjo$traffic$JsonParser$decodeRoads,
+					A3(
+						_NoRedInk$elm_decode_pipeline$Json_Decode_Pipeline$required,
+						'cars',
+						_loovjo$traffic$JsonParser$decodeCars,
+						_NoRedInk$elm_decode_pipeline$Json_Decode_Pipeline$decode(_loovjo$traffic$Base$Traffic)))))));
 
 var Elm = {};
 Elm['JsonParser'] = Elm['JsonParser'] || {};

@@ -9373,9 +9373,13 @@ var _loovjo$traffic$Base$Road = F5(
 	function (a, b, c, d, e) {
 		return {start: a, end: b, connectedTo: c, trafficLight: d, width: e};
 	});
-var _loovjo$traffic$Base$Traffic = F4(
-	function (a, b, c, d) {
-		return {cars: a, roads: b, ip: c, perms: d};
+var _loovjo$traffic$Base$User = F2(
+	function (a, b) {
+		return {ip: a, name: b};
+	});
+var _loovjo$traffic$Base$Traffic = F6(
+	function (a, b, c, d, e, f) {
+		return {cars: a, roads: b, ip: c, perms: d, loggedIn: e, others: f};
 	});
 var _loovjo$traffic$Base$Model = function (a) {
 	return function (b) {
@@ -9401,7 +9405,9 @@ var _loovjo$traffic$Base$Model = function (a) {
 																					return function (v) {
 																						return function (w) {
 																							return function (x) {
-																								return {cars: a, roads: b, err: c, size: d, lasttime: e, scroll: f, dragMouse: g, mouse: h, renderScale: i, webSocketUrl: j, ip: k, accelRate: l, steerRate: m, lastClickTime: n, trackingCar: o, controls: p, currentDragCar: q, buildingRoad: r, snap: s, buildingRoadStart: t, selectState: u, currentSelectedRoad: v, otherRoad: w, menu: x};
+																								return function (y) {
+																									return {cars: a, roads: b, err: c, size: d, lasttime: e, scroll: f, dragMouse: g, mouse: h, renderScale: i, webSocketUrl: j, ip: k, accelRate: l, steerRate: m, lastClickTime: n, trackingCar: o, controls: p, others: q, currentDragCar: r, buildingRoad: s, snap: t, buildingRoadStart: u, selectState: v, currentSelectedRoad: w, otherRoad: x, menu: y};
+																								};
 																							};
 																						};
 																					};
@@ -9439,6 +9445,7 @@ var _loovjo$traffic$Base$FlipSelecting = {ctor: 'FlipSelecting'};
 var _loovjo$traffic$Base$RemoveSelecting = {ctor: 'RemoveSelecting'};
 var _loovjo$traffic$Base$CombineSelecting = {ctor: 'CombineSelecting'};
 var _loovjo$traffic$Base$NotSelecting = {ctor: 'NotSelecting'};
+var _loovjo$traffic$Base$LoginScreen = {ctor: 'LoginScreen'};
 var _loovjo$traffic$Base$FlipRoadClicked = {ctor: 'FlipRoadClicked'};
 var _loovjo$traffic$Base$RemoveRoadClicked = {ctor: 'RemoveRoadClicked'};
 var _loovjo$traffic$Base$CombineRoadClicked = {ctor: 'CombineRoadClicked'};
@@ -9446,44 +9453,53 @@ var _loovjo$traffic$Base$AddRoadClicked = {ctor: 'AddRoadClicked'};
 var _loovjo$traffic$Base$AddCarClicked = function (a) {
 	return {ctor: 'AddCarClicked', _0: a};
 };
-var _loovjo$traffic$Base$generateMenuButtons = function (perms) {
-	return A2(
-		_elm_lang$core$Basics_ops['++'],
-		A2(_elm_lang$core$List$member, 'place', perms) ? {
-			ctor: '::',
-			_0: A2(
-				_loovjo$traffic$Base$MenuButton,
-				'AddCar',
-				_loovjo$traffic$Base$AddCarClicked(false)),
-			_1: {ctor: '[]'}
-		} : {ctor: '[]'},
-		A2(
+var _loovjo$traffic$Base$generateMenuButtons = function (traffic) {
+	if (traffic.loggedIn) {
+		var perms = traffic.perms;
+		return A2(
 			_elm_lang$core$Basics_ops['++'],
-			A2(_elm_lang$core$List$member, 'police', perms) ? {
+			A2(_elm_lang$core$List$member, 'place', perms) ? {
 				ctor: '::',
 				_0: A2(
 					_loovjo$traffic$Base$MenuButton,
-					'AddPolice',
-					_loovjo$traffic$Base$AddCarClicked(true)),
+					'AddCar',
+					_loovjo$traffic$Base$AddCarClicked(false)),
 				_1: {ctor: '[]'}
 			} : {ctor: '[]'},
-			A2(_elm_lang$core$List$member, 'build', perms) ? {
-				ctor: '::',
-				_0: A2(_loovjo$traffic$Base$MenuButton, 'AddRoad', _loovjo$traffic$Base$AddRoadClicked),
-				_1: {
+			A2(
+				_elm_lang$core$Basics_ops['++'],
+				A2(_elm_lang$core$List$member, 'police', perms) ? {
 					ctor: '::',
-					_0: A2(_loovjo$traffic$Base$MenuButton, 'RemoveRoad', _loovjo$traffic$Base$RemoveRoadClicked),
+					_0: A2(
+						_loovjo$traffic$Base$MenuButton,
+						'AddPolice',
+						_loovjo$traffic$Base$AddCarClicked(true)),
+					_1: {ctor: '[]'}
+				} : {ctor: '[]'},
+				A2(_elm_lang$core$List$member, 'build', perms) ? {
+					ctor: '::',
+					_0: A2(_loovjo$traffic$Base$MenuButton, 'AddRoad', _loovjo$traffic$Base$AddRoadClicked),
 					_1: {
 						ctor: '::',
-						_0: A2(_loovjo$traffic$Base$MenuButton, 'FlipRoad', _loovjo$traffic$Base$FlipRoadClicked),
+						_0: A2(_loovjo$traffic$Base$MenuButton, 'RemoveRoad', _loovjo$traffic$Base$RemoveRoadClicked),
 						_1: {
 							ctor: '::',
-							_0: A2(_loovjo$traffic$Base$MenuButton, 'CombineRoad', _loovjo$traffic$Base$CombineRoadClicked),
-							_1: {ctor: '[]'}
+							_0: A2(_loovjo$traffic$Base$MenuButton, 'FlipRoad', _loovjo$traffic$Base$FlipRoadClicked),
+							_1: {
+								ctor: '::',
+								_0: A2(_loovjo$traffic$Base$MenuButton, 'CombineRoad', _loovjo$traffic$Base$CombineRoadClicked),
+								_1: {ctor: '[]'}
+							}
 						}
 					}
-				}
-			} : {ctor: '[]'}));
+				} : {ctor: '[]'}));
+	} else {
+		return {
+			ctor: '::',
+			_0: A2(_loovjo$traffic$Base$MenuButton, 'login', _loovjo$traffic$Base$LoginScreen),
+			_1: {ctor: '[]'}
+		};
+	}
 };
 var _loovjo$traffic$Base$MenuButtonClicked = function (a) {
 	return {ctor: 'MenuButtonClicked', _0: a};
@@ -9701,68 +9717,128 @@ var _loovjo$traffic$TrafficRenderer$renderTrafficLights = F2(
 var _loovjo$traffic$TrafficRenderer$renderCars = F2(
 	function (model, cars) {
 		return A2(
-			_elm_lang$core$List$map,
+			_elm_lang$core$List$concatMap,
 			function (car) {
 				return A2(
-					_elm_lang$svg$Svg$image,
+					_elm_lang$core$Basics_ops['++'],
 					{
 						ctor: '::',
-						_0: _elm_lang$svg$Svg_Attributes$x(
-							_elm_lang$core$Basics$toString((model.scroll.x + (car.pos.x * model.renderScale)) - ((_loovjo$traffic$Base$carWidth / 2) * model.renderScale))),
-						_1: {
-							ctor: '::',
-							_0: _elm_lang$svg$Svg_Attributes$y(
-								_elm_lang$core$Basics$toString((model.scroll.y + (car.pos.y * model.renderScale)) - ((_loovjo$traffic$Base$carHeight / 2) * model.renderScale))),
-							_1: {
+						_0: A2(
+							_elm_lang$svg$Svg$image,
+							{
 								ctor: '::',
-								_0: _elm_lang$svg$Svg_Attributes$width(
-									_elm_lang$core$Basics$toString(_loovjo$traffic$Base$carWidth * model.renderScale)),
+								_0: _elm_lang$svg$Svg_Attributes$x(
+									_elm_lang$core$Basics$toString((model.scroll.x + (car.pos.x * model.renderScale)) - ((_loovjo$traffic$Base$carWidth / 2) * model.renderScale))),
 								_1: {
 									ctor: '::',
-									_0: _elm_lang$svg$Svg_Attributes$height(
-										_elm_lang$core$Basics$toString(_loovjo$traffic$Base$carHeight * model.renderScale)),
+									_0: _elm_lang$svg$Svg_Attributes$y(
+										_elm_lang$core$Basics$toString((model.scroll.y + (car.pos.y * model.renderScale)) - ((_loovjo$traffic$Base$carHeight / 2) * model.renderScale))),
 									_1: {
 										ctor: '::',
-										_0: _elm_lang$svg$Svg_Attributes$xlinkHref(
-											A2(
-												_elm_lang$core$Basics_ops['++'],
-												'Textures/Cars/',
-												_loovjo$traffic$Base$getImg(car))),
+										_0: _elm_lang$svg$Svg_Attributes$width(
+											_elm_lang$core$Basics$toString(_loovjo$traffic$Base$carWidth * model.renderScale)),
 										_1: {
 											ctor: '::',
-											_0: _elm_lang$svg$Svg_Attributes$opacity(
-												_elm_lang$core$Basics$toString(car.fade)),
+											_0: _elm_lang$svg$Svg_Attributes$height(
+												_elm_lang$core$Basics$toString(_loovjo$traffic$Base$carHeight * model.renderScale)),
 											_1: {
 												ctor: '::',
-												_0: _elm_lang$svg$Svg_Attributes$transform(
+												_0: _elm_lang$svg$Svg_Attributes$xlinkHref(
 													A2(
 														_elm_lang$core$Basics_ops['++'],
-														'rotate(',
-														A2(
-															_elm_lang$core$Basics_ops['++'],
-															_elm_lang$core$Basics$toString(car.rot),
+														'Textures/Cars/',
+														_loovjo$traffic$Base$getImg(car))),
+												_1: {
+													ctor: '::',
+													_0: _elm_lang$svg$Svg_Attributes$opacity(
+														_elm_lang$core$Basics$toString(car.fade)),
+													_1: {
+														ctor: '::',
+														_0: _elm_lang$svg$Svg_Attributes$transform(
 															A2(
 																_elm_lang$core$Basics_ops['++'],
-																' ',
+																'rotate(',
 																A2(
 																	_elm_lang$core$Basics_ops['++'],
-																	_elm_lang$core$Basics$toString((car.pos.x * model.renderScale) + model.scroll.x),
+																	_elm_lang$core$Basics$toString(car.rot),
 																	A2(
 																		_elm_lang$core$Basics_ops['++'],
 																		' ',
 																		A2(
 																			_elm_lang$core$Basics_ops['++'],
-																			_elm_lang$core$Basics$toString((car.pos.y * model.renderScale) + model.scroll.y),
-																			')'))))))),
-												_1: {ctor: '[]'}
+																			_elm_lang$core$Basics$toString((car.pos.x * model.renderScale) + model.scroll.x),
+																			A2(
+																				_elm_lang$core$Basics_ops['++'],
+																				' ',
+																				A2(
+																					_elm_lang$core$Basics_ops['++'],
+																					_elm_lang$core$Basics$toString((car.pos.y * model.renderScale) + model.scroll.y),
+																					')'))))))),
+														_1: {ctor: '[]'}
+													}
+												}
 											}
 										}
 									}
 								}
-							}
-						}
+							},
+							{ctor: '[]'}),
+						_1: {ctor: '[]'}
 					},
-					{ctor: '[]'});
+					function () {
+						var _p4 = car.controlledBy;
+						if (_p4.ctor === 'Just') {
+							var users = A2(
+								_elm_lang$core$List$filter,
+								function (user) {
+									return _elm_lang$core$Native_Utils.eq(user.ip, _p4._0);
+								},
+								model.others);
+							var user = _elm_lang$core$List$head(users);
+							var _p5 = user;
+							if (_p5.ctor === 'Just') {
+								return {
+									ctor: '::',
+									_0: A2(
+										_elm_lang$svg$Svg$text_,
+										{
+											ctor: '::',
+											_0: _elm_lang$svg$Svg_Attributes$x(
+												_elm_lang$core$Basics$toString(model.scroll.x + (car.pos.x * model.renderScale))),
+											_1: {
+												ctor: '::',
+												_0: _elm_lang$svg$Svg_Attributes$y(
+													_elm_lang$core$Basics$toString(model.scroll.y + ((car.pos.y + 1) * model.renderScale))),
+												_1: {
+													ctor: '::',
+													_0: _elm_lang$svg$Svg_Attributes$fill('white'),
+													_1: {
+														ctor: '::',
+														_0: _elm_lang$svg$Svg_Attributes$textAnchor('middle'),
+														_1: {
+															ctor: '::',
+															_0: _elm_lang$svg$Svg_Attributes$fontSize(
+																_elm_lang$core$Basics$toString(model.renderScale / 2)),
+															_1: {ctor: '[]'}
+														}
+													}
+												}
+											}
+										},
+										{
+											ctor: '::',
+											_0: _elm_lang$svg$Svg$text(_p5._0.name),
+											_1: {ctor: '[]'}
+										}),
+									_1: {ctor: '[]'}
+								};
+							} else {
+								return {ctor: '[]'};
+							}
+						} else {
+							return {ctor: '[]'};
+						}
+					}());
 			},
 			cars);
 	});
@@ -9827,24 +9903,24 @@ var _loovjo$traffic$TrafficRenderer$renderRoadsCaps = F2(
 					_elm_lang$core$List$concatMap,
 					function (idx) {
 						var maybeOtherRoad = A2(_loovjo$traffic$Base_ops['!!'], model.roads, idx);
-						var _p4 = maybeOtherRoad;
-						if (_p4.ctor === 'Just') {
-							var _p5 = _p4._0;
+						var _p6 = maybeOtherRoad;
+						if (_p6.ctor === 'Just') {
+							var _p7 = _p6._0;
 							var otherRoadRot = _elm_lang$core$Tuple$second(
 								_elm_lang$core$Basics$toPolar(
-									{ctor: '_Tuple2', _0: _p5.end.x - _p5.start.x, _1: _p5.end.y - _p5.start.y}));
-							var otherRoadEdge1x = ((_p5.start.x + _elm_lang$core$Tuple$first(
+									{ctor: '_Tuple2', _0: _p7.end.x - _p7.start.x, _1: _p7.end.y - _p7.start.y}));
+							var otherRoadEdge1x = ((_p7.start.x + _elm_lang$core$Tuple$first(
 								_elm_lang$core$Basics$fromPolar(
-									{ctor: '_Tuple2', _0: _p5.width / 2, _1: otherRoadRot - (_elm_lang$core$Basics$pi / 2)}))) * model.renderScale) + model.scroll.x;
-							var otherRoadEdge1y = ((_p5.start.y + _elm_lang$core$Tuple$second(
+									{ctor: '_Tuple2', _0: _p7.width / 2, _1: otherRoadRot - (_elm_lang$core$Basics$pi / 2)}))) * model.renderScale) + model.scroll.x;
+							var otherRoadEdge1y = ((_p7.start.y + _elm_lang$core$Tuple$second(
 								_elm_lang$core$Basics$fromPolar(
-									{ctor: '_Tuple2', _0: _p5.width / 2, _1: otherRoadRot - (_elm_lang$core$Basics$pi / 2)}))) * model.renderScale) + model.scroll.y;
-							var otherRoadEdge2x = ((_p5.start.x - _elm_lang$core$Tuple$first(
+									{ctor: '_Tuple2', _0: _p7.width / 2, _1: otherRoadRot - (_elm_lang$core$Basics$pi / 2)}))) * model.renderScale) + model.scroll.y;
+							var otherRoadEdge2x = ((_p7.start.x - _elm_lang$core$Tuple$first(
 								_elm_lang$core$Basics$fromPolar(
-									{ctor: '_Tuple2', _0: _p5.width / 2, _1: otherRoadRot - (_elm_lang$core$Basics$pi / 2)}))) * model.renderScale) + model.scroll.x;
-							var otherRoadEdge2y = ((_p5.start.y - _elm_lang$core$Tuple$second(
+									{ctor: '_Tuple2', _0: _p7.width / 2, _1: otherRoadRot - (_elm_lang$core$Basics$pi / 2)}))) * model.renderScale) + model.scroll.x;
+							var otherRoadEdge2y = ((_p7.start.y - _elm_lang$core$Tuple$second(
 								_elm_lang$core$Basics$fromPolar(
-									{ctor: '_Tuple2', _0: _p5.width / 2, _1: otherRoadRot - (_elm_lang$core$Basics$pi / 2)}))) * model.renderScale) + model.scroll.y;
+									{ctor: '_Tuple2', _0: _p7.width / 2, _1: otherRoadRot - (_elm_lang$core$Basics$pi / 2)}))) * model.renderScale) + model.scroll.y;
 							var roadRot = _elm_lang$core$Tuple$second(
 								_elm_lang$core$Basics$toPolar(
 									{ctor: '_Tuple2', _0: road.end.x - road.start.x, _1: road.end.y - road.start.y}));

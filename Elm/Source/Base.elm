@@ -67,16 +67,20 @@ defaultMenu =
     , buttons = []
     }
 
-generateMenuButtons : List String -> List MenuButton
-generateMenuButtons perms =
-       (if List.member "place" perms then [ MenuButton "AddCar" <| AddCarClicked False ] else [])
-    ++ (if List.member "police" perms then [ MenuButton "AddPolice" <| AddCarClicked True ] else [])
-    ++ (if List.member "build" perms then 
-        [ MenuButton "AddRoad" AddRoadClicked
-        , MenuButton "RemoveRoad" RemoveRoadClicked
-        , MenuButton "FlipRoad" FlipRoadClicked 
-        , MenuButton "CombineRoad" CombineRoadClicked 
-        ] else [])
+generateMenuButtons : Traffic -> List MenuButton
+generateMenuButtons traffic =
+    if traffic.loggedIn then
+        let perms = traffic.perms
+        in (if List.member "place" perms then [ MenuButton "AddCar" <| AddCarClicked False ] else [])
+        ++ (if List.member "police" perms then [ MenuButton "AddPolice" <| AddCarClicked True ] else [])
+        ++ (if List.member "build" perms then 
+            [ MenuButton "AddRoad" AddRoadClicked
+            , MenuButton "RemoveRoad" RemoveRoadClicked
+            , MenuButton "FlipRoad" FlipRoadClicked 
+            , MenuButton "CombineRoad" CombineRoadClicked 
+            ] else [])
+    else
+        [ MenuButton "login" LoginScreen ]
 
 getClosestRoad : Position -> List Road -> Maybe Road
 getClosestRoad pos roads =
@@ -155,12 +159,17 @@ type alias Road =
     , width : Float
     }
 
+type alias User =
+    { ip : String
+    , name : String}
 
 type alias Traffic =
     { cars : List Car
     , roads : List Road
     , ip : String
     , perms : List String
+    , loggedIn : Bool
+    , others : List User
     }
 
 getImg : Car -> String
@@ -194,6 +203,7 @@ type alias Model =
     , lastClickTime : Maybe Float
     , trackingCar : Maybe String
     , controls : Controls
+    , others : List User
 
     , currentDragCar : Maybe ProtoCar
 
@@ -232,4 +242,5 @@ type Msg
     | CombineRoadClicked
     | RemoveRoadClicked
     | FlipRoadClicked
+    | LoginScreen
 
