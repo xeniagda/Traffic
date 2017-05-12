@@ -8,14 +8,16 @@ renderRoads : Model -> List Road -> List (S.Svg Msg)
 renderRoads model roads =
     (
         List.map (\road ->
-            S.line
+            S.line (
             [ Sa.x1 <| toString <| (road.start.x * model.renderScale) + model.scroll.x
             , Sa.y1 <| toString <| (road.start.y * model.renderScale) + model.scroll.y
             , Sa.x2 <| toString <| (road.end.x * model.renderScale) + model.scroll.x
             , Sa.y2 <| toString <| (road.end.y * model.renderScale) + model.scroll.y
             , Sa.strokeWidth <| toString <| model.renderScale * road.width + 2
             , Sa.stroke "gray"
-            ] []
+            ] ++ (if List.member road.id model.hiddenRoads then [Sa.opacity "0.5"] else [])
+            )
+            []
         )
         roads
     ) ++ renderRoadsCaps model roads

@@ -52,6 +52,7 @@ init flags =
         , controls = flags.controls
         , others = []
         , currentDragCar = Nothing
+        , hiddenRoads = []
         , buildingRoad = False
         , snap = False
         , buildingRoadStart = Nothing
@@ -222,6 +223,19 @@ update msg model =
                                 Just idx -> WebSocket.send model.webSocketUrl <| "rflip/" ++ toString idx
                                 Nothing -> Cmd.none
                             )
+                HideSelecting ->
+                    case model.currentSelectedRoad of
+                        Nothing -> ( model, Cmd.none )
+                        Just road ->
+                            ( { model 
+                            | selectState = NotSelecting
+                            , currentSelectedRoad = Nothing 
+                            , hiddenRoads = 
+                                if List.member road.id model.hiddenRoads then List.filter (\x -> x /= road.id) model.hiddenRoads
+                                else List.append model.hiddenRoads [road.id]
+                            } 
+                            , Cmd.none
+                            )
                 NotSelecting ->
                     ( {model
                         | dragMouse = Just {x = toFloat pos.x, y = toFloat pos.y}
@@ -243,7 +257,7 @@ update msg model =
                          | mouse = Just mouse
                          , currentSelectedRoad =
                              if model.selectState /= NotSelecting then
-                                 getClosestRoad mouse model.roads
+                                 getClosestRoad mouse <| List.filter (\road -> not <| List.member road.id model.hiddenRoads) model.roads
                              else model.currentSelectedRoad
                          }
 
@@ -458,6 +472,14 @@ update msg model =
 
         FlipRoadClicked ->
             ( { model | selectState = FlipSelecting }
+            , Cmd.none )
+
+        HideRoadClicked ->
+            ( { model | selectState = HideSelecting }
+            , Cmd.none )
+
+        ShowRoadClicked ->
+            ( { model | hiddenRoads = [] }
             , Cmd.none )
 
         ClosePopup ->

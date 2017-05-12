@@ -87,6 +87,8 @@ generateMenuButtons traffic =
                 , MenuButton "RemoveRoad" RemoveRoadClicked
                 , MenuButton "FlipRoad" FlipRoadClicked 
                 , MenuButton "CombineRoad" CombineRoadClicked 
+                , MenuButton "Hide" HideRoadClicked 
+                , MenuButton "Show" ShowRoadClicked 
                 ] else [])
         else
             [ MenuButton "login" LoginScreen ]
@@ -220,6 +222,8 @@ type alias Model =
 
     , currentDragCar : Maybe ProtoCar
 
+    , hiddenRoads : List String
+
     , buildingRoad : Bool
     , snap : Bool
     , buildingRoadStart : Maybe Position
@@ -247,6 +251,7 @@ type SelectState
     | CombineSelecting
     | RemoveSelecting
     | FlipSelecting
+    | HideSelecting
 
 type Msg
     = ServerSync String
@@ -266,6 +271,8 @@ type Msg
     | CombineRoadClicked
     | RemoveRoadClicked
     | FlipRoadClicked
+    | HideRoadClicked
+    | ShowRoadClicked
     | ClosePopup
     | LoginScreen
     | InfoScreen
