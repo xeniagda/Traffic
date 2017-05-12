@@ -38,6 +38,7 @@ decodeCars =
             |> P.required "hand_breaks" Decode.bool
             |> P.required "break_strength" Decode.float
             |> P.optional "fade" Decode.float 1
+            |> P.optional "police" Decode.bool False
             |> P.custom (Decode.maybe (Decode.field "controlled_by" Decode.string))
         )
 

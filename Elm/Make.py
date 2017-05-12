@@ -85,7 +85,7 @@ for root, dirs, files in os.walk("Source"):
 
 compile_time = time.time() - start
 
-print("\nCompiled %i files total, took %.1f seconds" % (compiled, compile_time))
+print("\nCompiled %i files total, took %.2f seconds" % (compiled, compile_time))
 
 hash_file = open(HASH_PATH, "w")
 hash_file.write(repr(hashes))

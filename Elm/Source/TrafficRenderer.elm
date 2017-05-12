@@ -99,6 +99,7 @@ renderCars model cars =
                               [ Sa.x <| toString <| model.scroll.x + car.pos.x * model.renderScale
                               , Sa.y <| toString <| model.scroll.y + (car.pos.y + 1) * model.renderScale
                               , Sa.fill "white"
+                              , Sa.fontFamily "Arial"
                               , Sa.textAnchor "middle"
                               , Sa.fontSize <| toString <| model.renderScale / 2
                               ]
@@ -114,12 +115,13 @@ renderCars model cars =
 
 renderTrafficLights : Model -> List Road -> List (S.Svg Msg)
 renderTrafficLights model roads =
-    List.concatMap (\road ->
+    List.filterMap (\road ->
         case road.trafficLight of
             Just light ->
                 let roadDelta = {x = road.end.x - road.start.x, y = road.end.y - road.start.y}
                     roadRotation = (Tuple.second <| toPolar (roadDelta.x, roadDelta.y)) / pi * 180 + 90
-                in [S.image
+                in Just <|
+                   S.image
                     [ Sa.x <| toString <| (road.end.x + light.offset.x - 0.5) * model.renderScale + model.scroll.x
                     , Sa.y <| toString <| (road.end.y + light.offset.y - 0.5) * model.renderScale + model.scroll.y
                     , Sa.width <| toString model.renderScale
@@ -131,8 +133,7 @@ renderTrafficLights model roads =
                               ")"
                     , Sa.xlinkHref <| getTrafficLightPath light
                     ] []
-                ]
-            Nothing -> []
+            Nothing -> Nothing
     ) roads
 
 

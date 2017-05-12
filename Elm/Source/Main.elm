@@ -497,10 +497,12 @@ update msg model =
         Login ->
             case model.popup of
                 LogingInPopup pop ->
-                    ( { model 
-                    | popup = NoPopup
-                    }
-                    , WebSocket.send model.webSocketUrl <| "login/" ++ pop.name)
+                    if String.length pop.name < nameLengthMax && String.length pop.name > 0 then
+                            ( { model
+                            | popup = NoPopup
+                            }
+                            , WebSocket.send model.webSocketUrl <| "login/" ++ pop.name)
+                    else ( model, Cmd.none )
                 _ -> ( model, Cmd.none )
 
 view : Model -> Html Msg
@@ -602,27 +604,29 @@ generatePopup popup model =
         NoPopup -> []
         InfoPopup -> 
             [ div [style [("text-align", "center")]] (
-                [  pre [] [text "Keys:"]
+                [ h3 [] [pre [] [text "Keys:"]]
                 , pre [] [text "+ Zoom in"]
                 , pre [] [text "- Zoom out"]
-                , pre [] [text "Double-click to make a car"]
                 , pre [] [text "w Accelerate"]
                 , pre [] [text "s Active breaks"]
                 , pre [] [text "a/d Steer left/right"]
                 , pre [] [text "x Drive backwards"]
-                ] ++ (
-                    case model.ip of
-                        Just ip -> [p [] [text <| "Your IP: " ++ ip]]
-                        Nothing -> [p [] [text "No IP assigned."]]
-                ) ++ (
-                case model.err of
-                    Just err ->
-                        [ p [style [("color", "red")]] [text <| "An error occured. Error was: " ++ toString err]
-                        ]
-                    Nothing ->
-                        []
-                ) ++
-                [ button [ onClick ClosePopup ] [text "Done!"] ]
+                ] ++
+                List.filterMap (\(prop, name) ->
+                    case prop of
+                        Just val -> Just (pre [] [text <| name ++ ": " ++ (toString val)])
+                        Nothing -> Nothing
+                    )
+                [ (model.ip, "Ip") ] 
+                ++ (
+                    case model.err of
+                        Just err ->
+                            [ p [style [("color", "red")]] [text <| "An error occured. Error was: " ++ toString err]
+                            ]
+                        Nothing ->
+                            []
+                ) 
+                ++ [ button [ onClick ClosePopup ] [text "Done!"] ]
             )]
 
         LogingInPopup login ->
@@ -630,13 +634,21 @@ generatePopup popup model =
                          , ("margin-top", "200px") ]] 
                 [ h1 [style [("font-family", "Impact")]] [text "Username:"]
                 , Html.form [ onSubmit Login ]
-                [ input [ placeholder "Dabson XD"
-                        , onInput UpdateUsername 
-                        , style [("font-size", "40px")]
-                        ] []
-                , br [] []
-                , button [] [text "Login!"]
-                ]
+                (
+                    [ input [ placeholder "Dabson XD"
+                            , onInput UpdateUsername 
+                            , style [("font-size", "40px")]
+                            ] []
+                    , br [] []
+                    , button [disabled <| String.length login.name <= 0 || String.length login.name >= nameLengthMax] [text "Login!"]
+                    ] ++
+                    [ 
+                        if String.length login.name >= nameLengthMax then
+                            p [style [("color", "red")]] [text "u boot too big 4 me big boi. u need 2 b less fat pls."]
+                        else
+                            br [] []
+                    ]
+                )
                 ]
             ]
 

@@ -6,6 +6,8 @@ import Keyboard
 import Window
 import Svg as S
 
+nameLengthMax = 20
+
 zoomFactor = 1.2
 
 carHeight : Float
@@ -31,6 +33,7 @@ pRound pos =
     List.head <| List.drop n lst
 
 infixr 0 !!
+
 
 indexOf : List a -> a -> Maybe Int
 indexOf lst a =
@@ -130,6 +133,7 @@ toCar prot =
     , handBreaks = False
     , breakStrength = 0.2
     , fade = 0.5
+    , police = prot.isPolice
     , controlledBy = Nothing
     }
 
@@ -145,6 +149,7 @@ type alias Car =
     , handBreaks : Bool
     , breakStrength : Float
     , fade : Float
+    , police : Bool
     , controlledBy : Maybe String
     }
 

@@ -34,7 +34,6 @@ try {
     fs.writeFileSync(READ, "[]")
 }
 
-
 /*
  * Permissions and stuff:
  *  connect - Be able to connect to the sever
@@ -52,12 +51,15 @@ try {
 IP_INFO = {
 }
 
-DEFAULT_PERMS = new Set(["connect", "view", "place"])
+function makeDefaultPerms() {
+    return new Set(["connect", "view", "place"])
+}
+
 function makeDefaultUser(name) {
     return {
         amount_of_placed_cars: 0,
         name: name,
-        perms: DEFAULT_PERMS
+        perms: makeDefaultPerms()
     }
 }
 
@@ -110,6 +112,7 @@ function doCommand(ip, line) {
         if (parts.length > 1) {
             selected = Object.keys(IP_INFO).filter(ip => matches(ip, parts[1]))
         }
+        
         else 
             return "Invalid. Syntax is [command] [ip] ..."
 
@@ -188,7 +191,7 @@ function doCommand(ip, line) {
             }
             else {
                 if (selected.length == 0) {
-                    return "Found no ips matching " + parts[0]
+                    return "Found no ips matching " + parts[1]
                 }
                 res = "Deleted "
                 selected.forEach(ip => {
@@ -252,7 +255,7 @@ function doCommand(ip, line) {
 
         return res.trim()
     } else if (parts[0] === "SPAWNRATE" && parts.length == 2) {
-        SPAWN_RATE = parts[1] | 0
+        SPAWN_RATE = parseFloat(parts[1])
         return "Set spawn rate to " + SPAWN_RATE
     }
     return "Couldn't find command " + parts[0] // Fallback
@@ -328,7 +331,6 @@ function init() {
         cars: [ ],
         roads: JSON.parse(fs.readFileSync(READ)),
         intersections: [
-            {roads: [1, 5, 9]}
         ],
         timeUntilNextCar: 3
     }
@@ -754,7 +756,7 @@ var broadcast = timers.setInterval(() => {
                 permissions = IP_INFO[ip].perms || []
             }
             else {
-                permissions = DEFAULT_PERMS
+                permissions = makeDefaultPerms()
             }
 
             if (permissions.has("view")) {
@@ -792,7 +794,7 @@ wss.on('connection', (socket => {
             permissions = IP_INFO[ip].perms || []
         }
         else {
-            permissions = DEFAULT_PERMS
+            permissions = makeDefaultPerms()
         }
 
         if (!permissions.has("connect")) {
