@@ -38,7 +38,7 @@ infixr 0 !!
 indexOf : List a -> a -> Maybe Int
 indexOf lst a =
     if lst == [] then Nothing
-    else 
+    else
         let tail = Maybe.withDefault [] <| List.tail lst
         in case List.head lst of
             Nothing -> Nothing
@@ -47,6 +47,11 @@ indexOf lst a =
                              Just num -> Just <| num + 1
                              Nothing -> Nothing
 
+id2idx : Model -> String -> Maybe Int
+id2idx model id =
+    List.head 
+        <| List.filterMap (\(idx, road) -> if road.id == id then Just idx else Nothing)
+        <| List.indexedMap (,) model.roads
 
 type MenuState = In | Out
 type alias Menu =
@@ -159,9 +164,10 @@ type alias TrafficLight =
     }
 
 type alias Road =
-    { start : Position
+    { id : String
+    , start : Position
     , end : Position
-    , connectedTo : List Int
+    , connectedTo : List String
     , trafficLight : Maybe TrafficLight
     , width : Float
     }

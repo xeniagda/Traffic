@@ -14,6 +14,18 @@ CARS = ["Car1", "Car2", "Car3", "Car4"]
 READ = "Traffic.js"
 
 port = -1
+
+RANDOM_STRING_CHARS =  "0123456789qwertyuiopasdfghjklzxcvbnm"
+function generateID() {
+    res = ""
+    for (var i=0; i < 20; i++) {
+        ch = RANDOM_STRING_CHARS[0 | (Math.random() * RANDOM_STRING_CHARS.length)]
+        res += ch
+    }
+    return res
+}
+
+
 if (process.argv.length > 2) {
     if (process.argv[2].match(/^[0-9]+$/)) {
         port = process.argv[2] | 0
@@ -49,6 +61,17 @@ try {
  */
 
 IP_INFO = {
+    "::1": makeDefaultUser("loovjo")
+}
+IP_INFO["::1"].perms.add("build")
+IP_INFO["::1"].perms.add("command")
+
+function id2idx(id) {
+    for (var i = 0; i < traffic.roads.length; i++) {
+        if (traffic.roads[i].id === id)
+            return i
+    }
+    return -1
 }
 
 function makeDefaultPerms() {
@@ -311,20 +334,20 @@ DEFAULT_CAR_PROPERTIES = {
     fade: 1
 }
 
-ROADS_PRESET = [
-    {width: 1.5, start: {x: 12, y: 32}, end: {x: 12, y: 12}, connected_to: [3,5,7], speed_rec: 5, traffic_light: {green_left: 0, last_green: 0, offset: {x: 1, y: 1}}}, // Goes upwards
-    {width: 1.5, start: {x: 10, y: 12}, end: {x: 10, y: 32}, connected_to: [], speed_rec: 5},
-    {width: 1.5, start: {x: -10, y: 12}, end: {x: 10, y: 12}, connected_to: [1,5,7], speed_rec: 5, traffic_light: {green_left: 0, last_green: 0, offset: {x: -1, y: 1}}}, // Goes to the right
-    {width: 1.5, start: {x: 10, y: 10}, end: {x: -10, y: 10}, connected_to: [], speed_rec: 5},
-    {width: 1.5, start: {x: 10, y: -10}, end: {x: 10, y: 10}, connected_to: [1,3,7], speed_rec: 5, traffic_light: {green_left: 0, last_green: 0, offset: {x: -1, y: -1}}}, // Goes downwards
-    {width: 1.5, start: {x: 12, y: 10}, end: {x: 12, y: -10}, connected_to: [], speed_rec: 5},
-    {width: 1.5, start: {x: 33, y: 10}, end: {x: 12, y: 10}, connected_to: [1,3,5], speed_rec: 5, traffic_light: {green_left: 0, last_green: 0, offset: {x: 1, y: -1}}}, // Goes to the left
-    {width: 1.5, start: {x: 12, y: 12}, end: {x: 32, y: 12}, connected_to: [8], speed_rec: 5},
-    {width: 1.3, start: {x: 32, y: 12}, end: {x: 37, y: 17}, connected_to: [9], speed_rec: 5},
-    {width: 1.3, start: {x: 37, y: 17}, end: {x: 42, y: 17}, connected_to: [], speed_rec: 5},
-    {width: 1.3, start: {x: 38, y: 15}, end: {x: 33, y: 10}, connected_to: [6], speed_rec: 5},
-    {width: 1.3, start: {x: 42, y: 15}, end: {x: 38, y: 15}, connected_to: [10], speed_rec: 5},
-]
+// ROADS_PRESET = [
+//     {width: 1.5, start: {x: 12, y: 32}, end: {x: 12, y: 12}, connected_to: [3,5,7], speed_rec: 5, traffic_light: {green_left: 0, last_green: 0, offset: {x: 1, y: 1}}}, // Goes upwards
+//     {width: 1.5, start: {x: 10, y: 12}, end: {x: 10, y: 32}, connected_to: [], speed_rec: 5},
+//     {width: 1.5, start: {x: -10, y: 12}, end: {x: 10, y: 12}, connected_to: [1,5,7], speed_rec: 5, traffic_light: {green_left: 0, last_green: 0, offset: {x: -1, y: 1}}}, // Goes to the right
+//     {width: 1.5, start: {x: 10, y: 10}, end: {x: -10, y: 10}, connected_to: [], speed_rec: 5},
+//     {width: 1.5, start: {x: 10, y: -10}, end: {x: 10, y: 10}, connected_to: [1,3,7], speed_rec: 5, traffic_light: {green_left: 0, last_green: 0, offset: {x: -1, y: -1}}}, // Goes downwards
+//     {width: 1.5, start: {x: 12, y: 10}, end: {x: 12, y: -10}, connected_to: [], speed_rec: 5},
+//     {width: 1.5, start: {x: 33, y: 10}, end: {x: 12, y: 10}, connected_to: [1,3,5], speed_rec: 5, traffic_light: {green_left: 0, last_green: 0, offset: {x: 1, y: -1}}}, // Goes to the left
+//     {width: 1.5, start: {x: 12, y: 12}, end: {x: 32, y: 12}, connected_to: [8], speed_rec: 5},
+//     {width: 1.3, start: {x: 32, y: 12}, end: {x: 37, y: 17}, connected_to: [9], speed_rec: 5},
+//     {width: 1.3, start: {x: 37, y: 17}, end: {x: 42, y: 17}, connected_to: [], speed_rec: 5},
+//     {width: 1.3, start: {x: 38, y: 15}, end: {x: 33, y: 10}, connected_to: [6], speed_rec: 5},
+//     {width: 1.3, start: {x: 42, y: 15}, end: {x: 38, y: 15}, connected_to: [10], speed_rec: 5},
+// ]
 
 function init() {
     traffic = {
@@ -453,12 +476,16 @@ var physics = timers.setInterval(() => {
         }
 
 
-
         // Calculate AI
         if (!car.crashed && car.ai && car.ai.road_queue.length > 0) {
             current_path = car.ai.road_queue[0]
+            idx = id2idx(current_path.road)
 
-            road = traffic.roads[current_path.road]
+            if (idx === -1) {
+                return car
+            }
+
+            road = traffic.roads[idx]
             if (road === undefined)
                 return car
 
@@ -656,28 +683,28 @@ var physics = timers.setInterval(() => {
         attempt = 200
 
         do {
-            road_idx = Math.random() * traffic.roads.length | 0
+            road_id = traffic.roads[Math.random() * traffic.roads.length | 0].id
             attempt -= 1
         } while ((
-                traffic.roads.map(road => road.connected_to.indexOf(road_idx) != -1).reduce((a, b) => a || b) ||
-                traffic.cars.length > 0 && !traffic.cars.map(car => distance(car.pos, traffic.roads[road_idx].start) > 2).reduce((a, b) => a && b)
+                traffic.roads.map(road => road.connected_to.indexOf(road_id) != -1).reduce((a, b) => a || b) ||
+                traffic.cars.length > 0 && !traffic.cars.map(car => distance(car.pos, traffic.roads[id2idx(road_id)].start) > 2).reduce((a, b) => a && b)
             ) && attempt > 0
         )
 
         if (attempt != 0) {
-            road = traffic.roads[road_idx]
+            road = traffic.roads[id2idx(road_id)]
             road_rot = toDegrees(Math.atan2(road.end.y - road.start.y, road.end.x - road.start.x))
 
             path = []
-            current_road_idx = road_idx
-            for (i = 0; i < 10 && traffic.roads[current_road_idx].connected_to.length > 0; i++) {
-                path.push({road: current_road_idx, direction: FORWARD})
+            current_road_id = road_id
+            for (i = 0; i < 100 && traffic.roads[id2idx(current_road_id)].connected_to.length > 0; i++) {
+                path.push({road: current_road_id, direction: FORWARD})
 
-                current_road = traffic.roads[current_road_idx]
-                current_road_idx = current_road.connected_to[Math.random() * current_road.connected_to.length | 0]
+                current_road = traffic.roads[id2idx(current_road_id)]
+                current_road_id = current_road.connected_to[Math.random() * current_road.connected_to.length | 0]
 
             }
-            path.push({road: current_road_idx, direction: FORWARD})
+            path.push({road: current_road_id, direction: FORWARD})
 
             car = {
                 name: "Car" + carCount,
@@ -854,6 +881,7 @@ wss.on('connection', (socket => {
             else if (cmd === "rbuild" && parts.length == 5 && permissions.has("build")) { // build/x1/y1/x2/y2
                 poses = parts.splice(1).map(x => parseFloat(x))
                 road = {
+                    id: generateID(),
                     width: 1.5,
                     start: {x:poses[0],y:poses[1]},
                     end: {x:poses[2],y:poses[3]},
@@ -862,7 +890,7 @@ wss.on('connection', (socket => {
                 }
                 traffic.roads.push(road)
             }
-            else if (cmd === "rflip" && parts.length == 2 && permissions.has("build")) { // rflip/idx
+            else if (cmd === "rflip" && parts.length == 2 && permissions.has("build")) { // rflip/id
                 idx = parts[1] | 0
                 if (idx < traffic.roads.length) {
                     start = traffic.roads[idx].start
@@ -870,25 +898,22 @@ wss.on('connection', (socket => {
                     traffic.roads[idx].end = start
                 }
             }
-            else if (cmd === "rrm" && parts.length == 2 && permissions.has("build")) { // rrm/idx
-                traffic.roads.splice(parts[1] | 0, 1)
+            else if (cmd === "rrm" && parts.length == 2 && permissions.has("build")) { // rrm/id
+                idx = id2idx(parts[1])
 
-                traffic.roads = traffic.roads.map(road => {
-                    road.connected_to = road.connected_to.filter(con => con !== (parts[1] | 0)).map(con => con - (con > parts[1] | 0))
-                    return road
-                })
-                traffic.intersections = traffic.intersections.map(intersection => {
-                    intersection.roads = intersection.roads.filter(con => con !== (parts[1] | 0)).map(con => con - (con > parts[1] | 0))
-                    return intersection
-                })
+                traffic.roads.splice(idx, 1)
+
+                traffic.roads.forEach(road => {road.connected_to = road.connected_to.filter(id => id != parts[1])})
+
             }
-            else if (cmd === "rconn" && parts.length == 3 && permissions.has("build")) { // build/r1/r2
-                roads = parts.splice(1).map(x => x | 0)
+            else if (cmd === "rconn" && parts.length == 3 && permissions.has("build")) { // rconn/id1/id2
+                roads = parts.slice(1).map(id2idx)
+
                 if (traffic.roads[roads[0]].connected_to.indexOf(roads[1]) !== -1) {
-                    traffic.roads[roads[0]].connected_to = traffic.roads[roads[0]].connected_to.filter(a => a !== roads[1])
+                    traffic.roads[roads[0]].connected_to = traffic.roads[roads[0]].connected_to.filter(a => a !== parts[2])
                 }
                 else {
-                    traffic.roads[roads[0]].connected_to.push(roads[1])
+                    traffic.roads[roads[0]].connected_to.push(parts[2])
                 }
             }
             else if (cmd === "login" && parts.length == 2) { // login/name

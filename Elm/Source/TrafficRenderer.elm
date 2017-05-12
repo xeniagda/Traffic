@@ -49,7 +49,7 @@ renderRoadsCaps model roads =
                                 ]
                             Nothing ->
                                 []
-                    ) road.connectedTo
+                    ) <| List.filterMap (\x -> id2idx model x) road.connectedTo
             ) roads
 
 renderRoadLines : Model -> List Road -> List (S.Svg Msg)

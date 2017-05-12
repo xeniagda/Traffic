@@ -192,16 +192,12 @@ update msg model =
                             , currentSelectedRoad = Nothing
                             , otherRoad = Nothing
                             }
-                            , case (indexOf model.roads other
-                                 , indexOf model.roads road) of
-                                (Just r1, Just r2) ->
-                                WebSocket.send model.webSocketUrl
-                                    <| String.join "/"
-                                    [ "rconn"
-                                    , toString r1
-                                    , toString r2
-                                    ]
-                                _ -> Cmd.none
+                            , WebSocket.send model.webSocketUrl
+                                <| String.join "/"
+                                [ "rconn"
+                                , other.id
+                                , road.id
+                                ]
                             )
                         _ -> ( model, Cmd.none )
                 RemoveSelecting ->
@@ -212,9 +208,7 @@ update msg model =
                             | selectState = NotSelecting
                             , currentSelectedRoad = Nothing 
                             } 
-                            , case indexOf model.roads road of
-                                Just idx -> WebSocket.send model.webSocketUrl <| "rrm/" ++ toString idx
-                                Nothing -> Cmd.none
+                            , WebSocket.send model.webSocketUrl <| "rrm/" ++ road.id
                             )
                 FlipSelecting ->
                     case model.currentSelectedRoad of
@@ -572,7 +566,7 @@ view model =
                     case (model.buildingRoadStart, model.mouse) of
                         (Just start, Just mouse) ->
                             let f = if model.snap then pRound else identity
-                                road = Road (f start) (f mouse) [] Nothing 1.5
+                                road = Road "" (f start) (f mouse) [] Nothing 1.5
                             in renderRoads model [road]
                         _ -> []
                 )

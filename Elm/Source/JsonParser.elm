@@ -47,9 +47,10 @@ decodeRoads : Decoder (List Road)
 decodeRoads =
     Decode.list
         (P.decode Road
+            |> P.required "id" Decode.string
             |> P.required "start" decodePosition
             |> P.required "end" decodePosition
-            |> P.required "connected_to" (Decode.list Decode.int)
+            |> P.required "connected_to" (Decode.list Decode.string)
             |> P.custom (Decode.maybe (Decode.field "traffic_light" decodeTrafficLight))
             |> P.optional "width" Decode.float 1
         )
