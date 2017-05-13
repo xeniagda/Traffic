@@ -59,7 +59,8 @@ decodeTrafficLight : Decoder TrafficLight
 decodeTrafficLight =
     P.decode TrafficLight
         |> P.required "green_left" Decode.float
-        |> P.required "offset" decodePosition
+        |> P.required "offset" Decode.float
+        |> P.optional "at" Decode.float 1
 
 
 decodePosition : Decoder Position

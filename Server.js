@@ -15,7 +15,7 @@ READ = "Traffic.js"
 
 port = -1
 
-RANDOM_STRING_CHARS =  "0123456789qwertyuiopasdfghjklzxcvbnm"
+RANDOM_STRING_CHARS = "0123456789abcdefghijklmnopqrstuvwxyz"
 function generateID() {
     res = ""
     for (var i=0; i < 20; i++) {
@@ -64,6 +64,7 @@ IP_INFO = {
     "::1": makeDefaultUser("loovjo")
 }
 IP_INFO["::1"].perms.add("build")
+IP_INFO["::1"].perms.add("police")
 IP_INFO["::1"].perms.add("command")
 
 function id2idx(id) {
@@ -240,7 +241,10 @@ function doCommand(ip, line) {
         if (parts.length > 1) {
             path = parts[1]
         }
-        fs.writeFileSync(path, JSON.stringify(traffic.roads))
+        toSave = {roads: JSON.parse(JSON.stringify(traffic.roads)), intersections: traffic.intersections}
+        toSave.roads.forEach(road => {if (road.traffic_light) delete road.traffic_light.waiting_cars})
+
+        fs.writeFileSync(path, JSON.stringify(toSave, null, '    '))
         return "Wrote to " + path
     }
     else if (parts[0] === "DEBUG") {
@@ -350,19 +354,16 @@ DEFAULT_CAR_PROPERTIES = {
 // ]
 
 function init() {
-    traffic = {
-        cars: [ ],
-        roads: JSON.parse(fs.readFileSync(READ)),
-        intersections: [
-        ],
-        timeUntilNextCar: 3
+    traffic = JSON.parse(fs.readFileSync(READ))
+    if (traffic.constructor === Array) {
+        traffic = {roads: traffic}
     }
-}
 
-function save_roads() {
-    fs.writeFileSync("Traffic.js", JSON.stringify(traffic.roads))
+    if (!traffic.cars) traffic.cars = []
+    if (!traffic.roads) traffic.roads = []
+    if (!traffic.intersections) traffic.intersections = []
+    if (!traffic.timeUntilNextCar) traffic.timeUntilNextCar = 0
 }
-
 DEBUG = new Set([
     "cmd",
     // "AI",
@@ -412,7 +413,11 @@ var physics = timers.setInterval(() => {
     traffic.roads.forEach(road => {
         if (!road.traffic_light)
             return
+
         road.traffic_light.waiting_cars = []
+
+        if (road.traffic_light.green_left === undefined)
+            road.traffic_light.green_left = 0
 
         if (road.traffic_light.green_left > 0) {
             road.traffic_light.green_left -= delta
@@ -481,13 +486,12 @@ var physics = timers.setInterval(() => {
             current_path = car.ai.road_queue[0]
             idx = id2idx(current_path.road)
 
-            if (idx === -1) {
-                return car
-            }
 
             road = traffic.roads[idx]
-            if (road === undefined)
+            if (road === undefined || idx === -1) {
+                delete car.ai
                 return car
+            }
 
             road_delta = {x: road.end.x - road.start.x, y: road.end.y - road.start.y}
             road_rot = toDegrees(Math.atan2(road_delta.y, road_delta.x))
@@ -627,13 +631,13 @@ var physics = timers.setInterval(() => {
         any_green = false
 
         max_score = 0
-        max_cars_idx = -1
+        max_cars_id = null
         roads = intersection.roads
 
         for (i = 0; i < roads.length; i++) {
-            r = roads[i]
+            road_id = roads[i]
 
-            road = traffic.roads[r]
+            road = traffic.roads[id2idx(road_id)]
             if (road === undefined)
                 continue
 
@@ -646,26 +650,27 @@ var physics = timers.setInterval(() => {
 
             if (road.traffic_light.green_left > 0) {
                 any_green = true
-                max_cars_idx = r
+                max_cars_id = road_id
                 break
             }
 
-            if (score > max_score || max_cars_idx == -1) {
-                max_cars_idx = r
+            if (score > max_score || max_cars_id == null) {
+                max_cars_id = road_id
                 max_score = score
             }
             else if (score == max_score) {
-                other_time = traffic.roads[max_cars_idx].traffic_light.last_green
+                other_time = traffic.roads[id2idx(max_cars_id)].traffic_light.last_green
+
                 if (road.traffic_light.last_green < other_time)
-                    max_cars_idx = r
+                    max_cars_id = road_id
             }
 
         }
 
-        if (!any_green) {
+        if (!any_green && max_score > 0) {
 
-            if (traffic.roads[max_cars_idx] !== undefined) {
-                light = traffic.roads[max_cars_idx].traffic_light
+            if (traffic.roads[id2idx(max_cars_id)] !== undefined) {
+                light = traffic.roads[id2idx(max_cars_id)].traffic_light
                 light.green_left = light.waiting_cars.length + 2
                 light.last_green = totalTime
             }
@@ -904,12 +909,29 @@ wss.on('connection', (socket => {
                 traffic.roads.splice(idx, 1)
 
                 traffic.roads.forEach(road => {road.connected_to = road.connected_to.filter(id => id != parts[1])})
-
+            }
+            else if (cmd === "lbuild" && parts.length == 2 && permissions.has("build")) { // lbuild/id
+                road = traffic.roads[id2idx(parts[1])]
+                if (!road.traffic_light) {
+                    traffic.roads[id2idx(parts[1])].traffic_light = {offset: 1, at: 1}
+                }
+            }
+            else if (cmd === "lrm" && parts.length == 2 && permissions.has("build")) { // lrm/id
+                road = traffic.roads[id2idx(parts[1])]
+                if (road.traffic_light) {
+                    delete traffic.roads[id2idx(parts[1])].traffic_light
+                }
+            }
+            else if (cmd === "lflip" && parts.length == 2 && permissions.has("build")) { // lflip/id
+                road = traffic.roads[id2idx(parts[1])]
+                if (road.traffic_light) {
+                    traffic.roads[id2idx(parts[1])].traffic_light.offset *= -1
+                }
             }
             else if (cmd === "rconn" && parts.length == 3 && permissions.has("build")) { // rconn/id1/id2
                 roads = parts.slice(1).map(id2idx)
 
-                if (traffic.roads[roads[0]].connected_to.indexOf(roads[1]) !== -1) {
+                if (traffic.roads[roads[0]].connected_to.indexOf(parts[2]) !== -1) {
                     traffic.roads[roads[0]].connected_to = traffic.roads[roads[0]].connected_to.filter(a => a !== parts[2])
                 }
                 else {

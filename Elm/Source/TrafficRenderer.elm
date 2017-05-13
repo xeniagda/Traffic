@@ -121,17 +121,22 @@ renderTrafficLights model roads =
         case road.trafficLight of
             Just light ->
                 let roadDelta = {x = road.end.x - road.start.x, y = road.end.y - road.start.y}
-                    roadRotation = (Tuple.second <| toPolar (roadDelta.x, roadDelta.y)) / pi * 180 + 90
+                    roadRotation = Tuple.second <| toPolar (roadDelta.x, roadDelta.y)
+                    roadRotationDeg = roadRotation / pi * 180 + 90
+                    roadLength = Tuple.first <| toPolar (roadDelta.x, roadDelta.y)
+                    roadDelta_ = fromPolar (roadLength - light.at, roadRotation)
+                    roadEnd_ = {x = road.start.x + Tuple.first roadDelta_, y = road.start.y + Tuple.second roadDelta_}
+                    (dx, dy) = fromPolar (light.offset, roadRotation + pi / 2)
                 in Just <|
                    S.image
-                    [ Sa.x <| toString <| (road.end.x + light.offset.x - 0.5) * model.renderScale + model.scroll.x
-                    , Sa.y <| toString <| (road.end.y + light.offset.y - 0.5) * model.renderScale + model.scroll.y
+                    [ Sa.x <| toString <| (roadEnd_.x + dx - 0.5) * model.renderScale + model.scroll.x
+                    , Sa.y <| toString <| (roadEnd_.y + dy - 0.5) * model.renderScale + model.scroll.y
                     , Sa.width <| toString model.renderScale
                     , Sa.height <| toString model.renderScale
                     , Sa.transform <|
-                        "rotate(" ++ (toString roadRotation) ++
-                              " " ++ (toString <| (road.end.x + light.offset.x) * model.renderScale + model.scroll.x) ++
-                              " " ++ (toString <| (road.end.y + light.offset.y) * model.renderScale + model.scroll.y) ++
+                        "rotate(" ++ (toString roadRotationDeg) ++
+                              " " ++ (toString <| (roadEnd_.x + dx) * model.renderScale + model.scroll.x) ++
+                              " " ++ (toString <| (roadEnd_.y + dy) * model.renderScale + model.scroll.y) ++
                               ")"
                     , Sa.xlinkHref <| getTrafficLightPath light
                     ] []

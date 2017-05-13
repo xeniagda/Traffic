@@ -87,6 +87,9 @@ generateMenuButtons traffic =
                 , MenuButton "RemoveRoad" RemoveRoadClicked
                 , MenuButton "FlipRoad" FlipRoadClicked 
                 , MenuButton "CombineRoad" CombineRoadClicked 
+                , MenuButton "AddLight" (LightClicked AddLight)
+                , MenuButton "FlipLight" (LightClicked FlipLight)
+                , MenuButton "RemoveLight" (LightClicked RemoveLight)
                 , MenuButton "Hide" HideRoadClicked 
                 , MenuButton "Show" ShowRoadClicked 
                 ] else [])
@@ -116,6 +119,7 @@ type alias Controls =
     , remove : Int
     , place : Int
     , snap : Int
+    , help : Int
     }
 
 type alias Position =
@@ -162,7 +166,8 @@ type alias Car =
 
 type alias TrafficLight =
     { greenLeft : Float
-    , offset : Position
+    , offset : Float
+    , at : Float
     }
 
 type alias Road =
@@ -252,6 +257,9 @@ type SelectState
     | RemoveSelecting
     | FlipSelecting
     | HideSelecting
+    | LightSelecting LightState
+
+type LightState = AddLight | RemoveLight | FlipLight
 
 type Msg
     = ServerSync String
@@ -273,6 +281,7 @@ type Msg
     | FlipRoadClicked
     | HideRoadClicked
     | ShowRoadClicked
+    | LightClicked LightState
     | ClosePopup
     | LoginScreen
     | InfoScreen

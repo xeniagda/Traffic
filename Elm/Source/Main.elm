@@ -149,131 +149,154 @@ update msg model =
 
               }, Cmd.none )
         MouseRelease _ ->
-            ( {model | dragMouse = Nothing, lastClickTime = model.lasttime}, Cmd.none )
+            case model.popup of
+                NoPopup ->
+                    ( {model | dragMouse = Nothing, lastClickTime = model.lasttime}, Cmd.none )
+                _ -> ( model, Cmd.none )
 
         MousePress pos ->
-            if model.buildingRoad then
-                case model.buildingRoadStart of
-                    Nothing ->
-                        let start = { x = (toFloat pos.x - model.scroll.x) / model.renderScale
-                                    , y = (toFloat pos.y - model.scroll.y) / model.renderScale }
-                            start_ = if model.snap then pRound start else start
-                        in  ( { model
-                            | buildingRoadStart = Just start_
-                            }, Cmd.none )
-                    Just start ->
-                        ( { model
-                        | buildingRoadStart = Nothing
-                        , buildingRoad = False
-                        },
-                        case model.mouse of
-                            Just mouse ->
-                                let mouse_ = if model.snap then pRound mouse else mouse
-                                in WebSocket.send model.webSocketUrl
-                                    <| String.join "/"
-                                    [ "rbuild"
-                                    , toString <| start.x
-                                    , toString <| start.y
-                                    , toString <| mouse_.x
-                                    , toString <| mouse_.y
-                                    ]
-                            Nothing -> Cmd.none
-                        )
-            else case model.selectState of
-                CombineSelecting -> 
-                    case (model.currentSelectedRoad, model.otherRoad) of
-                        (Just road, Nothing) ->
-                            ( { model
-                            | otherRoad = Just road
-                            }
-                            , Cmd.none )
-                        (Just road, Just other) ->
-                            ( { model
-                            | selectState = NotSelecting
-                            , currentSelectedRoad = Nothing
-                            , otherRoad = Nothing
-                            }
-                            , WebSocket.send model.webSocketUrl
-                                <| String.join "/"
-                                [ "rconn"
-                                , other.id
-                                , road.id
-                                ]
-                            )
-                        _ -> ( model, Cmd.none )
-                RemoveSelecting ->
-                    case model.currentSelectedRoad of
-                        Nothing -> ( model, Cmd.none )
-                        Just road ->
-                            ( { model 
-                            | selectState = NotSelecting
-                            , currentSelectedRoad = Nothing 
-                            } 
-                            , WebSocket.send model.webSocketUrl <| "rrm/" ++ road.id
-                            )
-                FlipSelecting ->
-                    case model.currentSelectedRoad of
-                        Nothing -> ( model, Cmd.none )
-                        Just road ->
-                            ( { model 
-                            | selectState = NotSelecting
-                            , currentSelectedRoad = Nothing 
-                            } 
-                            , case indexOf model.roads road of
-                                Just idx -> WebSocket.send model.webSocketUrl <| "rflip/" ++ toString idx
+            case model.popup of
+                NoPopup ->
+                    if model.buildingRoad then
+                        case model.buildingRoadStart of
+                            Nothing ->
+                                let start = { x = (toFloat pos.x - model.scroll.x) / model.renderScale
+                                            , y = (toFloat pos.y - model.scroll.y) / model.renderScale }
+                                    start_ = if model.snap then pRound start else start
+                                in  ( { model
+                                    | buildingRoadStart = Just start_
+                                    }, Cmd.none )
+                            Just start ->
+                                ( { model
+                                | buildingRoadStart = Nothing
+                                , buildingRoad = False
+                                },
+                                case model.mouse of
+                                    Just mouse ->
+                                        let mouse_ = if model.snap then pRound mouse else mouse
+                                        in WebSocket.send model.webSocketUrl
+                                            <| String.join "/"
+                                            [ "rbuild"
+                                            , toString <| start.x
+                                            , toString <| start.y
+                                            , toString <| mouse_.x
+                                            , toString <| mouse_.y
+                                            ]
+                                    Nothing -> Cmd.none
+                                )
+                    else case model.selectState of
+                        CombineSelecting -> 
+                            case (model.currentSelectedRoad, model.otherRoad) of
+                                (Just road, Nothing) ->
+                                    ( { model
+                                    | otherRoad = Just road
+                                    }
+                                    , Cmd.none )
+                                (Just road, Just other) ->
+                                    ( { model
+                                    | selectState = NotSelecting
+                                    , currentSelectedRoad = Nothing
+                                    , otherRoad = Nothing
+                                    }
+                                    , WebSocket.send model.webSocketUrl
+                                        <| String.join "/"
+                                        [ "rconn"
+                                        , other.id
+                                        , road.id
+                                        ]
+                                    )
+                                _ -> ( model, Cmd.none )
+                        RemoveSelecting ->
+                            case model.currentSelectedRoad of
+                                Nothing -> ( model, Cmd.none )
+                                Just road ->
+                                    ( { model 
+                                    | selectState = NotSelecting
+                                    , currentSelectedRoad = Nothing 
+                                    } 
+                                    , WebSocket.send model.webSocketUrl <| "rrm/" ++ road.id
+                                    )
+                        FlipSelecting ->
+                            case model.currentSelectedRoad of
+                                Nothing -> ( model, Cmd.none )
+                                Just road ->
+                                    ( { model 
+                                    | selectState = NotSelecting
+                                    , currentSelectedRoad = Nothing 
+                                    } 
+                                    , case indexOf model.roads road of
+                                        Just idx -> WebSocket.send model.webSocketUrl <| "rflip/" ++ toString idx
+                                        Nothing -> Cmd.none
+                                    )
+                        HideSelecting ->
+                            case model.currentSelectedRoad of
+                                Nothing -> ( model, Cmd.none )
+                                Just road ->
+                                    ( { model 
+                                    | selectState = NotSelecting
+                                    , currentSelectedRoad = Nothing 
+                                    , hiddenRoads = 
+                                        if List.member road.id model.hiddenRoads then List.filter (\x -> x /= road.id) model.hiddenRoads
+                                        else List.append model.hiddenRoads [road.id]
+                                    } 
+                                    , Cmd.none
+                                    )
+                        LightSelecting lState ->
+                            case model.currentSelectedRoad of
+                                Nothing -> ( model, Cmd.none )
+                                Just road ->
+                                    ( { model 
+                                    | selectState = NotSelecting
+                                    , currentSelectedRoad = Nothing 
+                                    }
+                                    , WebSocket.send model.webSocketUrl <| 
+                                        case lState of
+                                            AddLight -> "lbuild/" ++ road.id
+                                            RemoveLight -> "lrm/" ++ road.id
+                                            FlipLight -> "lflip/" ++ road.id
+                                    )
+                        NotSelecting ->
+                            ( {model
+                                | dragMouse = Just {x = toFloat pos.x, y = toFloat pos.y}
+                                , currentDragCar = Nothing}
+                            , case model.currentDragCar of
+                                Just car -> WebSocket.send model.webSocketUrl <| "create/" ++ (Http.encodeUri <| encode 0 <| encodeProtoCar car)
                                 Nothing -> Cmd.none
                             )
-                HideSelecting ->
-                    case model.currentSelectedRoad of
-                        Nothing -> ( model, Cmd.none )
-                        Just road ->
-                            ( { model 
-                            | selectState = NotSelecting
-                            , currentSelectedRoad = Nothing 
-                            , hiddenRoads = 
-                                if List.member road.id model.hiddenRoads then List.filter (\x -> x /= road.id) model.hiddenRoads
-                                else List.append model.hiddenRoads [road.id]
-                            } 
-                            , Cmd.none
-                            )
-                NotSelecting ->
-                    ( {model
-                        | dragMouse = Just {x = toFloat pos.x, y = toFloat pos.y}
-                        , currentDragCar = Nothing}
-                    , case model.currentDragCar of
-                        Just car -> WebSocket.send model.webSocketUrl <| "create/" ++ (Http.encodeUri <| encode 0 <| encodeProtoCar car)
-                        Nothing -> Cmd.none
-                    )
+                _ -> ( model, Cmd.none )
 
         MouseMove pos ->
-            let track = case model.trackingCar of
-                    Nothing -> False
-                    Just name -> List.length (List.filter (\car -> car.name == name) model.cars) > 0
+            case model.popup of
+                NoPopup ->
+                    let track = case model.trackingCar of
+                            Nothing -> False
+                            Just name -> List.length (List.filter (\car -> car.name == name) model.cars) > 0
 
-                mouse = { x = (toFloat pos.x - model.scroll.x) / model.renderScale
-                        , y = (toFloat pos.y - model.scroll.y) / model.renderScale }
+                        mouse = { x = (toFloat pos.x - model.scroll.x) / model.renderScale
+                                , y = (toFloat pos.y - model.scroll.y) / model.renderScale }
 
-                model_ = {model
-                         | mouse = Just mouse
-                         , currentSelectedRoad =
-                             if model.selectState /= NotSelecting then
-                                 getClosestRoad mouse <| List.filter (\road -> not <| List.member road.id model.hiddenRoads) model.roads
-                             else model.currentSelectedRoad
-                         }
+                        model_ = {model
+                                 | mouse = Just mouse
+                                 , currentSelectedRoad =
+                                     if model.selectState /= NotSelecting then
+                                         getClosestRoad mouse <| List.filter (\road -> not <| List.member road.id model.hiddenRoads) model.roads
+                                     else model.currentSelectedRoad
+                                 }
 
-            in if not track then
-                case model_.dragMouse of
-                    Just mousePos ->
-                        let delta = {x = toFloat pos.x - mousePos.x, y = toFloat pos.y - mousePos.y}
-                        in ( {model_ | scroll = {x = model_.scroll.x + delta.x, y = model_.scroll.y + delta.y}, dragMouse = Just {x = toFloat pos.x, y = toFloat pos.y}}, Cmd.none )
-                    Nothing ->
-                        case model_.currentDragCar of
-                            Just car ->
-                                ( { model_
-                                | currentDragCar = Just {car | pos = {x = (toFloat pos.x - model_.scroll.x) / model_.renderScale, y = (toFloat pos.y - model_.scroll.y) / model_.renderScale}}
-                                }, Cmd.none )
-                            Nothing -> ( model_, Cmd.none )
-            else ( model_, Cmd.none )
+                    in if not track then
+                        case model_.dragMouse of
+                            Just mousePos ->
+                                let delta = {x = toFloat pos.x - mousePos.x, y = toFloat pos.y - mousePos.y}
+                                in ( {model_ | scroll = {x = model_.scroll.x + delta.x, y = model_.scroll.y + delta.y}, dragMouse = Just {x = toFloat pos.x, y = toFloat pos.y}}, Cmd.none )
+                            Nothing ->
+                                case model_.currentDragCar of
+                                    Just car ->
+                                        ( { model_
+                                        | currentDragCar = Just {car | pos = {x = (toFloat pos.x - model_.scroll.x) / model_.renderScale, y = (toFloat pos.y - model_.scroll.y) / model_.renderScale}}
+                                        }, Cmd.none )
+                                    Nothing -> ( model_, Cmd.none )
+                    else ( model_, Cmd.none )
+                _ -> ( model, Cmd.none )
 
         KeyDown key ->
             if key == model.controls.free then
@@ -290,147 +313,156 @@ update msg model =
                         let menu = model.menu
                         in { menu | state = In }
                     }, Cmd.none )
-            else if key == model.controls.zoomIn then -- Plus key
-                ( {model
-                    | renderScale = model.renderScale * zoomFactor
-                    , scroll =
-                        case model.size of
-                            Just size ->
-                                {x = (model.scroll.x - size.x / 2) * zoomFactor + size.x / 2, y = (model.scroll.y - size.y / 2) * zoomFactor + size.y / 2}
-                            Nothing ->
-                                model.scroll
-                }, Cmd.none )
-            else if key == model.controls.zoomOut then -- Minus key
-                ( {model
-                    | renderScale = model.renderScale / zoomFactor
-                    , scroll =
-                        case model.size of
-                            Just size ->
-                                {x = (model.scroll.x - size.x / 2) / zoomFactor + size.x / 2, y = (model.scroll.y - size.y / 2) / zoomFactor + size.y / 2}
-                            Nothing ->
-                                model.scroll
-                }, Cmd.none )
-            else case model.ip of
-                Just myIp ->
-                    if key == model.controls.remove then
-                        ( model
-                        ,
-                            let distToScroll car = Tuple.first <| toPolar <| (car.pos.x - model.scroll.x, car.pos.y - model.scroll.y)
-                                closestCar = List.head
-                                    <| List.sortWith (\c1 c2 -> compare (distToScroll c2) (distToScroll c1) )
-                                    <| List.filter (\c -> c.controlledBy == model.ip) model.cars
-                            in case closestCar of
-                                Just {name} -> WebSocket.send model.webSocketUrl <| "remove/" ++ name
-                                Nothing -> Cmd.none
-                        )
-                    else if key == model.controls.break then
-                        ( { model | cars = List.map (\car ->
-                                case car.controlledBy of
-                                    Just ip -> if ip /= myIp then car else
-                                                  {car | handBreaks = True, accel = 0}
-                                    Nothing -> car
-                            ) model.cars},
-                        WebSocket.send model.webSocketUrl "breaks" )
-                    else if key == model.controls.up then
-                        ( { model | cars = List.map (\car ->
-                                case car.controlledBy of
-                                    Just ip -> if ip /= myIp then car else
-                                                  {car | handBreaks = False, accel = model.accelRate}
-                                    Nothing -> car
-                            ) model.cars},
-                            WebSocket.send model.webSocketUrl ( "accel/" ++ (toString model.accelRate) ) )
-                    else if key == model.controls.back then
-                        ( { model | cars = List.map (\car ->
-                                case car.controlledBy of
-                                    Just ip -> if ip /= myIp then car else
-                                                  {car | handBreaks = False, accel = negate model.accelRate}
-                                    Nothing -> car
-                            ) model.cars},
-                            WebSocket.send model.webSocketUrl ( "accel/" ++ (toString <| negate model.accelRate) ) )
-                    else if key == model.controls.left then
-                        ( { model | cars = List.map (\car ->
-                                case car.controlledBy of
-                                    Just ip -> if ip /= myIp then car else
-                                                  {car | steering = negate model.steerRate}
-                                    Nothing -> car
-                            ) model.cars},
-                            WebSocket.send model.webSocketUrl ( "steer/" ++ (toString <| negate model.steerRate)) )
-                    else if key == model.controls.right then
-                        ( { model | cars = List.map (\car ->
-                                case car.controlledBy of
-                                    Just ip -> if ip /= myIp then car else
-                                                  {car | steering = model.steerRate}
-                                    Nothing -> car
-                            ) model.cars},
-                        WebSocket.send model.webSocketUrl ( "steer/" ++ (toString model.steerRate)))
-                    else if key == model.controls.carUp || key == model.controls.carDown then
-                        ( { model |
-                            trackingCar =
-                                let controlledByMe =
-                                    List.sortWith (\car1 car2 -> compare car1.pos.x car2.pos.x) <|
-                                        case model.ip of
-                                            Just ip -> List.filter (\car ->
-                                                case car.controlledBy of
-                                                    Just c -> c == ip
-                                                    Nothing -> False) model.cars
-                                            Nothing -> []
-                                in case model.trackingCar of
-                                    Nothing -> Maybe.map .name <| List.head controlledByMe
-                                    Just trackName ->
-                                        let track = List.head <| List.filter (\(idx, car) -> car.name == trackName) (List.indexedMap (,) controlledByMe)
-                                        in case track of
-                                            Just (idx, car) ->
-                                                let res =
-                                                    if key == model.controls.carUp then
-                                                        Maybe.map .name <| List.head <| List.drop (idx+1) controlledByMe
-                                                    else
-                                                        if idx == 0 then Nothing else Maybe.map .name <| List.head <| List.drop (idx-1) <| controlledByMe
-                                                in case res of
-                                                    Just x -> Just x
-                                                    Nothing ->
-                                                        if key == model.controls.carUp then
-                                                            Maybe.map .name <| List.head controlledByMe
-                                                        else
-                                                            Maybe.map .name <| List.head <| List.reverse controlledByMe
+            else 
+            case model.popup of
+                NoPopup ->
+                    if key == model.controls.zoomIn then -- Plus key
+                        ( {model
+                            | renderScale = model.renderScale * zoomFactor
+                            , scroll =
+                                case model.size of
+                                    Just size ->
+                                        {x = (model.scroll.x - size.x / 2) * zoomFactor + size.x / 2, y = (model.scroll.y - size.y / 2) * zoomFactor + size.y / 2}
+                                    Nothing ->
+                                        model.scroll
+                        }, Cmd.none )
+                    else if key == model.controls.zoomOut then -- Minus key
+                        ( {model
+                            | renderScale = model.renderScale / zoomFactor
+                            , scroll =
+                                case model.size of
+                                    Just size ->
+                                        {x = (model.scroll.x - size.x / 2) / zoomFactor + size.x / 2, y = (model.scroll.y - size.y / 2) / zoomFactor + size.y / 2}
+                                    Nothing ->
+                                        model.scroll
+                        }, Cmd.none )
+                    else case model.ip of
+                        Just myIp ->
+                            if key == model.controls.remove then
+                                ( model
+                                ,
+                                    let distToScroll car = Tuple.first <| toPolar <| (car.pos.x - model.scroll.x, car.pos.y - model.scroll.y)
+                                        closestCar = List.head
+                                            <| List.sortWith (\c1 c2 -> compare (distToScroll c2) (distToScroll c1) )
+                                            <| List.filter (\c -> c.controlledBy == model.ip) model.cars
+                                    in case closestCar of
+                                        Just {name} -> WebSocket.send model.webSocketUrl <| "remove/" ++ name
+                                        Nothing -> Cmd.none
+                                )
+                            else if key == model.controls.break then
+                                ( { model | cars = List.map (\car ->
+                                        case car.controlledBy of
+                                            Just ip -> if ip /= myIp then car else
+                                                          {car | handBreaks = True, accel = 0}
+                                            Nothing -> car
+                                    ) model.cars},
+                                WebSocket.send model.webSocketUrl "breaks" )
+                            else if key == model.controls.up then
+                                ( { model | cars = List.map (\car ->
+                                        case car.controlledBy of
+                                            Just ip -> if ip /= myIp then car else
+                                                          {car | handBreaks = False, accel = model.accelRate}
+                                            Nothing -> car
+                                    ) model.cars},
+                                    WebSocket.send model.webSocketUrl ( "accel/" ++ (toString model.accelRate) ) )
+                            else if key == model.controls.back then
+                                ( { model | cars = List.map (\car ->
+                                        case car.controlledBy of
+                                            Just ip -> if ip /= myIp then car else
+                                                          {car | handBreaks = False, accel = negate model.accelRate}
+                                            Nothing -> car
+                                    ) model.cars},
+                                    WebSocket.send model.webSocketUrl ( "accel/" ++ (toString <| negate model.accelRate) ) )
+                            else if key == model.controls.left then
+                                ( { model | cars = List.map (\car ->
+                                        case car.controlledBy of
+                                            Just ip -> if ip /= myIp then car else
+                                                          {car | steering = negate model.steerRate}
+                                            Nothing -> car
+                                    ) model.cars},
+                                    WebSocket.send model.webSocketUrl ( "steer/" ++ (toString <| negate model.steerRate)) )
+                            else if key == model.controls.right then
+                                ( { model | cars = List.map (\car ->
+                                        case car.controlledBy of
+                                            Just ip -> if ip /= myIp then car else
+                                                          {car | steering = model.steerRate}
+                                            Nothing -> car
+                                    ) model.cars},
+                                WebSocket.send model.webSocketUrl ( "steer/" ++ (toString model.steerRate)))
+                            else if key == model.controls.carUp || key == model.controls.carDown then
+                                ( { model |
+                                    trackingCar =
+                                        let controlledByMe =
+                                            List.sortWith (\car1 car2 -> compare car1.pos.x car2.pos.x) <|
+                                                case model.ip of
+                                                    Just ip -> List.filter (\car ->
+                                                        case car.controlledBy of
+                                                            Just c -> c == ip
+                                                            Nothing -> False) model.cars
+                                                    Nothing -> []
+                                        in case model.trackingCar of
                                             Nothing -> Maybe.map .name <| List.head controlledByMe
-                          }
-                          , Cmd.none )
-                    else if key == model.controls.snap then
-                        ( { model | snap = True }, Cmd.none )
-                    else (always (model, Cmd.none)) <| Debug.log "Key Down" key
-                Nothing -> ( model, Cmd.none )
+                                            Just trackName ->
+                                                let track = List.head <| List.filter (\(idx, car) -> car.name == trackName) (List.indexedMap (,) controlledByMe)
+                                                in case track of
+                                                    Just (idx, car) ->
+                                                        let res =
+                                                            if key == model.controls.carUp then
+                                                                Maybe.map .name <| List.head <| List.drop (idx+1) controlledByMe
+                                                            else
+                                                                if idx == 0 then Nothing else Maybe.map .name <| List.head <| List.drop (idx-1) <| controlledByMe
+                                                        in case res of
+                                                            Just x -> Just x
+                                                            Nothing ->
+                                                                if key == model.controls.carUp then
+                                                                    Maybe.map .name <| List.head controlledByMe
+                                                                else
+                                                                    Maybe.map .name <| List.head <| List.reverse controlledByMe
+                                                    Nothing -> Maybe.map .name <| List.head controlledByMe
+                                  }
+                                  , Cmd.none )
+                            else if key == model.controls.snap then
+                                ( { model | snap = True }, Cmd.none )
+                            else if key == model.controls.help then
+                                ( { model | popup = InfoPopup }, Cmd.none )
+                            else (always (model, Cmd.none)) <| Debug.log "Key Down" key
+                        Nothing -> ( model, Cmd.none )
+                _ -> ( model, Cmd.none )            
 
         KeyUp key ->
-            case model.ip of
-                Just myIp ->
-                    if key == model.controls.break then -- k
-                        ( { model | cars = List.map (\car ->
-                                case car.controlledBy of
-                                    Just ip -> if ip /= myIp then car else
-                                                  {car | handBreaks = False}
-                                    Nothing -> car
-                            ) model.cars},
-                        WebSocket.send model.webSocketUrl "no_breaks" )
-                    else if key == model.controls.up || key == model.controls.back then
-                        ( { model | cars = List.map (\car ->
-                                case car.controlledBy of
-                                    Just ip -> if ip /= myIp then car else
-                                                  {car | accel = 0}
-                                    Nothing -> car
-                            ) model.cars},
-                        WebSocket.send model.webSocketUrl "accel/0" )
-                    else if key == model.controls.left || key == model.controls.right then
-                        ( { model | cars = List.map (\car ->
-                                case car.controlledBy of
-                                    Just ip -> if ip /= myIp then car else
-                                                  {car | steering = 0}
-                                    Nothing -> car
-                            ) model.cars},
-                        WebSocket.send model.webSocketUrl "steer/0" )
-                    else if key == model.controls.snap then
-                        ( { model | snap = False }, Cmd.none )
-                    else (always (model, Cmd.none)) <| Debug.log "Key Up" key
-                Nothing -> ( model, Cmd.none )
+            case model.popup of
+                NoPopup ->
+                    case model.ip of
+                        Just myIp ->
+                            if key == model.controls.break then -- k
+                                ( { model | cars = List.map (\car ->
+                                        case car.controlledBy of
+                                            Just ip -> if ip /= myIp then car else
+                                                          {car | handBreaks = False}
+                                            Nothing -> car
+                                    ) model.cars},
+                                WebSocket.send model.webSocketUrl "no_breaks" )
+                            else if key == model.controls.up || key == model.controls.back then
+                                ( { model | cars = List.map (\car ->
+                                        case car.controlledBy of
+                                            Just ip -> if ip /= myIp then car else
+                                                          {car | accel = 0}
+                                            Nothing -> car
+                                    ) model.cars},
+                                WebSocket.send model.webSocketUrl "accel/0" )
+                            else if key == model.controls.left || key == model.controls.right then
+                                ( { model | cars = List.map (\car ->
+                                        case car.controlledBy of
+                                            Just ip -> if ip /= myIp then car else
+                                                          {car | steering = 0}
+                                            Nothing -> car
+                                    ) model.cars},
+                                WebSocket.send model.webSocketUrl "steer/0" )
+                            else if key == model.controls.snap then
+                                ( { model | snap = False }, Cmd.none )
+                            else (always (model, Cmd.none)) <| Debug.log "Key Up" key
+                        Nothing -> ( model, Cmd.none )
+                _ -> ( model, Cmd.none )
 
 
         MenuBallClicked ->
@@ -480,6 +512,10 @@ update msg model =
 
         ShowRoadClicked ->
             ( { model | hiddenRoads = [] }
+            , Cmd.none )
+
+        LightClicked lState ->
+            ( { model | selectState = LightSelecting lState }
             , Cmd.none )
 
         ClosePopup ->
@@ -633,7 +669,11 @@ generatePopup popup model =
                         Just val -> Just (pre [] [text <| name ++ ": " ++ (toString val)])
                         Nothing -> Nothing
                     )
-                [ (model.ip, "Ip") ] 
+                [ (Maybe.map toString model.ip, "Ip")
+                , (Maybe.map toString model.size, "Screen size")
+                , (Maybe.map toString model.trackingCar, "Tracking car")
+                , (Maybe.map toString model.currentSelectedRoad, "Current selected road")
+                ]
                 ++ (
                     case model.err of
                         Just err ->
