@@ -19,6 +19,8 @@ if "-h" in sys.argv[1:] or "--help" in sys.argv[1:]:
         """ % (__file__, __file__)))
     sys.exit()
 
+FILES_TO_COMPILE = ["Source/Main.elm"]
+
 CHECK_HASH = "-a" in sys.argv[1:]
 HASH_PATH = ".hashes"
 
@@ -49,9 +51,11 @@ start = time.time()
 
 for root, dirs, files in os.walk("Source"):
     for source in files:
-        print()
         if source.endswith(".elm"):
             full_path = os.path.join(root, source)
+            if not full_path in FILES_TO_COMPILE:
+                continue
+            print()
             changed = True
 
             content = open(full_path, "r").read()
