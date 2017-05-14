@@ -81,7 +81,6 @@ function makeDefaultPerms() {
 
 function makeDefaultUser(name) {
     return {
-        amount_of_placed_cars: 0,
         name: name,
         perms: makeDefaultPerms()
     }
