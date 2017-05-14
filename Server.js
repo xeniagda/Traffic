@@ -227,7 +227,7 @@ function doCommand(ip, line) {
     }
     else if (parts[0] === "MAKE") {
         if (parts.length != 3) {
-            return "MAKE syntax: MAKE [ips] [name]"
+            return "MAKE syntax: MAKE [ip] [name]"
         }
         else {
             user = makeDefaultUser(parts[2])
@@ -256,7 +256,7 @@ function doCommand(ip, line) {
 
         parts.splice(1).forEach(param => {
             if (!DEBUGS.has(param)) {
-                res += "Invalid debug parameter " + param
+                res += "Invalid debug parameter " + param + "\n"
             }
             else if (DEBUG.has(param)) {
                 DEBUG.delete(param)
