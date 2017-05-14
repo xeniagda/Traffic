@@ -245,7 +245,7 @@ type alias Model =
 type Popup
     = NoPopup
     | LogingInPopup LoginPopup
-    | InfoPopup
+    | InfoPopup Bool
 
 type alias LoginPopup = 
     { name : String
@@ -285,6 +285,7 @@ type Msg
     | ClosePopup
     | LoginScreen
     | InfoScreen
+    | InfoToggleDebug
     | UpdateUsername String
     | Login
 

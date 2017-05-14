@@ -3,6 +3,7 @@ module Main exposing (..)
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
+import Html.Lazy exposing (..)
 import Http
 import Task
 import Json.Decode as Decode exposing (decodeString)
@@ -424,7 +425,7 @@ update msg model =
                             else if key == model.controls.snap then
                                 ( { model | snap = True }, Cmd.none )
                             else if key == model.controls.help then
-                                ( { model | popup = InfoPopup }, Cmd.none )
+                                ( { model | popup = InfoPopup False }, Cmd.none )
                             else (always (model, Cmd.none)) <| Debug.log "Key Down" key
                         Nothing -> ( model, Cmd.none )
                 _ -> ( model, Cmd.none )            
@@ -533,7 +534,16 @@ update msg model =
 
         InfoScreen ->
             ( { model 
-              | popup = InfoPopup
+              | popup = InfoPopup True
+            }
+            , Cmd.none )
+
+        InfoToggleDebug ->
+            ( { model 
+              | popup = 
+                  case model.popup of
+                      InfoPopup debug -> InfoPopup <| not debug
+                      _ -> model.popup
             }
             , Cmd.none )
 
@@ -581,7 +591,7 @@ view model =
                     cars = renderCars model model.cars
                     trafficLights = renderTrafficLights model model.roads
                     menu = renderMenu model
-                 in
+                in
                     lines ++ roads ++ cars ++ trafficLights ++ menu
                 ++ (
                     List.concatMap (\road ->
@@ -638,8 +648,7 @@ view model =
                    [div [ style (centerFill model ++
                                 [ ("background-color", "#A64")
                                 , ("opacity", "0.6")] )] []
-                   , div [style <| centerFill model]
-                       (generatePopup model.popup model)
+                   , generatePopup model.popup model
                    ]
                 ]
             )
@@ -650,11 +659,12 @@ centerFill model =
     , ("width", "100%")
     , ("height", (Maybe.withDefault "10" <| Maybe.map (toString << .y) model.size) ++ "px")]
 
-generatePopup : Popup -> Model -> List (Html Msg)
+generatePopup : Popup -> Model -> Html Msg
 generatePopup popup model =
-    case popup of
+    div [style <| centerFill model]
+    <| case popup of
         NoPopup -> []
-        InfoPopup -> 
+        InfoPopup debug ->
             [ div [style [("text-align", "center")]] (
                 [ h3 [] [pre [] [text "Keys:"]]
                 , pre [] [text "+ Zoom in"]
@@ -663,25 +673,31 @@ generatePopup popup model =
                 , pre [] [text "s Active breaks"]
                 , pre [] [text "a/d Steer left/right"]
                 , pre [] [text "x Drive backwards"]
+                , button [ onClick InfoToggleDebug ] [text <| if debug then "Hide Debug" else "Show Debug"]
+                , br [] []
                 ] ++
-                List.filterMap (\(prop, name) ->
-                    case prop of
-                        Just val -> Just (pre [] [text <| name ++ ": " ++ (toString val)])
-                        Nothing -> Nothing
+                (if debug then
+                    [ h3 [] [pre [] [text "Debug info:"]]
+                    ] ++
+                    List.filterMap (\(prop, name) ->
+                        case prop of
+                            Just val -> Just (pre [] [text <| name ++ ": " ++ (toString val)])
+                            Nothing -> Nothing
+                        )
+                    [ (Maybe.map toString model.ip, "Ip")
+                    , (Maybe.map toString model.size, "Screen size")
+                    , (Maybe.map toString model.trackingCar, "Tracking car")
+                    , (Maybe.map toString model.currentSelectedRoad, "Current selected road")
+                    ]
+                    ++ (
+                        case model.err of
+                            Just err ->
+                                [ p [style [("color", "red")]] [text <| "An error occured. Error was: " ++ toString err]
+                                ]
+                            Nothing ->
+                                []
                     )
-                [ (Maybe.map toString model.ip, "Ip")
-                , (Maybe.map toString model.size, "Screen size")
-                , (Maybe.map toString model.trackingCar, "Tracking car")
-                , (Maybe.map toString model.currentSelectedRoad, "Current selected road")
-                ]
-                ++ (
-                    case model.err of
-                        Just err ->
-                            [ p [style [("color", "red")]] [text <| "An error occured. Error was: " ++ toString err]
-                            ]
-                        Nothing ->
-                            []
-                ) 
+                else [])
                 ++ [ button [ onClick ClosePopup ] [text "Done!"] ]
             )]
 
