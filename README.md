@@ -2,14 +2,19 @@
 
 This is a simple traffic simulator written in `node.js` and `Elm`.
 
-![screenshot](http://i.imgur.com/FFXxFW7.png)
+![gif of simulator running](http://gph.to/2rfyRMc)
 
-To run everything, run `node Server.js` in the terminal. You need to have the `ws` library installed, you can install it using `npm install --save ws` If you make modifications to the Elm files, run `elm-make Base.elm --output ../index.html` in the `Web/Elm` directory.
+To run everything, run `node Server.js` in the terminal. If you are running Mac or Linux you can run the `Install.py` file to install everything necessary. If you make any changes to the Elm files, run the `Make.py` file to compile everything.
 
 Stuff currently in the simulator:
 
 * Roads that can be connected to each other, have speed limits etc.
 * Traffic lights
 * Cars with AI
-* Four hi-quality car textures (yellow, blue, tiger and Elm), with broken variants to (called "trasig", Swedish for "broken").
+* Five svg car textures (yellow, blue, police, tiger and Elm), with broken variants to (called "trasig", Swedish for "broken").
 * The ability to control cars from the browser
+* Building roads and traffic lights from the browser
+* A system for commands and permissions
+* Police cars
+
+See [Info-Server.md](https://github.com/loovjo/Traffic/blob/master/Info-Server.md) for information about running the server.
