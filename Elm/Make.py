@@ -3,6 +3,13 @@ import subprocess
 import sys
 import time
 
+RED = "\033[38;5;1m"
+GREEN = "\033[38;5;10m"
+BLUE = "\033[38;5;6m"
+BOLD = "\033[1m"
+RESET = "\033[0m"
+
+
 if "-h" in sys.argv[1:] or "--help" in sys.argv[1:]:
     from textwrap import dedent
     
@@ -67,29 +74,29 @@ for root, dirs, files in os.walk("Source"):
             hashes[full_path] = file_hash
 
             output = os.path.join("..", "Web", "Out", source.replace(".elm", ".js"))
-            print("Compiling %s -> %s" % (full_path, output))
+            print(BLUE + "Compiling %s -> %s" % (full_path, output) + RESET)
 
             if not changed and CHECK_HASH:
-                print("File not changed since last compile, skipping this file. (Use -a/--all to compile anyway)")
+                print(BLUE + "File not changed since last compile, skipping this file. (Use -a/--all to compile anyway)" + RESET)
                 continue
 
             proc = subprocess.Popen(["elm-make", full_path, "--output", output])
             if proc.wait() != 0:
-                print("Cancelling compile")
+                print(RED + "Cancelling compile" + RESET)
                 sys.exit(1)
 
             if os.path.exists("../UglifyJS/bin/uglifyjs") and not "-M" in sys.argv[1:]:
-                print("Minifying %s" % output)
+                print(BLUE + "Minifying %s" % output + RESET)
                 proc = subprocess.Popen(["../UglifyJS/bin/uglifyjs", "--output", output, output])
                 if proc.wait() != 0:
-                    print("Cancelling compile")
+                    print(RED + "Cancelling compile" + GREEN)
                     sys.exit(1)
-            print("Done compiling %s" % full_path)
+            print(BOLD + "Done compiling %s" % full_path + RESET)
             compiled += 1
 
 compile_time = time.time() - start
 
-print("\nCompiled %i files total, took %.2f seconds" % (compiled, compile_time))
+print(GREEN + BOLD + "\nCompiled %i %s total, took %.2f seconds" % (compiled, "file" if compiled == 1 else "files", compile_time) + RESET)
 
 hash_file = open(HASH_PATH, "w")
 hash_file.write(repr(hashes))
