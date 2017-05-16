@@ -256,6 +256,41 @@ update msg model =
                                             RemoveLight -> "lrm/" ++ road.id
                                             FlipLight -> "lflip/" ++ road.id
                                     )
+                        TrackSelecting ->
+                            case model.mouse of
+                                Nothing -> ( model, Cmd.none )
+                                Just pos ->
+                                    let closest = getClosestCar pos model.cars
+                                    in case closest of
+                                        Nothing -> ( model, Cmd.none )
+                                        Just car ->
+                                            ( { model 
+                                            | selectState = NotSelecting
+                                            , trackingCar = Just car.name
+                                            } 
+                                            , Cmd.none
+                                            )
+                        IntersectionMakeSelecting ->
+                            case (model.currentSelectedRoad, model.otherRoad) of
+                                (Just road, Nothing) ->
+                                    ( { model
+                                    | otherRoad = Just road
+                                    }
+                                    , Cmd.none )
+                                (Just road, Just other) ->
+                                    ( { model
+                                    | selectState = NotSelecting
+                                    , currentSelectedRoad = Nothing
+                                    , otherRoad = Nothing
+                                    }
+                                    , WebSocket.send model.webSocketUrl
+                                        <| String.join "/"
+                                        [ "intermake"
+                                        , other.id
+                                        , road.id
+                                        ]
+                                    )
+                                _ -> ( model, Cmd.none )
                         NotSelecting ->
                             ( {model
                                 | dragMouse = Just {x = toFloat pos.x, y = toFloat pos.y}
@@ -269,7 +304,8 @@ update msg model =
         MouseMove pos ->
             case model.popup of
                 NoPopup ->
-                    let track = case model.trackingCar of
+                    let 
+                        track = case model.trackingCar of
                             Nothing -> False
                             Just name -> List.length (List.filter (\car -> car.name == name) model.cars) > 0
 
@@ -279,7 +315,7 @@ update msg model =
                         model_ = {model
                                  | mouse = Just mouse
                                  , currentSelectedRoad =
-                                     if model.selectState /= NotSelecting then
+                                     if model.selectState /= NotSelecting && model.selectState /= TrackSelecting then
                                          getClosestRoad mouse <| List.filter (\road -> not <| List.member road.id model.hiddenRoads) model.roads
                                      else model.currentSelectedRoad
                                  }
@@ -488,6 +524,10 @@ update msg model =
             | currentDragCar = Just {pos = {x = 0, y = 0}, img = if police then "CarPolis" else "Car1", isPolice = police}
             }, Cmd.none )
 
+        TrackCarClicked ->
+            ( { model | selectState = TrackSelecting }
+            , Cmd.none )
+
         AddRoadClicked ->
             ( { model
             | buildingRoad = True
@@ -517,6 +557,10 @@ update msg model =
 
         LightClicked lState ->
             ( { model | selectState = LightSelecting lState }
+            , Cmd.none )
+
+        IntersectionMakeClicked ->
+            ( { model | selectState = IntersectionMakeSelecting }
             , Cmd.none )
 
         ClosePopup ->
@@ -586,9 +630,17 @@ view model =
                 , Sa.style "background: #227722"
                 ]
                 (let
+                    cars_ = 
+                        case (model.selectState, model.mouse) of
+                            (TrackSelecting, Just pos) ->
+                                case getClosestCar pos model.cars of 
+                                    Just closest ->
+                                        List.map (\car -> if car == closest then { car | size = car.size * 2 } else car) model.cars
+                                    Nothing -> model.cars
+                            _ -> model.cars
                     lines = renderBackgroundLines model
                     roads = renderRoads model model.roads
-                    cars = renderCars model model.cars
+                    cars = renderCars model cars_
                     trafficLights = renderTrafficLights model model.roads
                     menu = renderMenu model
                 in

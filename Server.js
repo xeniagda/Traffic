@@ -241,7 +241,12 @@ function doCommand(ip, line) {
             path = parts[1]
         }
         toSave = {roads: JSON.parse(JSON.stringify(traffic.roads)), intersections: traffic.intersections}
-        toSave.roads.forEach(road => {if (road.traffic_light) delete road.traffic_light.waiting_cars})
+        toSave.roads.forEach(road => {
+            if (road.traffic_light) {
+                road.traffic_light = {offset: road.traffic_light.offset,
+                                      at: road.traffic_light.at}
+            }
+        })
 
         fs.writeFileSync(path, JSON.stringify(toSave, null, '    '))
         return "Wrote to " + path
@@ -337,20 +342,6 @@ DEFAULT_CAR_PROPERTIES = {
     fade: 1
 }
 
-// ROADS_PRESET = [
-//     {width: 1.5, start: {x: 12, y: 32}, end: {x: 12, y: 12}, connected_to: [3,5,7], speed_rec: 5, traffic_light: {green_left: 0, last_green: 0, offset: {x: 1, y: 1}}}, // Goes upwards
-//     {width: 1.5, start: {x: 10, y: 12}, end: {x: 10, y: 32}, connected_to: [], speed_rec: 5},
-//     {width: 1.5, start: {x: -10, y: 12}, end: {x: 10, y: 12}, connected_to: [1,5,7], speed_rec: 5, traffic_light: {green_left: 0, last_green: 0, offset: {x: -1, y: 1}}}, // Goes to the right
-//     {width: 1.5, start: {x: 10, y: 10}, end: {x: -10, y: 10}, connected_to: [], speed_rec: 5},
-//     {width: 1.5, start: {x: 10, y: -10}, end: {x: 10, y: 10}, connected_to: [1,3,7], speed_rec: 5, traffic_light: {green_left: 0, last_green: 0, offset: {x: -1, y: -1}}}, // Goes downwards
-//     {width: 1.5, start: {x: 12, y: 10}, end: {x: 12, y: -10}, connected_to: [], speed_rec: 5},
-//     {width: 1.5, start: {x: 33, y: 10}, end: {x: 12, y: 10}, connected_to: [1,3,5], speed_rec: 5, traffic_light: {green_left: 0, last_green: 0, offset: {x: 1, y: -1}}}, // Goes to the left
-//     {width: 1.5, start: {x: 12, y: 12}, end: {x: 32, y: 12}, connected_to: [8], speed_rec: 5},
-//     {width: 1.3, start: {x: 32, y: 12}, end: {x: 37, y: 17}, connected_to: [9], speed_rec: 5},
-//     {width: 1.3, start: {x: 37, y: 17}, end: {x: 42, y: 17}, connected_to: [], speed_rec: 5},
-//     {width: 1.3, start: {x: 38, y: 15}, end: {x: 33, y: 10}, connected_to: [6], speed_rec: 5},
-//     {width: 1.3, start: {x: 42, y: 15}, end: {x: 38, y: 15}, connected_to: [10], speed_rec: 5},
-// ]
 
 function init() {
     traffic = JSON.parse(fs.readFileSync(READ))
@@ -645,7 +636,10 @@ var physics = timers.setInterval(() => {
 
             amount_of_cars = road.traffic_light.waiting_cars.length
 
-            score = amount_of_cars
+            if (road.traffic_light.last_green === undefined)
+                road.traffic_light.last_green = 0
+
+            score = amount_of_cars * (totalTime - road.traffic_light.last_green)
 
             if (road.traffic_light.green_left > 0) {
                 any_green = true
@@ -936,6 +930,43 @@ wss.on('connection', (socket => {
                 else {
                     traffic.roads[roads[0]].connected_to.push(parts[2])
                 }
+            }
+            else if (cmd === "intermake" && parts.length == 3 && permissions.has("build")) { // intermake/id1/id2
+                road1 = traffic.roads[id2idx(parts[1])]
+                road2 = traffic.roads[id2idx(parts[2])]
+
+                if (road1 === undefined || road2 === undefined) {
+                    return
+                }
+                if (road1.traffic_light === undefined || road2.traffic_light === undefined)
+                    return
+                
+                added = false
+
+                traffic.intersections.forEach(inter => {
+                    r1in = inter.roads.indexOf(parts[1]) != -1
+                    r2in = inter.roads.indexOf(parts[2]) != -1
+
+
+                    if (r1in && !r2in) {
+                        inter.roads.push(parts[2])
+                        added = true
+                    }
+                    else if (!r1in && r2in) {
+                        added = true
+                        inter.roads.push(parts[1])
+                    }
+                    else if (r1in && r2in) {
+                        added = true
+                        inter.roads.splice(inter.roads.indexOf(parts[1]), 1)
+                        inter.roads.splice(inter.roads.indexOf(parts[2]), 1)
+                    }
+                })
+
+                if (!added) (
+                    traffic.intersections.push({roads: [parts[1], parts[2]]})
+                )
+
             }
             else if (cmd === "login" && parts.length == 2) { // login/name
                 user = makeDefaultUser(parts[1])

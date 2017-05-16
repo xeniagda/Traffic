@@ -90,12 +90,17 @@ generateMenuButtons traffic =
                 , MenuButton "AddLight" (LightClicked AddLight)
                 , MenuButton "FlipLight" (LightClicked FlipLight)
                 , MenuButton "RemoveLight" (LightClicked RemoveLight)
+                , MenuButton "CombineLight" IntersectionMakeClicked
                 , MenuButton "Hide" HideRoadClicked 
                 , MenuButton "Show" ShowRoadClicked 
                 ] else [])
         else
-            [ MenuButton "login" LoginScreen ]
-    ) ++ [ MenuButton "Info" InfoScreen ]
+            [ MenuButton "login" LoginScreen 
+            ]
+    ) 
+    ++  [ MenuButton "Info" InfoScreen 
+        , MenuButton "TrackCar" TrackCarClicked
+        ]
 
 getClosestRoad : Position -> List Road -> Maybe Road
 getClosestRoad pos roads =
@@ -104,6 +109,12 @@ getClosestRoad pos roads =
             lengths = List.map (\roadPos -> Tuple.first <| toPolar (roadPos.x - pos.x, roadPos.y - pos.y)) positions
         in List.sum lengths / 1000 + (Maybe.withDefault 10000 <| List.minimum <| lengths)
     in List.head <| List.sortBy dist roads
+
+getClosestCar : Position -> List Car -> Maybe Car
+getClosestCar pos car =
+    let dist car =
+        Tuple.first <| toPolar (pos.x - car.pos.x, pos.y - car.pos.y)
+    in List.head <| List.sortBy dist car
 
 type alias Controls = 
     { up : Int
@@ -139,6 +150,7 @@ toCar prot =
     , rot = 0
     , speed = 0
     , accel = 0
+    , size = 1
     , steering = 0
     , crashed = False
     , handBreaks = False
@@ -155,6 +167,7 @@ type alias Car =
     , rot : Float
     , speed : Float -- How many pixels forwards the car should move every second in the direction it's facing
     , accel : Float
+    , size : Float
     , steering : Float
     , crashed : Bool
     , handBreaks : Bool
@@ -258,6 +271,8 @@ type SelectState
     | FlipSelecting
     | HideSelecting
     | LightSelecting LightState
+    | IntersectionMakeSelecting
+    | TrackSelecting
 
 type LightState = AddLight | RemoveLight | FlipLight
 
@@ -275,10 +290,12 @@ type Msg
     | MenuBallClicked
     | MenuButtonClicked Msg
     | AddCarClicked Bool
+    | TrackCarClicked
     | AddRoadClicked
     | CombineRoadClicked
     | RemoveRoadClicked
     | FlipRoadClicked
+    | IntersectionMakeClicked
     | HideRoadClicked
     | ShowRoadClicked
     | LightClicked LightState

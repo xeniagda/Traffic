@@ -33,6 +33,7 @@ decodeCars =
             |> P.required "rot" Decode.float
             |> P.required "speed" Decode.float
             |> P.required "accel" Decode.float
+            |> P.optional "size" Decode.float 1
             |> P.required "steering" Decode.float
             |> P.required "crashed" Decode.bool
             |> P.required "hand_breaks" Decode.bool

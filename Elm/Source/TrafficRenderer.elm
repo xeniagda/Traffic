@@ -73,43 +73,45 @@ renderRoadLines model roads =
 renderCars : Model -> List Car -> List (S.Svg Msg)
 renderCars model cars =
     List.concatMap (\car ->
-            [ S.image
-              [ Sa.x <| toString <| model.scroll.x + car.pos.x * model.renderScale - carWidth / 2 * model.renderScale
-              , Sa.y <| toString <| model.scroll.y + car.pos.y * model.renderScale - carHeight / 2 * model.renderScale
-              , Sa.width <| toString <| carWidth * model.renderScale
-              , Sa.height <| toString <| carHeight * model.renderScale
-              , Sa.xlinkHref <| "Textures/Cars/" ++ getImg car
-              , Sa.opacity <| toString car.fade
-              , Sa.transform <|
-                  "rotate("
-                      ++ (toString car.rot)
-                      ++ " "
-                      ++ (toString <| car.pos.x * model.renderScale + model.scroll.x)
-                      ++ " "
-                      ++ (toString <| car.pos.y * model.renderScale + model.scroll.y)
-                      ++ ")"
-              ]
-              []
-            ] ++ (
-            case car.controlledBy of
-                Just ip ->
-                    let users = List.filter (\user -> user.ip == ip) model.others
-                        user = List.head users
-                    in case user of
-                        Just user ->
-                            [ S.text_
-                              [ Sa.x <| toString <| model.scroll.x + car.pos.x * model.renderScale
-                              , Sa.y <| toString <| model.scroll.y + (car.pos.y + 1) * model.renderScale
-                              , Sa.fill "white"
-                              , Sa.fontFamily "Arial"
-                              , Sa.textAnchor "middle"
-                              , Sa.fontSize <| toString <| model.renderScale / 2
-                              ]
-                                [ S.text user.name ]
-                            ]
-                        Nothing -> []
-                Nothing -> []
-            )
+            let size = model.renderScale * car.size
+            in
+                [ S.image
+                  [ Sa.x <| toString <| model.scroll.x + car.pos.x * model.renderScale - carWidth / 2 * size
+                  , Sa.y <| toString <| model.scroll.y + car.pos.y * model.renderScale - carHeight / 2 * size
+                  , Sa.width <| toString <| carWidth * size
+                  , Sa.height <| toString <| carHeight * size
+                  , Sa.xlinkHref <| "Textures/Cars/" ++ getImg car
+                  , Sa.opacity <| toString car.fade
+                  , Sa.transform <|
+                      "rotate("
+                          ++ (toString car.rot)
+                          ++ " "
+                          ++ (toString <| car.pos.x * model.renderScale + model.scroll.x)
+                          ++ " "
+                          ++ (toString <| car.pos.y * model.renderScale + model.scroll.y)
+                          ++ ")"
+                  ]
+                  []
+                ] ++ (
+                case car.controlledBy of
+                    Just ip ->
+                        let users = List.filter (\user -> user.ip == ip) model.others
+                            user = List.head users
+                        in case user of
+                            Just user ->
+                                [ S.text_
+                                  [ Sa.x <| toString <| model.scroll.x + car.pos.x * size
+                                  , Sa.y <| toString <| model.scroll.y + (car.pos.y + 1) * size
+                                  , Sa.fill "white"
+                                  , Sa.fontFamily "Arial"
+                                  , Sa.textAnchor "middle"
+                                  , Sa.fontSize <| toString <| size / 2
+                                  ]
+                                    [ S.text user.name ]
+                                ]
+                            Nothing -> []
+                    Nothing -> []
+                )
 
         )
         cars
