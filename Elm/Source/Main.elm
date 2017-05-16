@@ -54,8 +54,8 @@ init flags =
         , others = []
         , currentDragCar = Nothing
         , hiddenRoads = []
-        , buildingRoad = False
         , snap = False
+        , buildingRoad = False
         , buildingRoadStart = Nothing
         , selectState = NotSelecting
         , currentSelectedRoad = Nothing
@@ -63,11 +63,7 @@ init flags =
         , popup = NoPopup
         , menu = defaultMenu
         }
-    -- ( Model [] [] Nothing Nothing Nothing {x=0, y=0} Nothing Nothing 40 (Debug.log "Websocket url: " flags.webSocketUrl) "" Nothing 6 200 Nothing Nothing flags.controls Nothing False False Nothing defaultMenu
-    , Cmd.batch
-    [ Task.perform identity <| Task.succeed CheckSize
-    , WebSocket.send flags.webSocketUrl "car"
-    ]
+    , Task.perform identity <| Task.succeed CheckSize
     )
 
 
@@ -186,7 +182,7 @@ update msg model =
                                     Nothing -> Cmd.none
                                 )
                     else case model.selectState of
-                        CombineSelecting -> 
+                        CombineSelecting ->
                             case (model.currentSelectedRoad, model.otherRoad) of
                                 (Just road, Nothing) ->
                                     ( { model
@@ -211,20 +207,20 @@ update msg model =
                             case model.currentSelectedRoad of
                                 Nothing -> ( model, Cmd.none )
                                 Just road ->
-                                    ( { model 
+                                    ( { model
                                     | selectState = NotSelecting
-                                    , currentSelectedRoad = Nothing 
-                                    } 
+                                    , currentSelectedRoad = Nothing
+                                    }
                                     , WebSocket.send model.webSocketUrl <| "rrm/" ++ road.id
                                     )
                         FlipSelecting ->
                             case model.currentSelectedRoad of
                                 Nothing -> ( model, Cmd.none )
                                 Just road ->
-                                    ( { model 
+                                    ( { model
                                     | selectState = NotSelecting
-                                    , currentSelectedRoad = Nothing 
-                                    } 
+                                    , currentSelectedRoad = Nothing
+                                    }
                                     , case indexOf model.roads road of
                                         Just idx -> WebSocket.send model.webSocketUrl <| "rflip/" ++ toString idx
                                         Nothing -> Cmd.none
@@ -233,24 +229,24 @@ update msg model =
                             case model.currentSelectedRoad of
                                 Nothing -> ( model, Cmd.none )
                                 Just road ->
-                                    ( { model 
+                                    ( { model
                                     | selectState = NotSelecting
-                                    , currentSelectedRoad = Nothing 
-                                    , hiddenRoads = 
+                                    , currentSelectedRoad = Nothing
+                                    , hiddenRoads =
                                         if List.member road.id model.hiddenRoads then List.filter (\x -> x /= road.id) model.hiddenRoads
                                         else List.append model.hiddenRoads [road.id]
-                                    } 
+                                    }
                                     , Cmd.none
                                     )
                         LightSelecting lState ->
                             case model.currentSelectedRoad of
                                 Nothing -> ( model, Cmd.none )
                                 Just road ->
-                                    ( { model 
+                                    ( { model
                                     | selectState = NotSelecting
-                                    , currentSelectedRoad = Nothing 
+                                    , currentSelectedRoad = Nothing
                                     }
-                                    , WebSocket.send model.webSocketUrl <| 
+                                    , WebSocket.send model.webSocketUrl <|
                                         case lState of
                                             AddLight -> "lbuild/" ++ road.id
                                             RemoveLight -> "lrm/" ++ road.id
@@ -264,10 +260,10 @@ update msg model =
                                     in case closest of
                                         Nothing -> ( model, Cmd.none )
                                         Just car ->
-                                            ( { model 
+                                            ( { model
                                             | selectState = NotSelecting
                                             , trackingCar = Just car.name
-                                            } 
+                                            }
                                             , Cmd.none
                                             )
                         IntersectionMakeSelecting ->
@@ -304,7 +300,7 @@ update msg model =
         MouseMove pos ->
             case model.popup of
                 NoPopup ->
-                    let 
+                    let
                         track = case model.trackingCar of
                             Nothing -> False
                             Just name -> List.length (List.filter (\car -> car.name == name) model.cars) > 0
@@ -350,7 +346,7 @@ update msg model =
                         let menu = model.menu
                         in { menu | state = In }
                     }, Cmd.none )
-            else 
+            else
             case model.popup of
                 NoPopup ->
                     if key == model.controls.zoomIn then -- Plus key
@@ -464,7 +460,7 @@ update msg model =
                                 ( { model | popup = InfoPopup False }, Cmd.none )
                             else (always (model, Cmd.none)) <| Debug.log "Key Down" key
                         Nothing -> ( model, Cmd.none )
-                _ -> ( model, Cmd.none )            
+                _ -> ( model, Cmd.none )
 
         KeyUp key ->
             case model.popup of
@@ -524,10 +520,6 @@ update msg model =
             | currentDragCar = Just {pos = {x = 0, y = 0}, img = if police then "CarPolis" else "Car1", isPolice = police}
             }, Cmd.none )
 
-        TrackCarClicked ->
-            ( { model | selectState = TrackSelecting }
-            , Cmd.none )
-
         AddRoadClicked ->
             ( { model
             | buildingRoad = True
@@ -535,56 +527,27 @@ update msg model =
             , Cmd.none
             )
 
-        CombineRoadClicked ->
-            ( { model | selectState = CombineSelecting }
-            , Cmd.none )
-
-        RemoveRoadClicked ->
-            ( { model | selectState = RemoveSelecting }
-            , Cmd.none )
-
-        FlipRoadClicked ->
-            ( { model | selectState = FlipSelecting }
-            , Cmd.none )
-
-        HideRoadClicked ->
-            ( { model | selectState = HideSelecting }
+        SelectStateChange state ->
+            ( { model | selectState = state }
             , Cmd.none )
 
         ShowRoadClicked ->
             ( { model | hiddenRoads = [] }
             , Cmd.none )
 
-        LightClicked lState ->
-            ( { model | selectState = LightSelecting lState }
-            , Cmd.none )
-
-        IntersectionMakeClicked ->
-            ( { model | selectState = IntersectionMakeSelecting }
-            , Cmd.none )
-
         ClosePopup ->
-            ( { model 
+            ( { model
               | popup = NoPopup
             }
             , Cmd.none )
 
-        LoginScreen ->
-            ( { model 
-              | popup =
-                  LogingInPopup { name = "" }
-            }
-            , Cmd.none )
-
-        InfoScreen ->
-            ( { model 
-              | popup = InfoPopup True
-            }
-            , Cmd.none )
+        OpenPopup pop ->
+            ( { model | popup = pop }
+            , Cmd.none)
 
         InfoToggleDebug ->
-            ( { model 
-              | popup = 
+            ( { model
+              | popup =
                   case model.popup of
                       InfoPopup debug -> InfoPopup <| not debug
                       _ -> model.popup
@@ -593,28 +556,28 @@ update msg model =
 
         UpdateUsername name ->
             case model.popup of
-                LogingInPopup pop ->
-                    ( { model 
-                    | popup = LogingInPopup {name = name}
+                LoginPopup _ ->
+                    ( { model
+                    | popup = LoginPopup name
                     }
                     , Cmd.none )
                 _ -> ( model, Cmd.none )
 
         Login ->
             case model.popup of
-                LogingInPopup pop ->
-                    if String.length pop.name < nameLengthMax && String.length pop.name > 0 then
+                LoginPopup name ->
+                    if String.length name < nameLengthMax && String.length name > 0 then
                             ( { model
                             | popup = NoPopup
                             }
-                            , WebSocket.send model.webSocketUrl <| "login/" ++ pop.name)
+                            , WebSocket.send model.webSocketUrl <| "login/" ++ name)
                     else ( model, Cmd.none )
                 _ -> ( model, Cmd.none )
 
 view : Model -> Html Msg
 view model =
     div [ style [ ("margin-top", "0px")
-                , ("padding-top", "0px") ] ] 
+                , ("padding-top", "0px") ] ]
         ([ div ( [ style [ ("margin", "0px")
                         , ("top", "0px")
                         , ("position", "fixed")]
@@ -630,10 +593,10 @@ view model =
                 , Sa.style "background: #227722"
                 ]
                 (let
-                    cars_ = 
+                    cars_ =
                         case (model.selectState, model.mouse) of
                             (TrackSelecting, Just pos) ->
-                                case getClosestCar pos model.cars of 
+                                case getClosestCar pos model.cars of
                                     Just closest ->
                                         List.map (\car -> if car == closest then { car | size = car.size * 2 } else car) model.cars
                                     Nothing -> model.cars
@@ -695,7 +658,7 @@ view model =
         ] ++
         (
             if model.popup == NoPopup then []
-            else 
+            else
                [ div [ style <| centerFill model ]
                    [div [ style (centerFill model ++
                                 [ ("background-color", "#A64")
@@ -753,21 +716,21 @@ generatePopup popup model =
                 ++ [ button [ onClick ClosePopup ] [text "Done!"] ]
             )]
 
-        LogingInPopup login ->
+        LoginPopup name ->
             [ div [style [ ("text-align", "center")
-                         , ("margin-top", "200px") ]] 
+                         , ("margin-top", "200px") ]]
                 [ h1 [style [("font-family", "Impact")]] [text "Username:"]
                 , Html.form [ onSubmit Login ]
                 (
                     [ input [ placeholder "Dabson XD"
-                            , onInput UpdateUsername 
+                            , onInput UpdateUsername
                             , style [("font-size", "40px")]
                             ] []
                     , br [] []
-                    , button [disabled <| String.length login.name <= 0 || String.length login.name >= nameLengthMax] [text "Login!"]
+                    , button [disabled <| String.length name <= 0 || String.length name >= nameLengthMax] [text "Login!"]
                     ] ++
-                    [ 
-                        if String.length login.name >= nameLengthMax then
+                    [
+                        if String.length name >= nameLengthMax then
                             p [style [("color", "red")]] [text "u boot too big 4 me big boi. u need 2 b less fat pls."]
                         else
                             br [] []

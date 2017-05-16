@@ -8,17 +8,17 @@ import Svg as S
 
 nameLengthMax = 20
 
+zoomFactor : Float
 zoomFactor = 1.2
 
 carHeight : Float
-carHeight =
-    0.8
+carHeight = 0.8
+
+carWidth = carHeight * 2
 
 
-carWidth : Float
-carWidth =
-    carHeight * 2
-
+type alias Position =
+    { x : Float, y : Float }
 
 pAdd : Position -> Position -> Position
 pAdd p1 p2 =
@@ -28,12 +28,12 @@ pRound : Position -> Position
 pRound pos =
     { x = toFloat <| round pos.x, y = toFloat <| round pos.y }
 
+
 (!!) : List a -> Int -> Maybe a
 (!!) lst n =
     List.head <| List.drop n lst
 
 infixr 0 !!
-
 
 indexOf : List a -> a -> Maybe Int
 indexOf lst a =
@@ -46,12 +46,6 @@ indexOf lst a =
                          else case indexOf tail a of
                              Just num -> Just <| num + 1
                              Nothing -> Nothing
-
-id2idx : Model -> String -> Maybe Int
-id2idx model id =
-    List.head 
-        <| List.filterMap (\(idx, road) -> if road.id == id then Just idx else Nothing)
-        <| List.indexedMap (,) model.roads
 
 type MenuState = In | Out
 type alias Menu =
@@ -72,7 +66,7 @@ defaultMenu =
     , height = 55
     , rotation = 0
     , state = In
-    , buttons = []
+    , buttons = [MenuButton "Info" <| OpenPopup <| InfoPopup True]
     }
 
 generateMenuButtons : Traffic -> List MenuButton
@@ -84,23 +78,24 @@ generateMenuButtons traffic =
             ++ (if List.member "police" perms then [ MenuButton "AddPolice" <| AddCarClicked True ] else [])
             ++ (if List.member "build" perms then 
                 [ MenuButton "AddRoad" AddRoadClicked
-                , MenuButton "RemoveRoad" RemoveRoadClicked
-                , MenuButton "FlipRoad" FlipRoadClicked 
-                , MenuButton "CombineRoad" CombineRoadClicked 
-                , MenuButton "AddLight" (LightClicked AddLight)
-                , MenuButton "FlipLight" (LightClicked FlipLight)
-                , MenuButton "RemoveLight" (LightClicked RemoveLight)
-                , MenuButton "CombineLight" IntersectionMakeClicked
-                , MenuButton "Hide" HideRoadClicked 
+                , MenuButton "RemoveRoad" <| SelectStateChange RemoveSelecting
+                , MenuButton "FlipRoad" <| SelectStateChange FlipSelecting 
+                , MenuButton "CombineRoad" <| SelectStateChange CombineSelecting 
+                , MenuButton "AddLight" <| SelectStateChange <| LightSelecting AddLight
+                , MenuButton "FlipLight" <| SelectStateChange <| LightSelecting FlipLight
+                , MenuButton "RemoveLight" <| SelectStateChange <| LightSelecting RemoveLight
+                , MenuButton "CombineLight" <| SelectStateChange IntersectionMakeSelecting
+                , MenuButton "Hide" <| SelectStateChange HideSelecting 
                 , MenuButton "Show" ShowRoadClicked 
                 ] else [])
         else
-            [ MenuButton "login" LoginScreen 
+            [ MenuButton "login" <| OpenPopup <| LoginPopup ""
             ]
     ) 
-    ++  [ MenuButton "Info" InfoScreen 
-        , MenuButton "TrackCar" TrackCarClicked
+    ++  [ MenuButton "Info" <| OpenPopup <| InfoPopup True 
+        , MenuButton "TrackCar" <| SelectStateChange TrackSelecting
         ]
+
 
 getClosestRoad : Position -> List Road -> Maybe Road
 getClosestRoad pos roads =
@@ -115,6 +110,13 @@ getClosestCar pos car =
     let dist car =
         Tuple.first <| toPolar (pos.x - car.pos.x, pos.y - car.pos.y)
     in List.head <| List.sortBy dist car
+
+id2idx : Model -> String -> Maybe Int
+id2idx model id =
+    List.head 
+        <| List.filterMap (\(idx, road) -> if road.id == id then Just idx else Nothing)
+        <| List.indexedMap (,) model.roads
+
 
 type alias Controls = 
     { up : Int
@@ -133,8 +135,22 @@ type alias Controls =
     , help : Int
     }
 
-type alias Position =
-    { x : Float, y : Float }
+type alias Car =
+    { name : String
+    , img : String
+    , pos : Position
+    , rot : Float
+    , speed : Float
+    , accel : Float
+    , size : Float
+    , steering : Float
+    , crashed : Bool
+    , handBreaks : Bool
+    , breakStrength : Float
+    , fade : Float
+    , police : Bool
+    , controlledBy : Maybe String
+    }
 
 type alias ProtoCar =
     { pos : Position
@@ -158,23 +174,6 @@ toCar prot =
     , fade = 0.5
     , police = prot.isPolice
     , controlledBy = Nothing
-    }
-
-type alias Car =
-    { name : String
-    , img : String
-    , pos : Position
-    , rot : Float
-    , speed : Float -- How many pixels forwards the car should move every second in the direction it's facing
-    , accel : Float
-    , size : Float
-    , steering : Float
-    , crashed : Bool
-    , handBreaks : Bool
-    , breakStrength : Float
-    , fade : Float
-    , police : Bool
-    , controlledBy : Maybe String
     }
 
 type alias TrafficLight =
@@ -213,7 +212,7 @@ getTrafficLightPath : TrafficLight -> String
 getTrafficLightPath light =
     if light.greenLeft <= 0 then
         "Textures/TrafficLights/Light_red.png"
-    else if light.greenLeft < 1 then
+    else if light.greenLeft < 2 then
         "Textures/TrafficLights/Light_yellow.png"
     else
         "Textures/TrafficLights/Light_green.png"
@@ -251,18 +250,13 @@ type alias Model =
     , otherRoad : Maybe Road
     
     , popup : Popup
-
     , menu : Menu
     }
 
 type Popup
     = NoPopup
-    | LogingInPopup LoginPopup
+    | LoginPopup String
     | InfoPopup Bool
-
-type alias LoginPopup = 
-    { name : String
-    }
 
 type SelectState 
     = NotSelecting
@@ -290,18 +284,11 @@ type Msg
     | MenuBallClicked
     | MenuButtonClicked Msg
     | AddCarClicked Bool
-    | TrackCarClicked
     | AddRoadClicked
-    | CombineRoadClicked
-    | RemoveRoadClicked
-    | FlipRoadClicked
-    | IntersectionMakeClicked
-    | HideRoadClicked
+    | SelectStateChange SelectState
     | ShowRoadClicked
-    | LightClicked LightState
+    | OpenPopup Popup
     | ClosePopup
-    | LoginScreen
-    | InfoScreen
     | InfoToggleDebug
     | UpdateUsername String
     | Login

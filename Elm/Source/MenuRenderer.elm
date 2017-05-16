@@ -6,16 +6,19 @@ import Svg.Events as Sev
 
 import Base exposing (..)
 
+fromEdgeX = 0.5
+fromEdgeY = 0.5
+
 renderMenu : Model -> List (S.Svg Msg)
 renderMenu model =
     case model.size of
         Just size ->
-            let ballPosition = {x = size.x - model.menu.radius * 1.5, y = size.y - model.menu.radius * 1.5}
+            let ballPosition = {x = size.x - model.menu.radius * (1 + fromEdgeX), y = size.y - model.menu.radius * (1 + fromEdgeY)}
                 ballRot = model.menu.rotation * pi / 4
                 width = model.menu.radius + model.menu.rotation * model.menu.height * (toFloat <| List.length model.menu.buttons)
                 currentMenuWidth = model.menu.rotation * width
             in 
-                [ S.rect
+                [ S.rect -- Menu background
                     [ Sa.x <| toString <| ballPosition.x - currentMenuWidth
                     , Sa.y <| toString <| ballPosition.y - model.menu.height / 2
                     , Sa.width <| toString <| currentMenuWidth
@@ -23,14 +26,14 @@ renderMenu model =
                     , Sa.style "fill:white"
                     , Sa.fillOpacity "0.5"
                     ] []
-                , S.circle
+                , S.circle -- Menu ball
                     [ Sa.cx <| toString <| floor ballPosition.x
                     , Sa.cy <| toString <| floor ballPosition.y
                     , Sa.r  <| toString model.menu.radius
                     , Sa.style "fill:white"
                     , Sev.onClick MenuBallClicked
                     ] []
-                , S.line
+                , S.line -- First dash
                     [ Sa.x1 <| toString <| ballPosition.x - model.menu.radius * (cos <| negate ballRot)
                     , Sa.y1 <| toString <| ballPosition.y - model.menu.radius * (sin <| negate ballRot)
                     , Sa.x2 <| toString <| ballPosition.x + model.menu.radius * (cos <| negate ballRot)
@@ -39,7 +42,7 @@ renderMenu model =
                     , Sa.strokeWidth "2"
                     , Sa.stroke "gray"
                     ] []
-                , S.line
+                , S.line -- Second dash
                     [ Sa.x1 <| toString <| ballPosition.x - model.menu.radius * sin ballRot
                     , Sa.y1 <| toString <| ballPosition.y - model.menu.radius * cos ballRot
                     , Sa.x2 <| toString <| ballPosition.x + model.menu.radius * sin ballRot
@@ -79,3 +82,4 @@ renderMenu model =
                     ]
                     ) model.menu.buttons)
         Nothing -> []
+
