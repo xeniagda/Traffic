@@ -100,8 +100,8 @@ renderCars model cars =
                         in case user of
                             Just user ->
                                 [ S.text_
-                                  [ Sa.x <| toString <| model.scroll.x + car.pos.x * size
-                                  , Sa.y <| toString <| model.scroll.y + (car.pos.y + 1) * size
+                                  [ Sa.x <| toString <| model.scroll.x + car.pos.x * model.renderScale
+                                  , Sa.y <| toString <| model.scroll.y + (car.pos.y + 1) * model.renderScale
                                   , Sa.fill "white"
                                   , Sa.fontFamily "Arial"
                                   , Sa.textAnchor "middle"
