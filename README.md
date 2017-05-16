@@ -2,7 +2,7 @@
 
 This is a simple traffic simulator written in `node.js` and `Elm`.
 
-![gif of simulator running](http://gph.to/2rfyRMc)
+![gif of simulator running](https://media.giphy.com/media/xUPGcr428SWoTBZZ28/giphy.gif))
 
 To run everything, run `node Server.js` in the terminal. If you are running Mac or Linux you can run the `Install.py` file to install everything necessary. If you make any changes to the Elm files, run the `Make.py` file to compile everything.
 
