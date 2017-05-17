@@ -9,21 +9,12 @@ import Base exposing (..)
 decodeTraffic : Decoder Traffic
 decodeTraffic =
     P.decode Traffic
-        |> P.optional "cars" decodeCars []
-        |> P.optional "roads" decodeRoads []
-        |> P.custom (Decode.oneOf 
-            [ Decode.succeed ""
-            , Decode.at [ "you", "ip" ] Decode.string ]
-        )
-        |> P.custom (Decode.oneOf 
-            [ Decode.succeed []
-            , Decode.at [ "you", "perms" ] <| Decode.list Decode.string ]
-        )
-        |> P.custom (Decode.oneOf 
-            [ Decode.succeed False
-            , Decode.at [ "you", "info", "loggedIn" ] <| Decode.bool ]
-        )
-        |> P.optional "others" decodeOthers []
+        |> P.required "cars" decodeCars
+        |> P.required "roads" decodeRoads
+        |> P.custom (Decode.at [ "you", "ip" ] Decode.string)
+        |> P.custom (Decode.at [ "you", "info", "perms" ] ( Decode.list Decode.string ))
+        |> P.custom (Decode.at [ "you", "info", "loggedIn" ] Decode.bool)
+        |> P.required "others" decodeOthers
 
 decodeOthers =
     Decode.list
@@ -49,7 +40,7 @@ decodeCars =
             |> P.required "break_strength" Decode.float
             |> P.optional "fade" Decode.float 1
             |> P.optional "police" Decode.bool False
-            |> P.optional "controlled_by" (Decode.maybe Decode.string) Nothing
+            |> P.custom (Decode.maybe (Decode.field "controlled_by" Decode.string))
         )
 
 
@@ -75,9 +66,7 @@ decodeTrafficLight =
 
 decodePosition : Decoder Position
 decodePosition =
-    P.decode Position
-        |> P.required "x" Decode.float
-        |> P.required "y" Decode.float
+    Decode.map2 (\x y -> { x = x, y = y }) (Decode.field "x" Decode.float) (Decode.field "y" Decode.float)
 
 encodeProtoCar : ProtoCar -> Enc.Value
 encodeProtoCar car =
