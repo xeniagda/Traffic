@@ -35,18 +35,6 @@ pRound pos =
 
 infixr 0 !!
 
-indexOf : List a -> a -> Maybe Int
-indexOf lst a =
-    if lst == [] then Nothing
-    else
-        let tail = Maybe.withDefault [] <| List.tail lst
-        in case List.head lst of
-            Nothing -> Nothing
-            Just head -> if a == head then Just 0
-                         else case indexOf tail a of
-                             Just num -> Just <| num + 1
-                             Nothing -> Nothing
-
 type MenuState = In | Out
 type alias Menu =
     { radius : Float
@@ -88,6 +76,7 @@ generateMenuButtons traffic =
                 , MenuButton "Hide" <| SelectStateChange HideSelecting 
                 , MenuButton "Show" ShowRoadClicked 
                 ] else [])
+            ++ (if List.member "command" perms then [ MenuButton "Cmd" <| OpenPopup <| CommandPopup "" ] else [])
         else
             [ MenuButton "login" <| OpenPopup <| LoginPopup ""
             ]
@@ -109,7 +98,7 @@ getClosestCar : Position -> List Car -> Maybe Car
 getClosestCar pos car =
     let dist car =
         Tuple.first <| toPolar (pos.x - car.pos.x, pos.y - car.pos.y)
-    in List.head <| List.sortBy dist car
+    in List.head <| List.filter (\car -> dist car < 5) <| List.sortBy dist car
 
 id2idx : Model -> String -> Maybe Int
 id2idx model id =
@@ -248,6 +237,8 @@ type alias Model =
     , selectState : SelectState
     , currentSelectedRoad : Maybe Road
     , otherRoad : Maybe Road
+
+    , cmdLog : List String
     
     , popup : Popup
     , menu : Menu
@@ -257,6 +248,7 @@ type Popup
     = NoPopup
     | LoginPopup String
     | InfoPopup Bool
+    | CommandPopup String
 
 type SelectState 
     = NotSelecting
@@ -290,6 +282,8 @@ type Msg
     | OpenPopup Popup
     | ClosePopup
     | InfoToggleDebug
-    | UpdateUsername String
+    | UpdateText String
+    | SendCommand
+    | ClearLogs
     | Login
 

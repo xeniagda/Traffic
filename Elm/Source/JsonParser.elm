@@ -81,3 +81,7 @@ encodePos pos =
         [ ("x", Enc.float pos.x)
         , ("y", Enc.float pos.y)
         ]
+
+decodeRes : Decoder {cmd : String}
+decodeRes =
+    Decode.map (\res -> {cmd = res}) (Decode.field "res" Decode.string)

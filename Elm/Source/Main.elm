@@ -60,6 +60,7 @@ init flags =
         , selectState = NotSelecting
         , currentSelectedRoad = Nothing
         , otherRoad = Nothing
+        , cmdLog = []
         , popup = NoPopup
         , menu = defaultMenu
         }
@@ -87,10 +88,16 @@ update msg model =
                     }
                     , Task.perform identity <| Task.succeed FixScroll )
                 Err error ->
-                    ( { model
-                        | err = Just error
-                    }
-                    , Cmd.none )
+                    let cmdRes = decodeString decodeRes json
+                    in case cmdRes of
+                        Ok res ->
+                            ( { model | cmdLog = model.cmdLog ++ ["  " ++ res.cmd] } 
+                            , Cmd.none )
+                        Err _ ->
+                            ( { model
+                                | err = Just error
+                            }
+                            , Cmd.none )
 
         Resize size ->
             ( { model | size = Just { x = toFloat size.width, y = toFloat size.height } }, Cmd.none )
@@ -221,9 +228,7 @@ update msg model =
                                     | selectState = NotSelecting
                                     , currentSelectedRoad = Nothing
                                     }
-                                    , case indexOf model.roads road of
-                                        Just idx -> WebSocket.send model.webSocketUrl <| "rflip/" ++ toString idx
-                                        Nothing -> Cmd.none
+                                    , WebSocket.send model.webSocketUrl <| "rflip/" ++ road.id
                                     )
                         HideSelecting ->
                             case model.currentSelectedRoad of
@@ -554,14 +559,34 @@ update msg model =
             }
             , Cmd.none )
 
-        UpdateUsername name ->
+        UpdateText text ->
             case model.popup of
                 LoginPopup _ ->
                     ( { model
-                    | popup = LoginPopup name
+                    | popup = LoginPopup text
+                    }
+                    , Cmd.none )
+                CommandPopup _ ->
+                    ( { model
+                    | popup = CommandPopup text
                     }
                     , Cmd.none )
                 _ -> ( model, Cmd.none )
+
+        SendCommand ->
+            case model.popup of
+                CommandPopup cmd ->
+                    ( { model
+                    | popup = CommandPopup ""
+                    , cmdLog = model.cmdLog ++ [cmd]
+                    }
+                    , WebSocket.send model.webSocketUrl <| "cmd/" ++ cmd)
+                _ -> ( model, Cmd.none )
+
+        ClearLogs ->
+            ( { model
+                | cmdLog = []}
+            , Cmd.none )
 
         Login ->
             case model.popup of
@@ -598,7 +623,7 @@ view model =
                             (TrackSelecting, Just pos) ->
                                 case getClosestCar pos model.cars of
                                     Just closest ->
-                                        List.map (\car -> if car == closest then { car | size = car.size * 2 } else car) model.cars
+                                        List.map (\car -> if car == closest then { car | size = car.size * 1.3 } else car) model.cars
                                     Nothing -> model.cars
                             _ -> model.cars
                     lines = renderBackgroundLines model
@@ -723,7 +748,7 @@ generatePopup popup model =
                 , Html.form [ onSubmit Login ]
                 (
                     [ input [ placeholder "Dabson XD"
-                            , onInput UpdateUsername
+                            , onInput UpdateText
                             , style [("font-size", "40px")]
                             ] []
                     , br [] []
@@ -736,6 +761,27 @@ generatePopup popup model =
                             br [] []
                     ]
                 )
+                ]
+            ]
+
+        CommandPopup cmd ->
+            [ div [ class "cmd" ] 
+                [ div [ class "cmdLog" ]
+                    <| List.map (\log -> pre [] [text log]) model.cmdLog
+                , div []
+                    [ Html.form [ onSubmit SendCommand ]
+                        [ button [ class "rightButton" ] [text "Send command"]
+                        , span [ class "wrapper" ] 
+                            [ input [ class "cmdInp"
+                                    , placeholder "DENY * view"
+                                    , onInput UpdateText
+                                    , value cmd ] [] 
+                            ]
+                        
+                        ]
+                    , button [ onClick ClosePopup ] [text "Done"]
+                    , button [ onClick ClearLogs ] [text "Clear"]
+                    ]
                 ]
             ]
 

@@ -150,7 +150,7 @@ function doCommand(ip, line) {
                 }
                 if (perm == "command" || perm == "moderator") {
                     if (ip && !IP_INFO[ip].perms.has("moderator")) {
-                        return "You do not have access to GRANT _ command"
+                        return "You do not have access to GRANT _ command/moderator"
                     }
                 }
                 selected.forEach(ip => IP_INFO[ip].perms.add(perm))
@@ -174,7 +174,7 @@ function doCommand(ip, line) {
                 }
                 if (perm == "command" || perm == "moderator") {
                     if (ip && !IP_INFO[ip].perms.has("moderator")) {
-                        return "You do not have access to DENY _ command"
+                        return "You do not have access to DENY _ command/moderator"
                     }
                 }
                 selected.forEach(ip => {
@@ -889,7 +889,7 @@ wss.on('connection', (socket => {
                 traffic.roads.push(road)
             }
             else if (cmd === "rflip" && parts.length == 2 && permissions.has("build")) { // rflip/id
-                idx = parts[1] | 0
+                idx = id2idx(parts[1])
                 if (idx < traffic.roads.length) {
                     start = traffic.roads[idx].start
                     traffic.roads[idx].start = traffic.roads[idx].end
