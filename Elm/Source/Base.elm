@@ -121,6 +121,7 @@ type alias Controls =
     , remove : Int
     , place : Int
     , snap : Int
+    , hide : Int
     , help : Int
     }
 

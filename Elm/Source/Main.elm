@@ -461,6 +461,13 @@ update msg model =
                                   , Cmd.none )
                             else if key == model.controls.snap then
                                 ( { model | snap = True }, Cmd.none )
+                            else if key == model.controls.hide then
+                                case model.currentSelectedRoad of
+                                    Just road ->
+                                        ( { model
+                                            | hiddenRoads = model.hiddenRoads ++ [road.id]}
+                                        , Cmd.none )
+                                    Nothing -> ( model, Cmd.none )
                             else if key == model.controls.help then
                                 ( { model | popup = InfoPopup False }, Cmd.none )
                             else (always (model, Cmd.none)) <| Debug.log "Key Down" key
