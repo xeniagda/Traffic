@@ -16,6 +16,8 @@ import Mouse
 import Keyboard
 import WebSocket
 
+import List.Extra exposing (isSuffixOf)
+
 import Base exposing (..)
 import TrafficRenderer exposing (..)
 import MenuRenderer exposing (renderMenu)
@@ -52,6 +54,7 @@ init flags =
         , trackingCar = Nothing
         , controls = flags.controls
         , others = []
+        , keyCombo = []
         , currentDragCar = Nothing
         , hiddenRoads = []
         , snap = False
@@ -336,6 +339,16 @@ update msg model =
                     else ( model_, Cmd.none )
                 _ -> ( model, Cmd.none )
 
+        KeyCodeDown code ->
+            case keyboardMap !! code of
+                Just key -> update (KeyDown key) model
+                Nothing -> ( model, Cmd.none )
+
+        KeyCodeUp code ->
+            case keyboardMap !! code of
+                Just key -> update (KeyUp key) model
+                Nothing -> ( model, Cmd.none )
+
         KeyDown key ->
             if key == model.controls.free then
                     ( {model
@@ -347,6 +360,7 @@ update msg model =
                     , currentSelectedRoad = Nothing
                     , otherRoad = Nothing
                     , popup = NoPopup
+                    , keyCombo = []
                     , menu =
                         let menu = model.menu
                         in { menu | state = In }
@@ -461,7 +475,7 @@ update msg model =
                                   , Cmd.none )
                             else if key == model.controls.snap then
                                 ( { model | snap = True }, Cmd.none )
-                            else if key == model.controls.hide then
+                            else if key == model.controls.hide && model.currentSelectedRoad /= Nothing then
                                 case model.currentSelectedRoad of
                                     Just road ->
                                         ( { model
@@ -470,7 +484,18 @@ update msg model =
                                     Nothing -> ( model, Cmd.none )
                             else if key == model.controls.help then
                                 ( { model | popup = InfoPopup False }, Cmd.none )
-                            else (always (model, Cmd.none)) <| Debug.log "Key Down" key
+                            else
+                                let combo = Debug.log "Combo" <| model.keyCombo ++ [key]
+                                    matching = Debug.log "Matching" <| List.filter (\button ->
+                                        case button.hotKey of
+                                            Just hotKey -> isSuffixOf hotKey combo
+                                            Nothing -> False) model.menu.buttons
+                                    sorted = Debug.log "Sorted" <| List.sortBy (negate << List.length << (Maybe.withDefault []) << .hotKey) matching
+                                    first = List.head sorted
+                                in 
+                                   case first of
+                                       Just button -> ( {model | keyCombo = []}, Task.perform identity <| Task.succeed button.message )
+                                       Nothing -> (always ({model | keyCombo = combo}, Cmd.none)) <| Debug.log "Key Down" key
                         Nothing -> ( model, Cmd.none )
                 _ -> ( model, Cmd.none )
 
@@ -731,11 +756,19 @@ generatePopup popup model =
                             Just val -> Just (pre [] [text <| name ++ ": " ++ (toString val)])
                             Nothing -> Nothing
                         )
+                    (
                     [ (Maybe.map toString model.ip, "Ip")
                     , (Maybe.map toString model.size, "Screen size")
                     , (Maybe.map toString model.trackingCar, "Tracking car")
                     , (Maybe.map toString model.currentSelectedRoad, "Current selected road")
+                    , (Just <| toString model.keyCombo, "Current selected road")
                     ]
+                    ++ List.filterMap (\button ->
+                        case button.hotKey of
+                            Just hotKey -> Just (Just <| String.join "" hotKey, button.image ++ " hotkey")
+                            Nothing -> Nothing
+                        ) model.menu.buttons
+                    )
                     ++ (
                         case model.err of
                             Just err ->
@@ -802,7 +835,7 @@ subscriptions model =
         , Mouse.downs MousePress
         , Mouse.ups MouseRelease
         , Mouse.moves MouseMove
-        , Keyboard.downs KeyDown
-        , Keyboard.ups KeyUp
+        , Keyboard.downs KeyCodeDown
+        , Keyboard.ups KeyCodeUp
         , WebSocket.listen model.webSocketUrl ServerSync
         ]

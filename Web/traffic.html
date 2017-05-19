@@ -55,21 +55,21 @@
 
 var node = document.getElementById("main")
 var defaultControls = { 
-    up: 87, // W
-    left: 65, // A
-    right: 68, // D
-    break: 83, // S
-    back: 88, // X
-    carUp: 39, // Right
-    carDown: 37, // Left
-    free: 27, // Escape
-    zoomIn: 187, // Plus
-    zoomOut: 189, // Minus
-    remove: 8, // Backspace
-    place: 13, // Enter
-    snap: 16, // Shift
-    hide: 72, // H
-    help: 191, // Question mark
+    up: "W",
+    left: "A",
+    right: "D",
+    break: "S",
+    back: "Q",
+    carUp: "RIGHT",
+    carDown: "LEFT",
+    free: "ESCAPE",
+    zoomIn: "EQUALS",
+    zoomOut: "MINUS",
+    remove: "BACK_SPACE",
+    place: "ENTER",
+    snap: "SHIFT",
+    hide: "H",
+    help: "SLASH"
 }
 var query = location.search.substr(1)
 var result = {}
