@@ -392,7 +392,7 @@ function add_car(car) {
     return undefined
 }
 
-function pathFind(start_id, end_id) {
+function pathFind(start_id, end_id) { // Uses a weighted breadth-first search because I'm too lazy to make an actual A-star algorithm. TODO: Make this an A-star algorithm
     visited = new Set([])
     current_stack = [{path: [start_id], score: 0}]
 
@@ -415,18 +415,36 @@ function pathFind(start_id, end_id) {
                 dx = r.start.x - r.end.x
                 dy = r.start.y - r.end.y
                 length = dx ** 2 + dy ** 2
-                new_score = current.score + length
+
+                car_speed_on_road = traffic.cars.filter(car => {
+                    if (!car.ai)
+                        return false
+                    if (!car.ai.road_queue)
+                        return false
+                    if (car.ai.road_queue.length == 0)
+                        return false
+                    return car.ai.road_queue[0] == rId
+                }).map(car => car.speed)
+                
+                if (car_speed_on_road.length == 0) {
+                    avg_speed = r.speed_rec
+                }
+                else {
+                    avg_speed = car_speed_on_road.reduce((a, b) => a + b) / car_speed_on_road.length
+                }
+
+                new_score = current.score + length / avg_speed
 
                 added = false
                 for (var i = 0; i < current_stack.length; i++) {
                     if (current_stack[i].score > new_score) {
-                        current_stack.splice(i, 0, {path: current.path.concat([rId]), score: current.score + length})
+                        current_stack.splice(i, 0, {path: current.path.concat([rId]), score: new_score})
                         added = true
                         break
                     }
                 }
                 if (!added)
-                    current_stack.push({path: current.path.concat([rId]), score: current.score + length})
+                    current_stack.push({path: current.path.concat([rId]), score: new_score})
             })
         }
     }
@@ -993,6 +1011,9 @@ wss.on('connection', (socket => {
                 if (road.traffic_light) {
                     delete traffic.roads[id2idx(parts[1])].traffic_light
                 }
+                traffic.intersection.forEach(inter => {
+                    inter.roads = inter.roads.filter(road => parts[1])
+                })
             }
             else if (cmd === "lflip" && parts.length == 2 && permissions.has("build")) { // lflip/id
                 road = traffic.roads[id2idx(parts[1])]
