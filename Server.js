@@ -776,7 +776,7 @@ var broadcast = timers.setInterval(() => {
 
     wss.clients.forEach(client => {
         if (client.readyState === ws.OPEN) {
-            ip = client.upgradeReq.connection.remoteAddress
+            ip = client._socket.remoteAddress || client.upgradeReq.connection.remoteAddress
             
             if (IP_INFO[ip]) {
                 permissions = IP_INFO[ip].perms || []
@@ -814,7 +814,7 @@ var broadcast = timers.setInterval(() => {
 wss.on('connection', (socket => {
 
     socket.on('message', (data, flags) => {
-        ip = socket.upgradeReq.connection.remoteAddress
+        ip = client._socket.remoteAddress || client.upgradeReq.connection.remoteAddress
 
         if (IP_INFO[ip]) {
             permissions = IP_INFO[ip].perms || []
