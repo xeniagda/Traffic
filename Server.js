@@ -6,9 +6,6 @@ let ws = require("ws")
 let readline = require("readline")
 let ip_lib = require("ip")
 
-FORWARD = 0
-BACKWARD = 1
-
 CARS = ["Car1", "Car2", "Car3", "Car4", "GuitarCar"]
 
 READ = "Traffic.js"
@@ -86,7 +83,7 @@ function makeDefaultUser(name) {
     }
 }
 
-SPAWN_RATE = 2000
+SPAWN_RATE = 2
 
 PERMISSION = new Set(["connect", "view", "place", "police", "build", "command", "moderator"])
 
@@ -395,6 +392,46 @@ function add_car(car) {
     return undefined
 }
 
+function pathFind(start_id, end_id) {
+    visited = new Set([])
+    current_stack = [{path: [start_id], score: 0}]
+
+    while (current_stack.length) {
+        current = current_stack.splice(0, 1)[0]
+        latest = current.path[current.path.length - 1]
+
+        if (visited.has(latest))
+            continue
+
+        visited.add(latest)
+
+        if (latest === end_id)
+            return current.path
+
+        road = traffic.roads[id2idx(latest)]
+        if (road !== undefined) {
+            road.connected_to.forEach(rId => {
+                r = traffic.roads[id2idx(rId)]
+                dx = r.start.x - r.end.x
+                dy = r.start.y - r.end.y
+                length = dx ** 2 + dy ** 2
+                new_score = current.score + length
+
+                added = false
+                for (var i = 0; i < current_stack.length; i++) {
+                    if (current_stack[i].score > new_score) {
+                        current_stack.splice(i, 0, {path: current.path.concat([rId]), score: current.score + length})
+                        added = true
+                        break
+                    }
+                }
+                if (!added)
+                    current_stack.push({path: current.path.concat([rId]), score: current.score + length})
+            })
+        }
+    }
+}
+
 var physics = timers.setInterval(() => {
     delta = (Date.now() - lastTime) / 1000
     totalTime += delta
@@ -420,6 +457,9 @@ var physics = timers.setInterval(() => {
 
     traffic.cars = traffic.cars.filter(car => traffic.cars.filter(check => car.name === check.name && car !== check).length === 0)
 
+    traffic.roads.forEach(road => {
+        road.connected_to = road.connected_to.filter(c => id2idx(c) !== -1) // Remove dead connections
+    })
 
     traffic.cars = traffic.cars.map(car => {
         car = JSON.parse(JSON.stringify(car))
@@ -472,12 +512,48 @@ var physics = timers.setInterval(() => {
 
 
         // Calculate AI
+        
+        if (!car.ai)
+            return car
+
+        // Check if road_queue is valid
+        
+        valid = true
+
+        for (var i = 0; i < car.ai.road_queue.length - 1; i++) {
+            road_id = car.ai.road_queue[i]
+            road = traffic.roads[id2idx(road_id)]
+            if (road === undefined) {
+                valid = false
+                break
+            }
+
+            next_id = car.ai.road_queue[i + 1]
+            next = traffic.roads[id2idx(next_id)]
+
+            if (road.connected_to.indexOf(next_id) == -1) {
+                valid = false
+            }
+        }
+        if (car.ai.road_queue.length == 0)
+            valid = false
+
+        if (car.ai.road_queue[-1] !== car.ai.destination)
+            valid = false
+
+
+        if (!valid) {
+            path = pathFind(car.ai.road_queue[0], car.ai.destination)
+            if (path !== undefined)
+                car.ai.road_queue = path
+        }
+
         if (!car.crashed && car.ai && car.ai.road_queue.length > 0) {
+
             current_path = car.ai.road_queue[0]
-            idx = id2idx(current_path.road)
-
-
+            idx = id2idx(current_path)
             road = traffic.roads[idx]
+
             if (road === undefined || idx === -1) {
                 delete car.ai
                 return car
@@ -512,10 +588,9 @@ var physics = timers.setInterval(() => {
             dist_exag = Math.exp(3 * dist) + 1
 
             // Steer car towards closest point
-            wanted_end_pos = current_path.direction == FORWARD ? road.end : road.start
 
-            towards = {x: (closest.x * dist_exag + wanted_end_pos.x) / (dist_exag + 1),
-                       y: (closest.y * dist_exag + wanted_end_pos.y) / (dist_exag + 1)}
+            towards = {x: (closest.x * dist_exag + road.end.x) / (dist_exag + 1),
+                       y: (closest.y * dist_exag + road.end.y) / (dist_exag + 1)}
 
 
             wanted_rot = (toDegrees(Math.atan2(car.pos.y - towards.y,
@@ -526,8 +601,8 @@ var physics = timers.setInterval(() => {
 
             car.steering = ((car.steering + 180) % 360 - 180) * 5
 
-            dwx = wanted_end_pos.x - car.pos.x
-            dwy = wanted_end_pos.y - car.pos.y
+            dwx = road.end.x - car.pos.x
+            dwy = road.end.y - car.pos.y
             dist_to_finish = Math.sqrt(dwx * dwx + dwy * dwy)
 
             // How far would the car go if the breaks were all down? Use the geometric series b+b^2+b^3... where b = break factor
@@ -681,51 +756,54 @@ var physics = timers.setInterval(() => {
         attempt = 200
 
         do {
-            road_id = traffic.roads[Math.random() * traffic.roads.length | 0].id
+            start_id = traffic.roads[Math.random() * traffic.roads.length | 0].id
             attempt -= 1
         } while ((
-                traffic.roads.map(road => road.connected_to.indexOf(road_id) != -1).reduce((a, b) => a || b) ||
-                traffic.cars.length > 0 && !traffic.cars.map(car => distance(car.pos, traffic.roads[id2idx(road_id)].start) > 2).reduce((a, b) => a && b)
+                traffic.roads.map(road => road.connected_to.indexOf(start_id) != -1).reduce((a, b) => a || b) ||
+                traffic.cars.length > 0 && !traffic.cars.map(car => distance(car.pos, traffic.roads[id2idx(start_id)].start) > 2).reduce((a, b) => a && b)
             ) && attempt > 0
         )
 
         if (attempt != 0) {
-            road = traffic.roads[id2idx(road_id)]
-            road_rot = toDegrees(Math.atan2(road.end.y - road.start.y, road.end.x - road.start.x))
+            start = traffic.roads[id2idx(start_id)]
+            start_rot = toDegrees(Math.atan2(start.end.y - start.start.y, start.end.x - start.start.x))
 
-            path = []
-            current_road_id = road_id
-            for (i = 0; i < 100 && traffic.roads[id2idx(current_road_id)].connected_to.length > 0; i++) {
-                path.push({road: current_road_id, direction: FORWARD})
+            attempt = 200
+            do {
+                end_id = traffic.roads[Math.random() * traffic.roads.length | 0].id
+                attempt -= 1
+            } while (
+                traffic.roads[id2idx(end_id)].connected_to.length > 0
+                && attempt > 0
+            )
 
-                current_road = traffic.roads[id2idx(current_road_id)]
-                current_road_id = current_road.connected_to[Math.random() * current_road.connected_to.length | 0]
+            if (attempt != 0) {
+                car = {
+                    name: "Car" + carCount,
+                    img: texture,
+                    pos: start.start,
+                    rot: start_rot,
+                    accel: 0,
+                    speed: 0,
+                    size: 1 + (texture == "GuitarCar"),
+                    maxSpeed: 8,
+                    steering: 0,
+                    hand_breaks: false,
+                    break_strength: 0.2,
+                    crashed: false,
+                    is_police: false,
+                    ai: {
+                        waiting: false,
+                        road_queue: [start_id],
+                        destination: end_id
+                    },
+                }
+                add_car(car)
+
+                carCount += 1
 
             }
-            path.push({road: current_road_id, direction: FORWARD})
 
-            car = {
-                name: "Car" + carCount,
-                img: texture,
-                pos: road.start,
-                rot: road_rot,
-                accel: 0,
-                speed: 0,
-                size: 1 + (texture == "GuitarCar"),
-                maxSpeed: 8,
-                steering: 0,
-                hand_breaks: false,
-                break_strength: 0.2,
-                crashed: false,
-                is_police: false,
-                ai: {
-                    waiting: false,
-                    road_queue: path
-                },
-            }
-            add_car(car)
-
-            carCount += 1
         }
     }
 
@@ -814,7 +892,7 @@ var broadcast = timers.setInterval(() => {
 wss.on('connection', (socket => {
 
     socket.on('message', (data, flags) => {
-        ip = client._socket.remoteAddress || client.upgradeReq.connection.remoteAddress
+        ip = socket._socket.remoteAddress || socket.upgradeReq.connection.remoteAddress
 
         if (IP_INFO[ip]) {
             permissions = IP_INFO[ip].perms || []
