@@ -9,7 +9,7 @@ let ip_lib = require("ip")
 FORWARD = 0
 BACKWARD = 1
 
-CARS = ["Car1", "Car2", "Car3", "Car4"]
+CARS = ["Car1", "Car2", "Car3", "Car4", "GuitarCar"]
 
 READ = "Traffic.js"
 
@@ -86,7 +86,7 @@ function makeDefaultUser(name) {
     }
 }
 
-SPAWN_RATE = 2
+SPAWN_RATE = 2000
 
 PERMISSION = new Set(["connect", "view", "place", "police", "build", "command", "moderator"])
 
@@ -711,6 +711,7 @@ var physics = timers.setInterval(() => {
                 rot: road_rot,
                 accel: 0,
                 speed: 0,
+                size: 1 + (texture == "GuitarCar"),
                 maxSpeed: 8,
                 steering: 0,
                 hand_breaks: false,
