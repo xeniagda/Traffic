@@ -229,6 +229,7 @@ type alias Model =
     , others : List User
 
     , keyCombo : List String
+    , keyComboTimeLeft : Float
 
     , currentDragCar : Maybe ProtoCar
 

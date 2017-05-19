@@ -55,6 +55,7 @@ init flags =
         , controls = flags.controls
         , others = []
         , keyCombo = []
+        , keyComboTimeLeft = 0
         , currentDragCar = Nothing
         , hiddenRoads = []
         , snap = False
@@ -120,6 +121,8 @@ update msg model =
                     in
                         ( { model
                             | lasttime = Just time
+                            , keyComboTimeLeft = if model.keyComboTimeLeft > 0 then model.keyComboTimeLeft - delta else 0
+                            , keyCombo = if model.keyComboTimeLeft > 0 then model.keyCombo else []
                             , cars =
                                 List.map (\car ->
                                         { car
@@ -155,6 +158,7 @@ update msg model =
                     _ -> model.scroll
 
               }, Cmd.none )
+
         MouseRelease _ ->
             case model.popup of
                 NoPopup ->
@@ -485,7 +489,8 @@ update msg model =
                             else if key == model.controls.help then
                                 ( { model | popup = InfoPopup False }, Cmd.none )
                             else
-                                let combo = Debug.log "Combo" <| model.keyCombo ++ [key]
+                                let currentCombo = if model.keyComboTimeLeft > 0 then model.keyCombo else []
+                                    combo = Debug.log "Combo" <| currentCombo ++ [key]
                                     matching = Debug.log "Matching" <| List.filter (\button ->
                                         case button.hotKey of
                                             Just hotKey -> isSuffixOf hotKey combo
@@ -494,8 +499,8 @@ update msg model =
                                     first = List.head sorted
                                 in 
                                    case first of
-                                       Just button -> ( {model | keyCombo = []}, Task.perform identity <| Task.succeed button.message )
-                                       Nothing -> (always ({model | keyCombo = combo}, Cmd.none)) <| Debug.log "Key Down" key
+                                       Just button -> ( {model | keyCombo = [], keyComboTimeLeft = 1}, Task.perform identity <| Task.succeed button.message )
+                                       Nothing -> (always ({model | keyCombo = combo, keyComboTimeLeft = 1}, Cmd.none)) <| Debug.log "Key Down" key
                         Nothing -> ( model, Cmd.none )
                 _ -> ( model, Cmd.none )
 
@@ -744,30 +749,35 @@ generatePopup popup model =
                 , pre [] [text "w Accelerate"]
                 , pre [] [text "s Active breaks"]
                 , pre [] [text "a/d Steer left/right"]
-                , pre [] [text "x Drive backwards"]
-                , button [ onClick InfoToggleDebug ] [text <| if debug then "Hide Debug" else "Show Debug"]
-                , br [] []
+                , pre [] [text "q Drive backwards"]
                 ] ++
+                List.filterMap (\button ->
+                    case button.hotKey of
+                        Just hotKey -> Just <| pre [] [text <| button.image ++ ": " ++ String.join "-" hotKey]
+                        Nothing -> Nothing
+                    ) model.menu.buttons
+                ++
+                [ button [ onClick InfoToggleDebug ] [text <| if debug then "Hide Debug" else "Show Debug"]
+                , br [] []
+                ]
+                ++
                 (if debug then
                     [ h3 [] [pre [] [text "Debug info:"]]
                     ] ++
+                    (
                     List.filterMap (\(prop, name) ->
                         case prop of
                             Just val -> Just (pre [] [text <| name ++ ": " ++ (toString val)])
                             Nothing -> Nothing
                         )
                     (
-                    [ (Maybe.map toString model.ip, "Ip")
-                    , (Maybe.map toString model.size, "Screen size")
-                    , (Maybe.map toString model.trackingCar, "Tracking car")
-                    , (Maybe.map toString model.currentSelectedRoad, "Current selected road")
-                    , (Just <| toString model.keyCombo, "Current selected road")
-                    ]
-                    ++ List.filterMap (\button ->
-                        case button.hotKey of
-                            Just hotKey -> Just (Just <| String.join "-" hotKey, button.image ++ " hotkey")
-                            Nothing -> Nothing
-                        ) model.menu.buttons
+                        [ (Maybe.map toString model.ip, "Ip")
+                        , (Maybe.map toString model.size, "Screen size")
+                        , (Maybe.map toString model.trackingCar, "Tracking car")
+                        , (Maybe.map toString model.currentSelectedRoad, "Current selected road")
+                        , (Just <| toString model.keyCombo, "Current combo")
+                        , (Just <| toString model.keyComboTimeLeft, "Time left on combo")
+                        ]
                     )
                     ++ (
                         case model.err of
@@ -777,7 +787,7 @@ generatePopup popup model =
                             Nothing ->
                                 []
                     )
-                else [])
+                ) else [])
                 ++ [ button [ onClick ClosePopup ] [text "Done!"] ]
             )]
 
