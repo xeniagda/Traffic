@@ -765,7 +765,7 @@ generatePopup popup model =
                     ]
                     ++ List.filterMap (\button ->
                         case button.hotKey of
-                            Just hotKey -> Just (Just <| String.join "" hotKey, button.image ++ " hotkey")
+                            Just hotKey -> Just (Just <| String.join "-" hotKey, button.image ++ " hotkey")
                             Nothing -> Nothing
                         ) model.menu.buttons
                     )
