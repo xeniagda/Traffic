@@ -79,7 +79,7 @@ query.split("&").forEach(function(part) {
 });
 Object.keys(defaultControls).forEach(control => {
     if (result[control] !== undefined) {
-        defaultControls[control] = result[control] | 0
+        defaultControls[control] = result[control]
     }
 })
 
