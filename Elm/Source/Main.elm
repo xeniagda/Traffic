@@ -217,6 +217,7 @@ update msg model =
                                         ]
                                     )
                                 _ -> ( model, Cmd.none )
+
                         RemoveSelecting ->
                             case model.currentSelectedRoad of
                                 Nothing -> ( model, Cmd.none )
@@ -299,6 +300,29 @@ update msg model =
                                         ]
                                     )
                                 _ -> ( model, Cmd.none )
+
+                        AICarSelecting ->
+                            case (model.currentSelectedRoad, model.otherRoad) of
+                                (Just road, Nothing) ->
+                                    ( { model
+                                    | otherRoad = Just road
+                                    }
+                                    , Cmd.none )
+                                (Just road, Just other) ->
+                                    ( { model
+                                    | selectState = NotSelecting
+                                    , currentSelectedRoad = Nothing
+                                    , otherRoad = Nothing
+                                    }
+                                    , WebSocket.send model.webSocketUrl
+                                        <| String.join "/"
+                                        [ "createai"
+                                        , other.id
+                                        , road.id
+                                        ]
+                                    )
+                                _ -> ( model, Cmd.none )
+
                         NotSelecting ->
                             ( {model
                                 | dragMouse = Just {x = toFloat pos.x, y = toFloat pos.y}
@@ -672,8 +696,7 @@ view model =
                     lines ++ roads ++ cars ++ trafficLights ++ menu
                 ++ (
                     List.concatMap (\road ->
-                        [
-                            S.line
+                        [ S.line
                             [ Sa.x1 <| toString <| (road.start.x * model.renderScale) + model.scroll.x
                             , Sa.y1 <| toString <| (road.start.y * model.renderScale) + model.scroll.y
                             , Sa.x2 <| toString <| (road.end.x * model.renderScale) + model.scroll.x
@@ -681,8 +704,7 @@ view model =
                             , Sa.strokeWidth <| toString <| model.renderScale * 0.3
                             , Sa.stroke "green"
                             ] []
-                        ,
-                            S.circle
+                        , S.circle
                             [ Sa.cx <| toString <| (road.end.x * model.renderScale) + model.scroll.x
                             , Sa.cy <| toString <| (road.end.y * model.renderScale) + model.scroll.y
                             , Sa.fill "yellow"

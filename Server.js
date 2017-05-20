@@ -770,7 +770,6 @@ var physics = timers.setInterval(() => {
 
         // Add new car
 
-        texture = CARS[Math.random() * CARS.length | 0]
         attempt = 200
 
         do {
@@ -795,6 +794,7 @@ var physics = timers.setInterval(() => {
                 && attempt > 0
             )
 
+            texture = CARS[Math.random() * CARS.length | 0]
             if (attempt != 0) {
                 car = {
                     name: "Car" + carCount,
@@ -949,15 +949,51 @@ wss.on('connection', (socket => {
                     car.break_strength = 0.1
                     car.img = "CarPolis"
                 }
-
                 else if (car.img === "CarPolis") {
                     car.img = "Car1"
+                    car.maxSpeed = 8
+                    car.break_strength = 0.2
                 }
                 car.controlled_by = ip
 
                 add_car(car)
-
             }
+            else if (cmd === "createai" && parts.length == 3 && permissions.has("place")) { // createai/rIDstart/rIdend
+
+                texture = CARS[Math.random() * CARS.length | 0]
+                start_id = parts[1]
+                start = traffic.roads[id2idx(start_id)]
+                start_rot = toDegrees(Math.atan2(start.end.y - start.start.y, start.end.x - start.start.x))
+
+                end_id = parts[2]
+                end = traffic.roads[id2idx(end_id)]
+
+                car = {
+                    name: "AiCar" + carCount,
+                    img: texture,
+                    pos: start.start,
+                    rot: start_rot,
+                    accel: 0,
+                    speed: 0,
+                    size: 1 + (texture == "GuitarCar"),
+                    maxSpeed: 8,
+                    steering: 0,
+                    hand_breaks: false,
+                    break_strength: 0.2,
+                    crashed: false,
+                    is_police: false,
+                    ai: {
+                        waiting: false,
+                        road_queue: [start_id],
+                        destination: end_id
+                    },
+                    controlled_by: ip
+                }
+                add_car(car)
+
+                carCount += 1
+            }
+
             else if (cmd === "remove" && parts.length > 1) {
                 carName = parts[1]
                 traffic.cars = traffic.cars.filter(car => {

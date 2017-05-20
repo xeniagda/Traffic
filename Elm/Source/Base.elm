@@ -64,32 +64,33 @@ generateMenuButtons traffic =
         if traffic.loggedIn then
             let perms = traffic.perms
             in (if List.member "place" perms then [ MenuButton "AddCar" (Just ["C"]) <| AddCarClicked False ] else [])
-            ++ (if List.member "police" perms then [ MenuButton "AddPolice" (Just ["P"]) <| AddCarClicked True ] else [])
-            ++ (if List.member "build" perms then 
+            ++ (if List.member "police" perms then [ MenuButton "AddPolice" (Just ["P"]) <| AddCarClicked True 
+                                                   , MenuButton "FlipRoad" Nothing <| SelectStateChange AICarSelecting ] else [])
+            ++ (if List.member "build" perms then
                 [ MenuButton "AddRoad" (Just ["R", "M"]) AddRoadClicked
                 , MenuButton "RemoveRoad" (Just ["R", "X"]) <| SelectStateChange RemoveSelecting
-                , MenuButton "FlipRoad" (Just ["R", "F"]) <| SelectStateChange FlipSelecting 
-                , MenuButton "CombineRoad" (Just ["R", "C"]) <| SelectStateChange CombineSelecting 
+                , MenuButton "FlipRoad" (Just ["R", "F"]) <| SelectStateChange FlipSelecting
+                , MenuButton "CombineRoad" (Just ["R", "C"]) <| SelectStateChange CombineSelecting
                 , MenuButton "AddLight" (Just ["L", "M"]) <| SelectStateChange <| LightSelecting AddLight
                 , MenuButton "FlipLight" (Just ["L", "F"]) <| SelectStateChange <| LightSelecting FlipLight
                 , MenuButton "RemoveLight" (Just ["L", "X"]) <| SelectStateChange <| LightSelecting RemoveLight
                 , MenuButton "CombineLight" (Just ["L", "C"]) <| SelectStateChange IntersectionMakeSelecting
-                , MenuButton "Hide" (Just ["R", "H"]) <| SelectStateChange HideSelecting 
-                , MenuButton "Show" (Just ["R", "CONTROL", "H"]) ShowRoadClicked 
+                , MenuButton "Hide" (Just ["R", "H"]) <| SelectStateChange HideSelecting
+                , MenuButton "Show" (Just ["R", "CONTROL", "H"]) ShowRoadClicked
                 ] else [])
             ++ (if List.member "command" perms then [ MenuButton "Cmd" Nothing <| OpenPopup <| CommandPopup "" ] else [])
         else
             [ MenuButton "login" Nothing <| OpenPopup <| LoginPopup ""
             ]
-    ) 
-    ++  [ MenuButton "Info" Nothing <| OpenPopup <| InfoPopup True 
+    )
+    ++  [ MenuButton "Info" Nothing <| OpenPopup <| InfoPopup True
         , MenuButton "TrackCar" (Just ["T"]) <| SelectStateChange TrackSelecting
         ]
 
 
 getClosestRoad : Position -> List Road -> Maybe Road
 getClosestRoad pos roads =
-    let dist road = 
+    let dist road =
         let positions = [road.end]
             lengths = List.map (\roadPos -> Tuple.first <| toPolar (roadPos.x - pos.x, roadPos.y - pos.y)) positions
         in List.sum lengths / 1000 + (Maybe.withDefault 10000 <| List.minimum <| lengths)
@@ -103,12 +104,12 @@ getClosestCar pos car =
 
 id2idx : Model -> String -> Maybe Int
 id2idx model id =
-    List.head 
+    List.head
         <| List.filterMap (\(idx, road) -> if road.id == id then Just idx else Nothing)
         <| List.indexedMap (,) model.roads
 
 
-type alias Controls = 
+type alias Controls =
     { up : String
     , left : String
     , right : String
@@ -244,7 +245,7 @@ type alias Model =
     , otherRoad : Maybe Road
 
     , cmdLog : List String
-    
+
     , popup : Popup
     , menu : Menu
     }
@@ -255,7 +256,7 @@ type Popup
     | InfoPopup Bool
     | CommandPopup String
 
-type SelectState 
+type SelectState
     = NotSelecting
     | CombineSelecting
     | RemoveSelecting
@@ -264,6 +265,7 @@ type SelectState
     | LightSelecting LightState
     | IntersectionMakeSelecting
     | TrackSelecting
+    | AICarSelecting
 
 type LightState = AddLight | RemoveLight | FlipLight
 
